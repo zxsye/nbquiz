@@ -1,0 +1,65 @@
+name: Build Quiz Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'quizzes/**/*.json'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      # ── Checkout main (source) ──────────────────────────────────────────────
+      - name: Checkout main
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 2   # need HEAD~1 to diff changed files
+
+      # ── Find changed JSON files ─────────────────────────────────────────────
+      - name: Find changed quiz JSONs
+        id: changed
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD -- 'quizzes/**/*.json' | tr '\n' ' ')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+          echo "Changed: $FILES"
+
+      # ── Checkout gh-pages into a subfolder ─────────────────────────────────
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: gh-pages
+          path: gh-pages-out
+
+      # ── Build changed quizzes ───────────────────────────────────────────────
+      - name: Build HTML for changed quizzes
+        run: |
+          chmod +x build_quiz_site.sh
+          for json in ${{ steps.changed.outputs.files }}; do
+            # Mirror path: quizzes/W7/neuro/v1.json → W7/neuro/v1.html
+            rel="${json#quizzes/}"                        # strip quizzes/ prefix
+            html_path="gh-pages-out/${rel%.json}.html"   # swap .json → .html
+            mkdir -p "$(dirname "$html_path")"
+            echo "Building: $json → $html_path"
+            ./build_quiz_site.sh "$json" "$html_path"
+          done
+
+      # ── Regenerate index.html ───────────────────────────────────────────────
+      - name: Regenerate index.html
+        run: python3 generate_index.py gh-pages-out
+
+      # ── Commit and push to gh-pages ─────────────────────────────────────────
+      - name: Commit to gh-pages
+        run: |
+          cd gh-pages-out
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "Nothing to commit" && exit 0
+          git commit -m "Build: $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git push
