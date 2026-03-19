@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'quizzes/**/*.json'
+      - 'quizzes/**/*.html'
   workflow_dispatch:
 
 jobs:
@@ -20,18 +20,18 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@v4.2.2
         with:
-          fetch-depth: 2   # need HEAD~1 to diff changed files
+          fetch-depth: 2
 
-      # ── Find JSON files to build ────────────────────────────────────────────
-      # On manual trigger: build all JSONs. On push: build only changed ones.
-      - name: Find quiz JSONs to build
+      # ── Find HTML files to process ──────────────────────────────────────────
+      # On manual trigger: process all. On push: process only changed ones.
+      - name: Find quiz HTMLs to build
         id: changed
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            FILES=$(find quizzes -name '*.json' | tr '\n' ' ')
+            FILES=$(find quizzes -name '*.html' | tr '\n' ' ')
             echo "Manual trigger — building all: $FILES"
           else
-            FILES=$(git diff --name-only HEAD~1 HEAD -- 'quizzes/**/*.json' | tr '\n' ' ')
+            FILES=$(git diff --name-only HEAD~1 HEAD -- 'quizzes/**/*.html' | tr '\n' ' ')
             echo "Push trigger — changed: $FILES"
           fi
           echo "files=$FILES" >> $GITHUB_OUTPUT
@@ -43,17 +43,31 @@ jobs:
           ref: gh-pages
           path: gh-pages-out
 
-      # ── Build changed quizzes ───────────────────────────────────────────────
-      - name: Build HTML for changed quizzes
+      # ── Extract + Build ─────────────────────────────────────────────────────
+      - name: Extract and build quizzes
         run: |
+          chmod +x extract_notebooklm_quiz_json.sh
           chmod +x build_quiz_site.sh
-          for json in ${{ steps.changed.outputs.files }}; do
-            # Mirror path: quizzes/W7/neuro/v1.json → W7/neuro/v1.html
-            rel="${json#quizzes/}"                        # strip quizzes/ prefix
-            html_path="gh-pages-out/${rel%.json}.html"   # swap .json → .html
-            mkdir -p "$(dirname "$html_path")"
-            echo "Building: $json → $html_path"
-            ./build_quiz_site.sh "$json" "$html_path"
+
+          for src_html in ${{ steps.changed.outputs.files }}; do
+            echo "──────────────────────────────────────"
+            echo "Processing: $src_html"
+
+            # Step 1: Extract JSON from NotebookLM HTML
+            TEMP_JSON=$(mktemp /tmp/quiz_XXXX.json)
+            ./extract_notebooklm_quiz_json.sh "$src_html" "$TEMP_JSON"
+
+            # Step 2: Build quiz HTML
+            # Mirror path: quizzes/W7/Neuro/SAH.html → gh-pages-out/W7/Neuro/SAH.html
+            rel="${src_html#quizzes/}"
+            out_html="gh-pages-out/${rel}"
+            mkdir -p "$(dirname "$out_html")"
+
+            # Pass src_html as path hint so title/ID is derived correctly
+            ./build_quiz_site.sh "$TEMP_JSON" "$out_html" "$src_html"
+
+            rm -f "$TEMP_JSON"
+            echo "Built → $out_html"
           done
 
       # ── Regenerate index.html ───────────────────────────────────────────────
