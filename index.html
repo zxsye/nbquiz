@@ -196,6 +196,20 @@ body {
 .hint-toggle:hover { background: var(--hint-bg); }
 .hint-body { margin-top: 10px; padding: 12px 16px; background: var(--hint-bg); border-left: 3px solid #f59e0b; border-radius: 0 var(--radius) var(--radius) 0; font-size: .9rem; color: var(--hint); line-height: 1.55; display: none; }
 .hint-body.open { display: block; animation: fadeIn .2s ease; }
+
+/* ── Notes ── */
+.note-wrap { padding: 0 28px; margin-top: 12px; }
+.note-toggle { display: inline-flex; align-items: center; gap: 7px; font-size: .8rem; font-weight: 500; color: var(--text-2); cursor: pointer; background: none; border: 1.5px solid var(--border); border-radius: 99px; padding: 5px 14px; transition: all var(--transition); }
+.note-toggle:hover { background: var(--surface-2); }
+.note-toggle.has-note { color: var(--accent); border-color: var(--accent); background: var(--accent-light); }
+.note-body { margin-top: 10px; display: none; }
+.note-body.open { display: block; animation: fadeIn .2s ease; }
+.note-textarea { width: 100%; min-height: 90px; padding: 10px 14px; font-family: var(--font-sans); font-size: .88rem; color: var(--text); background: var(--surface-2); border: 1.5px solid var(--border); border-radius: var(--radius); resize: vertical; outline: none; transition: border-color var(--transition); line-height: 1.5; box-sizing: border-box; }
+.note-textarea:focus { border-color: var(--accent); background: var(--surface); }
+.note-save-status { font-size: .72rem; color: var(--text-3); margin-top: 4px; text-align: right; font-family: var(--font-mono); min-height: 1em; }
+.note-icon { position: absolute; top: -5px; left: -5px; font-size: 9px; background: var(--accent-light); border: 1px solid var(--accent); border-radius: 50%; display: none; width: 14px; height: 14px; align-items: center; justify-content: center; }
+.q-grid-item.has-note .note-icon { display: flex; }
+.review-note { margin-top: 8px; padding: 8px 12px; background: var(--accent-light); border-radius: 6px; font-size: .82rem; color: var(--text-2); line-height: 1.45; border-left: 3px solid var(--accent); white-space: pre-wrap; }
 @keyframes fadeIn { from{opacity:0} to{opacity:1} }
 
 /* ── Options ── */
@@ -331,6 +345,13 @@ body {
       <button class="hint-toggle" onclick="toggleHint()">💡 Show hint</button>
       <div class="hint-body" id="hintBody"></div>
     </div>
+    <div class="note-wrap" id="noteWrap">
+      <button class="note-toggle" id="noteToggleBtn" onclick="toggleNote()">📝 Add note</button>
+      <div class="note-body" id="noteBody">
+        <textarea class="note-textarea" id="noteTextarea" placeholder="Type your notes for this question…" oninput="onNoteInput()"></textarea>
+        <div class="note-save-status" id="noteSaveStatus"></div>
+      </div>
+    </div>
     <div class="options" id="options"></div>
     
     <div class="card-footer">
@@ -382,6 +403,7 @@ body {
       <div class="review-filters" style="margin-bottom: 16px; display: flex; gap: 8px; padding: 0 4px; flex-wrap:wrap;">
         <button class="filter-btn" id="filterWrong" onclick="filterReview('wrong')">Incorrect / Skipped</button>
         <button class="filter-btn" id="filterFlagged" onclick="filterReview('flagged')">🚩 Flagged</button>
+        <button class="filter-btn" id="filterNotes" onclick="filterReview('notes')">📝 With Notes</button>
         <button class="filter-btn" id="filterAll" onclick="filterReview('all')">All Questions</button>
       </div>
       
@@ -405,7 +427,9 @@ let answered      = false;
 let score         = 0;
 let results       = new Array(QUESTIONS.length).fill(null); 
 let flagged       = new Array(QUESTIONS.length).fill(false);
+let notes         = new Array(QUESTIONS.length).fill('');
 let currentFilter = 'wrong';
+let _noteSaveTimer = null;
 
 // ── Firebase ──────────────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -454,6 +478,37 @@ async function loadState() {
   } catch (e) { console.warn('Load failed:', e); return false; }
 }
 
+// ── Notes (separate doc — never reset by restartQuiz) ─────────────────────────
+function notesRef() {
+  return db.collection('quizSessions').doc(uid).collection('notes').doc(QUIZ_ID);
+}
+
+async function saveNote(idx) {
+  if (!uid) return;
+  const text = notes[idx] || '';
+  const statusEl = document.getElementById('noteSaveStatus');
+  try {
+    await notesRef().set({ [`n_${idx}`]: text }, { merge: true });
+    if (statusEl) statusEl.textContent = 'Saved ✓';
+    setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 1500);
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'Save failed';
+    console.warn('Note save failed:', e);
+  }
+}
+
+async function loadNotes() {
+  if (!uid) return;
+  try {
+    const snap = await notesRef().get();
+    if (!snap.exists) return;
+    const data = snap.data();
+    QUESTIONS.forEach((_, i) => {
+      if (data[`n_${i}`] !== undefined) notes[i] = data[`n_${i}`];
+    });
+  } catch (e) { console.warn('Notes load failed:', e); }
+}
+
 // ── Sidebar & Init ────────────────────────────────────────────────────────────
 function initSidebar() {
   const grid = document.getElementById('qGrid');
@@ -463,7 +518,7 @@ function initSidebar() {
     div.className = 'q-grid-item';
     div.id = `grid-item-${i}`;
     div.onclick = () => jumpTo(i);
-    div.innerHTML = `${i + 1}<div class="flag-icon">🚩</div>`;
+    div.innerHTML = `${i + 1}<div class="flag-icon">🚩</div><div class="note-icon">📝</div>`;
     grid.appendChild(div);
   });
 }
@@ -478,6 +533,7 @@ function updateSidebar() {
     
     if (i === current) el.classList.add('active');
     if (flagged[i]) el.classList.add('flagged');
+    if (notes[i] && notes[i].trim()) el.classList.add('has-note');
     
     const res = results[i];
     if (res) {
@@ -533,6 +589,18 @@ function renderQuestion(idx) {
   flagBtn.style.borderColor = flagged[idx] ? 'var(--wrong-ring)' : 'var(--border)';
   flagBtn.style.color = flagged[idx] ? 'var(--wrong)' : 'var(--text-2)';
 
+  // Note
+  const noteTextarea = document.getElementById('noteTextarea');
+  const noteToggleBtn = document.getElementById('noteToggleBtn');
+  const noteBody = document.getElementById('noteBody');
+  const noteSaveStatus = document.getElementById('noteSaveStatus');
+  noteTextarea.value = notes[idx] || '';
+  noteSaveStatus.textContent = '';
+  noteBody.classList.remove('open');
+  const hasNote = notes[idx] && notes[idx].trim();
+  noteToggleBtn.textContent = hasNote ? '📝 View / edit note' : '📝 Add note';
+  noteToggleBtn.classList.toggle('has-note', !!hasNote);
+
   // Hint
   const hw = document.getElementById('hintWrap');
   const hb = document.getElementById('hintBody');
@@ -587,6 +655,30 @@ function toggleHint() {
   const btn = document.querySelector('.hint-toggle');
   const isOpen = hb.classList.toggle('open');
   btn.textContent = isOpen ? '💡 Hide hint' : '💡 Show hint';
+}
+
+function toggleNote() {
+  const noteBody = document.getElementById('noteBody');
+  const isOpen = noteBody.classList.toggle('open');
+  if (isOpen) {
+    document.getElementById('noteTextarea').focus();
+  }
+}
+
+function onNoteInput() {
+  const idx = current;
+  const text = document.getElementById('noteTextarea').value;
+  notes[idx] = text;
+  const btn = document.getElementById('noteToggleBtn');
+  const hasNote = text.trim().length > 0;
+  btn.textContent = hasNote ? '📝 View / edit note' : '📝 Add note';
+  btn.classList.toggle('has-note', hasNote);
+  document.getElementById('noteSaveStatus').textContent = 'Saving…';
+  clearTimeout(_noteSaveTimer);
+  _noteSaveTimer = setTimeout(() => {
+    saveNote(idx);
+    updateSidebar();
+  }, 800);
 }
 
 function toggleFlag() {
@@ -726,6 +818,7 @@ function filterReview(type) {
   document.getElementById('filterAll').classList.toggle('active', type === 'all');
   document.getElementById('filterWrong').classList.toggle('active', type === 'wrong');
   document.getElementById('filterFlagged').classList.toggle('active', type === 'flagged');
+  document.getElementById('filterNotes').classList.toggle('active', type === 'notes');
   renderReviewList();
 }
 
@@ -736,27 +829,32 @@ function renderReviewList() {
   QUESTIONS.forEach((q, i) => {
     const r = results[i];
     const isFlagged = flagged[i];
+    const hasNote = notes[i] && notes[i].trim();
     const isCorrect = r && r.wasCorrect;
     const isUnanswered = !r || r.skipped;
 
     if (currentFilter === 'wrong' && isCorrect) return;
     if (currentFilter === 'flagged' && !isFlagged) return;
+    if (currentFilter === 'notes' && !hasNote) return;
 
     const div = document.createElement('div');
     div.className = 'review-item';
-    div.onclick   = () => jumpTo(i);
+    div.style.flexDirection = 'column';
+    div.style.alignItems = 'stretch';
     const stemShort = q.stem.length > 100 ? q.stem.slice(0, 100) + '…' : q.stem;
     
     let statusText = isUnanswered ? 'Unanswered' : (isCorrect ? 'Correct' : 'Wrong');
     let displayDetail = isUnanswered ? '' : `(${r.chosen} → ${r.correct})`;
     let flagHTML = isFlagged ? '<span style="color:var(--wrong); font-size:0.8rem; margin-left:6px;">🚩</span>' : '';
+    let noteIndicator = hasNote ? '<span style="font-size:0.8rem; margin-left:6px;">📝</span>' : '';
 
     div.innerHTML = `
-      <div class="review-dot ${isCorrect ? 'correct' : 'wrong'}"></div>
-      <div class="review-text">Q${i + 1}. ${escHtml(stemShort)}${flagHTML}</div>
-      <div class="review-answer">
-        <span class="status-${statusText}">${statusText}</span> ${displayDetail}
+      <div style="display:flex;align-items:flex-start;gap:14px;" onclick="jumpTo(${i})">
+        <div class="review-dot ${isCorrect ? 'correct' : 'wrong'}" style="margin-top:6px;flex-shrink:0;"></div>
+        <div class="review-text" style="flex:1;">Q${i + 1}. ${escHtml(stemShort)}${flagHTML}${noteIndicator}</div>
+        <div class="review-answer" style="flex-shrink:0;"><span class="status-${statusText}">${statusText}</span> ${displayDetail}</div>
       </div>
+      ${hasNote ? `<div class="review-note">${escHtml(notes[i])}</div>` : ''}
     `;
     list.appendChild(div);
   });
@@ -839,6 +937,7 @@ auth.signInAnonymously()
   .then(async (cred) => {
     uid = cred.user.uid;
     const restored = await loadState();
+    await loadNotes();
     if (restored && results.some(r => r !== null)) {
       initSidebar();
       renderQuestion(current);
