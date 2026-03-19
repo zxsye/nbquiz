@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'quizzes/**/*.json'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -21,13 +22,19 @@ jobs:
         with:
           fetch-depth: 2   # need HEAD~1 to diff changed files
 
-      # ── Find changed JSON files ─────────────────────────────────────────────
-      - name: Find changed quiz JSONs
+      # ── Find JSON files to build ────────────────────────────────────────────
+      # On manual trigger: build all JSONs. On push: build only changed ones.
+      - name: Find quiz JSONs to build
         id: changed
         run: |
-          FILES=$(git diff --name-only HEAD~1 HEAD -- 'quizzes/**/*.json' | tr '\n' ' ')
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            FILES=$(find quizzes -name '*.json' | tr '\n' ' ')
+            echo "Manual trigger — building all: $FILES"
+          else
+            FILES=$(git diff --name-only HEAD~1 HEAD -- 'quizzes/**/*.json' | tr '\n' ' ')
+            echo "Push trigger — changed: $FILES"
+          fi
           echo "files=$FILES" >> $GITHUB_OUTPUT
-          echo "Changed: $FILES"
 
       # ── Checkout gh-pages into a subfolder ─────────────────────────────────
       - name: Checkout gh-pages
