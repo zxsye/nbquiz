@@ -62,6 +62,17 @@ body {
   display: flex;
   flex-direction: column;
 }
+.home-btn {
+  display: inline-flex;
+  align-items: center;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--text-3);
+  text-decoration: none;
+  margin-bottom: 16px;
+  transition: color var(--transition);
+}
+.home-btn:hover { color: var(--accent); }
 .sidebar-header {
   font-family: var(--font-serif);
   font-size: 1.3rem;
@@ -420,6 +431,7 @@ body {
 </div>
 
 <aside class="sidebar">
+  <a href="https://zxsye.github.io/nbquiz/" class="home-btn">← Home</a>
   <div class="sidebar-header">
     <span>Quiz Status</span>
     <span style="font-size:0.8rem; color:var(--text-3); font-family:var(--font-mono);" id="sidebarCount">0/__QUIZ_TOTAL__</span>
