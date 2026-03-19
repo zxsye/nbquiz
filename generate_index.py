@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 """
 generate_index.py
-Scans the gh-pages output directory for quiz HTML files and generates index.html.
-
-Usage:
-    python3 generate_index.py <output_dir>
-
-Expects HTML files at: <output_dir>/<week>/<topic>/<name>.html
-Reads sidecar <name>.meta.json for question count if available.
+Scans gh-pages output dir for quiz HTML files, reads .meta.json sidecars,
+and generates index.html with Firebase-powered live progress bars.
 """
 
 import sys, os, re, json
@@ -15,7 +10,7 @@ from collections import defaultdict
 
 out_dir = sys.argv[1] if len(sys.argv) > 1 else '.'
 
-# ── Scan for quiz HTML files ──────────────────────────────────────────────────
+# ── Scan for quiz HTML + meta files ──────────────────────────────────────────
 quizzes = defaultdict(lambda: defaultdict(list))
 
 for root, dirs, files in os.walk(out_dir):
@@ -31,20 +26,24 @@ for root, dirs, files in os.walk(out_dir):
         week, topic, vfile = parts
         name = os.path.splitext(vfile)[0]
 
-        # Read sidecar meta if available
         meta_path = os.path.join(root, name + '.meta.json')
         q_count = None
+        quiz_id = f"{week}/{topic}/{name}"
         if os.path.exists(meta_path):
             try:
                 with open(meta_path) as f:
-                    q_count = json.load(f).get('questions')
+                    m = json.load(f)
+                    q_count = m.get('questions')
+                    quiz_id = m.get('quiz_id', quiz_id)
             except Exception:
                 pass
 
-        quizzes[week][topic].append((name, rel, q_count))
-
-if not quizzes:
-    print("  No quizzes found — generating empty index.")
+        quizzes[week][topic].append({
+            'name':     name,
+            'path':     rel,
+            'q_count':  q_count,
+            'quiz_id':  quiz_id,
+        })
 
 def week_sort_key(w):
     m = re.match(r'^W(\d+)$', w, re.IGNORECASE)
@@ -52,27 +51,52 @@ def week_sort_key(w):
 
 sorted_weeks = sorted(quizzes.keys(), key=week_sort_key)
 
-# ── Build cards HTML ──────────────────────────────────────────────────────────
+# ── Build QUIZ_META JS object ─────────────────────────────────────────────────
+quiz_meta_entries = []
+for week in sorted_weeks:
+    for topic, versions in quizzes[week].items():
+        for q in versions:
+            entry = {
+                'quiz_id': q['quiz_id'],
+                'path':    q['path'],
+                'total':   q['q_count'] or 0,
+            }
+            quiz_meta_entries.append(entry)
+
+quiz_meta_js = json.dumps(quiz_meta_entries, indent=2)
+
+# ── Build static card HTML (shells — JS fills in the bars) ───────────────────
 cards_html = ''
 for week in sorted_weeks:
     topics = quizzes[week]
     rows = ''
     for topic in sorted(topics.keys()):
-        versions = sorted(topics[topic], key=lambda x: x[0])
-        links = ''
-        for name, path, q_count in versions:
-            count_badge = f'<span class="q-count">{q_count}q</span>' if q_count else ''
-            links += f'<a href="{path}" class="ver-link">{name}{count_badge}</a>'
-        rows += f'''
-        <div class="topic-row">
+        versions = sorted(topics[topic], key=lambda x: x['name'])
+        pills = ''
+        for q in versions:
+            qid_attr = q['quiz_id'].replace('/', '__')
+            pills += f'''<div class="quiz-pill" data-quiz-id="{q['quiz_id']}">
+              <a href="{q['path']}" class="pill-link">
+                <span class="pill-name">{q['name']}</span>
+                <span class="pill-count">{q['q_count']}q</span>
+              </a>
+              <div class="progress-wrap" id="prog_{qid_attr}">
+                <div class="prog-bar">
+                  <div class="seg seg-correct"  id="seg_c_{qid_attr}"></div>
+                  <div class="seg seg-wrong"    id="seg_w_{qid_attr}"></div>
+                  <div class="seg seg-unans"    id="seg_u_{qid_attr}"></div>
+                </div>
+                <div class="flag-bar" id="seg_f_{qid_attr}"></div>
+                <div class="prog-labels" id="lbl_{qid_attr}"></div>
+              </div>
+            </div>'''
+        rows += f'''<div class="topic-row">
           <span class="topic-name">{topic.capitalize()}</span>
-          <div class="ver-links">{links}</div>
+          <div class="pill-group">{pills}</div>
         </div>'''
-    cards_html += f'''
-    <div class="week-card">
+    cards_html += f'''<div class="week-card">
       <div class="week-label">{week.upper()}</div>
-      <div class="topic-list">{rows}
-      </div>
+      <div class="topic-list">{rows}</div>
     </div>'''
 
 if not cards_html:
@@ -91,20 +115,26 @@ html = f'''<!DOCTYPE html>
 <style>
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
 :root {{
-  --bg:      #f7f5f0;
-  --surface: #ffffff;
-  --border:  #e2ddd5;
-  --text:    #1a1714;
-  --text-2:  #5a534a;
-  --text-3:  #9a8f83;
-  --accent:  #2563a8;
+  --bg:           #f7f5f0;
+  --surface:      #ffffff;
+  --border:       #e2ddd5;
+  --text:         #1a1714;
+  --text-2:       #5a534a;
+  --text-3:       #9a8f83;
+  --accent:       #2563a8;
   --accent-light: #dbeafe;
-  --radius:  10px;
-  --radius-lg: 16px;
-  --shadow:  0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.06);
-  --font-serif: 'Crimson Pro', Georgia, serif;
-  --font-sans:  'DM Sans', system-ui, sans-serif;
-  --font-mono:  'DM Mono', monospace;
+  --correct:      #166534;
+  --correct-bg:   #dcfce7;
+  --correct-bar:  #4ade80;
+  --wrong:        #991b1b;
+  --wrong-bg:     #fee2e2;
+  --wrong-bar:    #f87171;
+  --radius:       10px;
+  --radius-lg:    16px;
+  --shadow:       0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.06);
+  --font-serif:   'Crimson Pro', Georgia, serif;
+  --font-sans:    'DM Sans', system-ui, sans-serif;
+  --font-mono:    'DM Mono', monospace;
 }}
 body {{
   font-family: var(--font-sans);
@@ -114,7 +144,7 @@ body {{
   padding: 48px 24px 80px;
 }}
 .page-header {{
-  max-width: 720px;
+  max-width: 760px;
   margin: 0 auto 48px;
   display: flex;
   align-items: baseline;
@@ -122,113 +152,195 @@ body {{
   padding-bottom: 20px;
   border-bottom: 1.5px solid var(--border);
 }}
-.logo {{
-  font-family: var(--font-serif);
-  font-size: 2rem;
-  font-weight: 600;
-  color: var(--text);
-}}
+.logo {{ font-family: var(--font-serif); font-size: 2rem; font-weight: 600; color: var(--text); }}
 .logo span {{ color: var(--accent); }}
-.credit {{
-  font-size: .72rem;
-  color: var(--text-3);
-  font-family: var(--font-mono);
-}}
-.grid {{
-  max-width: 720px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}}
-.week-card {{
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}}
-.week-label {{
-  font-family: var(--font-mono);
-  font-size: .7rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--text-3);
-  padding: 14px 20px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-}}
+.header-right {{ display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }}
+.credit {{ font-size: .72rem; color: var(--text-3); font-family: var(--font-mono); }}
+.user-info {{ font-size: .75rem; color: var(--text-3); font-family: var(--font-mono); display: none; }}
+.signout-btn {{ font-size: .72rem; color: var(--text-3); background: none; border: none; cursor: pointer; font-family: var(--font-mono); padding: 0; display: none; }}
+.signout-btn:hover {{ color: var(--accent); }}
+.grid {{ max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }}
+.week-card {{ background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }}
+.week-label {{ font-family: var(--font-mono); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 14px 20px 10px; border-bottom: 1px solid var(--border); background: var(--bg); }}
 .topic-list {{ padding: 8px 0; }}
-.topic-row {{
-  display: flex;
-  align-items: center;
-  padding: 10px 20px;
-  gap: 16px;
-  border-bottom: 1px solid var(--border);
-}}
+.topic-row {{ display: flex; align-items: flex-start; padding: 12px 20px; gap: 16px; border-bottom: 1px solid var(--border); }}
 .topic-row:last-child {{ border-bottom: none; }}
-.topic-name {{
-  font-size: .95rem;
-  font-weight: 500;
-  color: var(--text);
-  min-width: 120px;
-}}
-.ver-links {{
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}}
-.ver-link {{
-  font-family: var(--font-mono);
-  font-size: .78rem;
-  font-weight: 500;
-  padding: 4px 12px;
-  border: 1.5px solid var(--border);
+.topic-name {{ font-size: .95rem; font-weight: 500; color: var(--text); min-width: 100px; padding-top: 10px; }}
+.pill-group {{ display: flex; gap: 10px; flex-wrap: wrap; flex: 1; }}
+.quiz-pill {{ display: flex; flex-direction: column; gap: 5px; min-width: 130px; max-width: 200px; flex: 1; }}
+.pill-link {{ display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; border: 1.5px solid var(--border); border-radius: var(--radius); text-decoration: none; background: var(--bg); transition: border-color .15s, background .15s; }}
+.pill-link:hover {{ border-color: var(--accent); background: var(--accent-light); }}
+.pill-name {{ font-family: var(--font-mono); font-size: .8rem; font-weight: 500; color: var(--accent); }}
+.pill-count {{ font-size: .68rem; color: var(--text-3); font-family: var(--font-mono); }}
+.progress-wrap {{ display: flex; flex-direction: column; gap: 2px; }}
+.prog-bar {{ display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: #e2ddd5; }}
+.seg {{ height: 100%; transition: width .4s ease; }}
+.seg-correct {{ background: var(--correct-bar); }}
+.seg-wrong   {{ background: var(--wrong-bar); }}
+.seg-unans   {{ background: #e2ddd5; }}
+.flag-bar {{
+  height: 3px;
   border-radius: 99px;
-  color: var(--accent);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: background .15s, border-color .15s;
+  background: linear-gradient(90deg, #f59e0b, #fbbf24, #fde68a, #f59e0b, #fbbf24);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+  width: 0%;
+  transition: width .4s ease;
 }}
-.ver-link:hover {{
-  background: var(--accent-light);
-  border-color: var(--accent);
+@keyframes shimmer {{ 0%{{background-position:200% 0}} 100%{{background-position:-200% 0}} }}
+.prog-labels {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }}
+.prog-label {{ font-size: .65rem; font-family: var(--font-mono); color: var(--text-3); display: flex; align-items: center; gap: 3px; }}
+.prog-label .dot {{ width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }}
+.dot-correct {{ background: var(--correct-bar); }}
+.dot-wrong   {{ background: var(--wrong-bar); }}
+.dot-unans   {{ background: #b4b0a8; }}
+.dot-flag    {{ background: #f59e0b; }}
+.prog-pct    {{ font-size: .65rem; font-family: var(--font-mono); color: var(--text-3); margin-left: auto; }}
+.empty {{ text-align: center; color: var(--text-3); font-size: .9rem; padding: 48px; }}
+
+/* Login overlay */
+#loginScreen {{
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 1000; padding: 24px;
 }}
-.q-count {{
-  font-size: .68rem;
-  color: var(--text-3);
-  background: var(--bg);
-  border-radius: 99px;
-  padding: 1px 6px;
-  border: 1px solid var(--border);
-}}
-.ver-link:hover .q-count {{
-  background: var(--accent-light);
-  border-color: var(--accent);
-}}
-.empty {{
-  text-align: center;
-  color: var(--text-3);
-  font-size: .9rem;
-  padding: 48px;
-}}
+#loginScreen.hidden {{ display: none; }}
+.login-logo {{ font-family: var(--font-serif); font-size: 2.4rem; font-weight: 600; color: var(--text); margin-bottom: 6px; text-align: center; }}
+.login-logo span {{ color: var(--accent); }}
+.login-sub {{ font-size: .85rem; color: var(--text-3); margin-bottom: 48px; text-align: center; }}
+.google-btn {{ display: flex; align-items: center; gap: 10px; padding: 13px 28px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 99px; font-family: var(--font-sans); font-size: .9rem; font-weight: 600; color: var(--text); cursor: pointer; transition: border-color .15s, background .15s; }}
+.google-btn:hover {{ border-color: var(--accent); background: var(--accent-light); }}
+.login-error {{ margin-top: 16px; font-size: .8rem; color: #991b1b; min-height: 1em; text-align: center; }}
+.made-by-login {{ position: fixed; bottom: 20px; font-size: .72rem; color: var(--text-3); font-family: var(--font-mono); }}
+
 @media (max-width: 520px) {{
-  .topic-row {{ flex-direction: column; align-items: flex-start; gap: 8px; }}
-  .topic-name {{ min-width: unset; }}
+  .topic-row {{ flex-direction: column; gap: 8px; }}
+  .topic-name {{ min-width: unset; padding-top: 0; }}
+  .quiz-pill {{ max-width: 100%; }}
 }}
 </style>
 </head>
 <body>
+
+<div id="loginScreen">
+  <div class="login-logo">NB <span>Quiz</span></div>
+  <div class="login-sub">Your personal medical study companion</div>
+  <button class="google-btn" onclick="signInWithGoogle()">
+    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+    Continue with Google
+  </button>
+  <div class="login-error" id="loginError"></div>
+  <div class="made-by-login">made by Zi Lin</div>
+</div>
+
 <header class="page-header">
   <div class="logo">NB <span>Quiz</span></div>
-  <div class="credit">made by Zi Lin</div>
+  <div class="header-right">
+    <div class="credit">made by Zi Lin</div>
+    <div class="user-info" id="userInfo"></div>
+    <button class="signout-btn" id="signoutBtn" onclick="signOut()">sign out</button>
+  </div>
 </header>
+
 <main class="grid">
 {cards_html}
 </main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {{
+  apiKey:            "AIzaSyCNnvrEli5lzU3sUFvttTsQPIYQXYK1_WE",
+  authDomain:        "nbquiz-6faf9.firebaseapp.com",
+  projectId:         "nbquiz-6faf9",
+  storageBucket:     "nbquiz-6faf9.firebasestorage.app",
+  messagingSenderId: "913114740758",
+  appId:             "1:913114740758:web:a856bb9c8eedf3cd629d37",
+  measurementId:     "G-8Z4YWVBZEZ"
+}};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+const QUIZ_META = {quiz_meta_js};
+
+const provider = new firebase.auth.GoogleAuthProvider();
+function signInWithGoogle() {{
+  document.getElementById('loginError').textContent = '';
+  auth.signInWithPopup(provider).catch(err => {{
+    document.getElementById('loginError').textContent = 'Sign-in failed. Please try again.';
+  }});
+}}
+function signOut() {{ auth.signOut(); }}
+
+auth.onAuthStateChanged(async user => {{
+  if (user) {{
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('userInfo').textContent = user.email;
+    document.getElementById('userInfo').style.display = 'block';
+    document.getElementById('signoutBtn').style.display = 'block';
+    await loadAllProgress(user.uid);
+  }} else {{
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('userInfo').style.display = 'none';
+    document.getElementById('signoutBtn').style.display = 'none';
+  }}
+}});
+
+async function loadAllProgress(uid) {{
+  const fetches = QUIZ_META.map(async q => {{
+    try {{
+      const snap = await db
+        .collection('quizSessions').doc(uid)
+        .collection('quizzes').doc(q.quiz_id)
+        .get();
+      return {{ quiz_id: q.quiz_id, total: q.total, data: snap.exists ? snap.data() : null }};
+    }} catch(e) {{
+      return {{ quiz_id: q.quiz_id, total: q.total, data: null }};
+    }}
+  }});
+
+  const results = await Promise.all(fetches);
+  results.forEach(r => renderBar(r.quiz_id, r.total, r.data));
+}}
+
+function renderBar(quiz_id, total, data) {{
+  const safe = quiz_id.replace(/\\//g, '__');
+  const progWrap = document.getElementById('prog_' + safe);
+  if (!progWrap) return;
+
+  if (!data || !total) return;
+
+  const results = data.results || [];
+  const flagged = data.flagged || [];
+
+  const correct  = results.filter(r => r && r.wasCorrect).length;
+  const wrong    = results.filter(r => r && !r.wasCorrect && !r.skipped).length;
+  const unans    = total - correct - wrong;
+  const flags    = flagged.filter(Boolean).length;
+  const pct      = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+  const pCorrect = (correct / total * 100).toFixed(1);
+  const pWrong   = (wrong   / total * 100).toFixed(1);
+  const pUnans   = (unans   / total * 100).toFixed(1);
+  const pFlag    = (flags   / total * 100).toFixed(1);
+
+  document.getElementById('seg_c_' + safe).style.width = pCorrect + '%';
+  document.getElementById('seg_w_' + safe).style.width = pWrong   + '%';
+  document.getElementById('seg_u_' + safe).style.width = pUnans   + '%';
+  document.getElementById('seg_f_' + safe).style.width = pFlag    + '%';
+
+  const lbl = document.getElementById('lbl_' + safe);
+  lbl.innerHTML = `
+    <span class="prog-label"><span class="dot dot-correct"></span>${{correct}} correct</span>
+    <span class="prog-label"><span class="dot dot-wrong"></span>${{wrong}} wrong</span>
+    <span class="prog-label"><span class="dot dot-unans"></span>${{unans}} left</span>
+    ${{flags > 0 ? `<span class="prog-label"><span class="dot dot-flag"></span>${{flags}} flagged</span>` : ''}}
+    <span class="prog-pct">${{pct}}%</span>
+  `;
+}}
+</script>
 </body>
 </html>'''
 

@@ -111,9 +111,9 @@ with open(out_path, 'w', encoding='utf-8') as f:
     f.write(html)
 
 # Write sidecar metadata for index generator
-meta_path = os.path.splitext(out_path)[0] + '.meta.json'
+meta_path = os.path.join(os.path.dirname(out_path), os.path.splitext(os.path.basename(out_path))[0] + '.meta.json')
 with open(meta_path, 'w', encoding='utf-8') as f:
-    json.dump({'questions': len(all_questions), 'title': display_title}, f)
+    json.dump({'questions': len(all_questions), 'title': display_title, 'quiz_id': quiz_id}, f)
 
 print(f"  Output    : {out_path} ({os.path.getsize(out_path):,} bytes)")
 PYEOF
