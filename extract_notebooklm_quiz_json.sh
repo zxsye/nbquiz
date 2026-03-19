@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # =============================================================================
-# extract_notebooklm_quiz.sh
-# Extracts quiz questions & answers from a NotebookLM saved webpage folder.
+# extract_notebooklm_quiz_json.sh
+# Extracts quiz questions & answers from a NotebookLM saved webpage.
 #
 # USAGE:
-#   ./extract_notebooklm_quiz_json.sh <path/to/saved_page_folder_or_file> [output.md]
+#   ./extract_notebooklm_quiz_json.sh <input> [output.json]
 #
 # SUPPORTS:
-#   - Single .htm/.html file (browser "Save Page As > Webpage, Complete")
-#   - .mhtml file (browser "Save Page As > Webpage, Single File")
-#   - A folder containing the saved page files (looks for shim.html + main .htm)
+#   1. shim.html        — single file downloaded from NotebookLM (default)
+#   2. .mhtml file      — saved as "Webpage, Single File" in browser
+#   3. folder           — contains shim.html + main .htm (full saved page)
 #
 # OUTPUT:
-#   A markdown file with all extracted questions, answers, rationales, and hints.
+#   A JSON file with all extracted questions, answers, rationales, and hints.
 # =============================================================================
 
 set -euo pipefail
