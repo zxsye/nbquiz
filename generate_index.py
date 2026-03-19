@@ -6,20 +6,19 @@ Scans the gh-pages output directory for quiz HTML files and generates index.html
 Usage:
     python3 generate_index.py <output_dir>
 
-Expects HTML files at: <output_dir>/<week>/<topic>/<version>.html
+Expects HTML files at: <output_dir>/<week>/<topic>/<name>.html
+Reads sidecar <name>.meta.json for question count if available.
 """
 
-import sys, os, re
+import sys, os, re, json
 from collections import defaultdict
 
 out_dir = sys.argv[1] if len(sys.argv) > 1 else '.'
 
 # ── Scan for quiz HTML files ──────────────────────────────────────────────────
-# Structure: week/topic/version.html  (3 levels deep, exclude index.html)
 quizzes = defaultdict(lambda: defaultdict(list))
 
 for root, dirs, files in os.walk(out_dir):
-    # Skip hidden dirs (like .git)
     dirs[:] = [d for d in dirs if not d.startswith('.')]
     for fname in sorted(files):
         if not fname.endswith('.html') or fname == 'index.html':
@@ -28,32 +27,42 @@ for root, dirs, files in os.walk(out_dir):
         rel  = os.path.relpath(full, out_dir).replace('\\', '/')
         parts = rel.split('/')
         if len(parts) != 3:
-            continue   # only handle week/topic/version.html
+            continue
         week, topic, vfile = parts
-        version = os.path.splitext(vfile)[0]
-        quizzes[week][topic].append((version, rel))
+        name = os.path.splitext(vfile)[0]
+
+        # Read sidecar meta if available
+        meta_path = os.path.join(root, name + '.meta.json')
+        q_count = None
+        if os.path.exists(meta_path):
+            try:
+                with open(meta_path) as f:
+                    q_count = json.load(f).get('questions')
+            except Exception:
+                pass
+
+        quizzes[week][topic].append((name, rel, q_count))
 
 if not quizzes:
     print("  No quizzes found — generating empty index.")
 
-# ── Sort weeks numerically where possible ────────────────────────────────────
 def week_sort_key(w):
     m = re.match(r'^W(\d+)$', w, re.IGNORECASE)
     return (0, int(m.group(1))) if m else (1, w)
 
 sorted_weeks = sorted(quizzes.keys(), key=week_sort_key)
 
-# ── Build cards HTML ─────────────────────────────────────────────────────────
+# ── Build cards HTML ──────────────────────────────────────────────────────────
 cards_html = ''
 for week in sorted_weeks:
     topics = quizzes[week]
     rows = ''
     for topic in sorted(topics.keys()):
         versions = sorted(topics[topic], key=lambda x: x[0])
-        links = ''.join(
-            f'<a href="{path}" class="ver-link">{ver}</a>'
-            for ver, path in versions
-        )
+        links = ''
+        for name, path, q_count in versions:
+            count_badge = f'<span class="q-count">{q_count}q</span>' if q_count else ''
+            links += f'<a href="{path}" class="ver-link">{name}{count_badge}</a>'
         rows += f'''
         <div class="topic-row">
           <span class="topic-name">{topic.capitalize()}</span>
@@ -67,7 +76,7 @@ for week in sorted_weeks:
     </div>'''
 
 if not cards_html:
-    cards_html = '<p class="empty">No quizzes yet. Push a JSON file to get started.</p>'
+    cards_html = '<p class="empty">No quizzes yet. Push an HTML file to get started.</p>'
 
 # ── Full index.html ───────────────────────────────────────────────────────────
 html = f'''<!DOCTYPE html>
@@ -174,14 +183,29 @@ body {{
   font-family: var(--font-mono);
   font-size: .78rem;
   font-weight: 500;
-  padding: 4px 14px;
+  padding: 4px 12px;
   border: 1.5px solid var(--border);
   border-radius: 99px;
   color: var(--accent);
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   transition: background .15s, border-color .15s;
 }}
 .ver-link:hover {{
+  background: var(--accent-light);
+  border-color: var(--accent);
+}}
+.q-count {{
+  font-size: .68rem;
+  color: var(--text-3);
+  background: var(--bg);
+  border-radius: 99px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+}}
+.ver-link:hover .q-count {{
   background: var(--accent-light);
   border-color: var(--accent);
 }}
@@ -212,4 +236,5 @@ index_path = os.path.join(out_dir, 'index.html')
 with open(index_path, 'w', encoding='utf-8') as f:
     f.write(html)
 
-print(f"  index.html → {index_path}  ({len(sorted_weeks)} weeks, {sum(len(t) for w in quizzes.values() for t in w.values())} quizzes)")
+total_quizzes = sum(len(v) for w in quizzes.values() for v in w.values())
+print(f"  index.html → {index_path}  ({len(sorted_weeks)} weeks, {total_quizzes} quizzes)")
