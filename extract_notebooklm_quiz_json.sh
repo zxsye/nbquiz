@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 # =============================================================================
-# extract_notebooklm_quiz_json.sh
-# Extracts quiz questions & answers from a NotebookLM saved webpage.
+# extract_notebooklm_quiz.sh
+# Extracts quiz questions & answers from a NotebookLM saved webpage folder.
 #
 # USAGE:
-#   ./extract_notebooklm_quiz_json.sh <path/to/saved_page.html> [output.json]
+#   ./extract_notebooklm_quiz_json.sh <path/to/saved_page_folder_or_file> [output.md]
 #
 # SUPPORTS:
-#   - Single .htm/.html file saved from the NotebookLM quiz page
-#     (browser "Save Page As > Webpage, Complete" or "Single File")
-#   - Also handles the older folder+shim.html layout as a fallback
+#   - Single .htm/.html file (browser "Save Page As > Webpage, Complete")
+#   - .mhtml file (browser "Save Page As > Webpage, Single File")
+#   - A folder containing the saved page files (looks for shim.html + main .htm)
 #
 # OUTPUT:
-#   A JSON file with all extracted questions, answer options, correct answers,
-#   per-option rationales, and hints.
+#   A markdown file with all extracted questions, answers, rationales, and hints.
 # =============================================================================
 
 set -euo pipefail
@@ -29,7 +28,7 @@ error()   { echo -e "${RED}[ERROR]${NC} $*" >&2; exit 1; }
 INPUT="${1:-}"
 OUTPUT="${2:-notebooklm_quiz.json}"
 
-[[ -z "$INPUT" ]]   && error "Usage: $0 <saved_page.html> [output.json]"
+[[ -z "$INPUT" ]] && error "Usage: $0 <saved_page_folder_or_file> [output.md]"
 [[ ! -e "$INPUT" ]] && error "Input not found: $INPUT"
 
 command -v python3 >/dev/null 2>&1 || error "python3 is required but not found."
@@ -47,8 +46,16 @@ output_path = sys.argv[2]
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+def strip_tags(text):
+    text = re.sub(r'<[^>]+>', ' ', text)
+    text = re.sub(r'&lt;',  '<',  text)
+    text = re.sub(r'&gt;',  '>',  text)
+    text = re.sub(r'&amp;', '&',  text)
+    text = re.sub(r'&nbsp;',' ',  text)
+    return re.sub(r'\s+', ' ', text).strip()
+
 def clean_math(text):
-    """Remove or normalise common LaTeX/KaTeX fragments found in NotebookLM exports."""
+    """Remove LaTeX/KaTeX wrappers common in NotebookLM quiz exports."""
     replacements = [
         (r'\$GCS\$',    'GCS'),   (r'\$CT\$',     'CT'),
         (r'\$MRI\$',    'MRI'),   (r'\$SpO_2\$',  'SpO2'),
@@ -59,7 +66,7 @@ def clean_math(text):
     for pat, rep in replacements:
         text = re.sub(pat, rep, text)
     text = re.sub(r'\\text\{([^}]+)\}', r'\1', text)
-    text = re.sub(r'\$([^$]+)\$', r'\1', text)   # strip remaining $ wrappers
+    text = re.sub(r'\$([^$]+)\$', r'\1', text)  # strip remaining $ wrappers
     text = text.replace('\\u0027', "'")
     return text
 
@@ -67,110 +74,150 @@ def read_file(path):
     with open(path, 'r', errors='replace') as f:
         return f.read()
 
-# ── Locate the HTML that contains data-app-data ───────────────────────────────
+# ── Locate source files ───────────────────────────────────────────────────────
 
-candidate_files = []
+shim_file  = None   # interactive quiz (30 Qs JSON)
+main_file  = None   # chat Q&As (10 Qs text)
+mhtml_file = None
 
-if os.path.isfile(input_path):
-    candidate_files.append(input_path)
-    # Also look for a shim.html next to or inside a companion _files folder
-    base = re.sub(r'\.(htm|html)$', '', input_path, flags=re.IGNORECASE)
+if os.path.isdir(input_path):
+    # "Save Page As > Webpage, Complete" produces a folder + .htm file
+    for f in glob.glob(os.path.join(input_path, '**', 'shim.html'), recursive=True):
+        shim_file = f; break
+    for f in glob.glob(os.path.join(input_path, '**', '*.htm'), recursive=True) + \
+              glob.glob(os.path.join(input_path, '**', '*.html'), recursive=True):
+        if 'shim' not in os.path.basename(f).lower() and \
+           'app' not in os.path.basename(f).lower() and \
+           'rotate' not in os.path.basename(f).lower() and \
+           'saved' not in os.path.basename(f).lower():
+            main_file = f; break
+    # Also check parent dir for .htm
+    parent = os.path.dirname(input_path.rstrip('/'))
+    for f in glob.glob(os.path.join(parent, '*.htm')):
+        main_file = f; break
+elif input_path.endswith('.mhtml'):
+    mhtml_file = input_path
+elif input_path.endswith(('.htm', '.html')):
+    # Check if this file IS a shim (contains data-app-data= signature)
+    with open(input_path, 'r', errors='replace') as _f:
+        _sample = _f.read(8192)
+    if 'data-app-data=' in _sample:
+        shim_file = input_path
+    else:
+        main_file = input_path
+    # Also look for accompanying _files folder
+    base = re.sub(r'\.(htm|html)$', '', input_path)
     for suffix in ['_files', ' Files', '_Files']:
-        shim = os.path.join(base + suffix, 'shim.html')
-        if os.path.exists(shim):
-            candidate_files.append(shim)
-elif os.path.isdir(input_path):
-    for pat in ['**/*.html', '**/*.htm']:
-        candidate_files.extend(glob.glob(os.path.join(input_path, pat), recursive=True))
+        folder = base + suffix
+        if os.path.isdir(folder):
+            candidate = os.path.join(folder, 'shim.html')
+            if os.path.exists(candidate):
+                shim_file = candidate
+                break
 
-source_file = None
-for f in candidate_files:
-    content = read_file(f)
-    if 'data-app-data=' in content and 'answerOptions' in content:
-        source_file = f
-        print(f"  Source file    : {source_file}")
-        break
+# If given a folder directly, also check for shim.html inside it
+if os.path.isdir(input_path):
+    candidate = os.path.join(input_path, 'shim.html')
+    if os.path.exists(candidate) and shim_file is None:
+        shim_file = candidate
 
-if source_file is None:
-    print("  [ERROR] Could not find a file containing quiz data (data-app-data attribute).")
-    print("          Make sure you saved the NotebookLM quiz page correctly.")
-    sys.exit(1)
+print(f"  Main page file : {main_file or '(not found)'}")
+print(f"  Quiz shim file : {shim_file or '(not found)'}")
+print(f"  MHTML file     : {mhtml_file or '(not found)'}")
+print()
 
-# ── Parse the data-app-data attribute ────────────────────────────────────────
+quiz_questions   = []  # from shim.html JSON
+chat_questions   = []  # from main .htm text
+total_found      = 0
 
-def extract_app_data(content):
-    """
-    The quiz data lives in:
-      <app-root data-app-data="...HTML-entity-encoded JSON...">
+# ── PART A: Extract interactive quiz from shim.html ───────────────────────────
 
-    The attribute value uses &quot; for " and &#39; for ', so we scan
-    character-by-character until we hit an unescaped closing quote.
-    """
-    marker = 'data-app-data="'
-    idx = content.find(marker)
+def extract_shim_quiz(path):
+    content = read_file(path)
+    idx = content.find('data-app-data="')
     if idx == -1:
-        return None
-
-    raw_start = idx + len(marker)
+        print("  [WARN] No data-app-data attribute found in shim.html")
+        return []
+    raw_start = idx + len('data-app-data="')
     pos = raw_start
     while pos < len(content):
-        chunk = content[pos:]
-        # HTML entity for a double-quote — keep going
-        if chunk.startswith('&quot;'):
+        if content[pos:pos+6] == '&quot;':
             pos += 6
-        elif chunk.startswith('&#34;'):
-            pos += 5
-        # Actual closing quote — end of attribute
         elif content[pos] == '"':
             break
         else:
             pos += 1
-
     raw_attr = content[raw_start:pos]
     decoded  = html.unescape(raw_attr)
-    return decoded
+    try:
+        data = json.loads(decoded)
+        return data.get('quiz', [])
+    except json.JSONDecodeError as e:
+        print(f"  [WARN] JSON parse error in shim.html: {e}")
+        return []
 
-raw_content = read_file(source_file)
-decoded_json = extract_app_data(raw_content)
+if shim_file:
+    quiz_questions = extract_shim_quiz(shim_file)
+    print(f"  Interactive quiz questions found : {len(quiz_questions)}")
 
-if decoded_json is None:
-    print("  [ERROR] data-app-data attribute not found in the HTML.")
+# ── PART B: Extract chat Q&As from main .htm or .mhtml ───────────────────────
+
+def extract_chat_questions(raw_content, is_mhtml=False):
+    if is_mhtml:
+        import quopri
+        try:
+            raw_content = quopri.decodestring(raw_content.encode('latin-1')).decode('utf-8', errors='replace')
+        except Exception:
+            pass
+    text = strip_tags(raw_content)
+    start = text.find('Question 1: Clinical Vignette')
+    if start == -1:
+        start = text.find('Question 1:')
+    end = text.find('Note: Due to system response length', start if start != -1 else 0)
+    if start == -1:
+        return []
+    chunk = text[start: end if end != -1 else start + 300000]
+    blocks = re.split(r'-{10,}', chunk)
+    return [b.strip() for b in blocks if b.strip() and 'Question' in b]
+
+if mhtml_file:
+    raw = read_file(mhtml_file)
+    chat_questions = extract_chat_questions(raw, is_mhtml=True)
+elif main_file:
+    raw = read_file(main_file)
+    chat_questions = extract_chat_questions(raw, is_mhtml=False)
+
+print(f"  Chat Q&A questions found         : {len(chat_questions)}")
+
+total_found = len(quiz_questions) + len(chat_questions)
+if total_found == 0:
+    print("\n  [ERROR] No questions found. Check that you saved the page correctly.")
     sys.exit(1)
 
-try:
-    data = json.loads(decoded_json)
-except json.JSONDecodeError as e:
-    print(f"  [ERROR] Failed to parse JSON from data-app-data: {e}")
-    sys.exit(1)
+# ── PART C: Build JSON output ──────────────────────────────────────────────────
 
-quiz_raw = data.get('quiz', [])
-print(f"  Questions found: {len(quiz_raw)}")
+output = {
+    "total_questions": total_found,
+    "interactive_quiz": [],
+    "chat_questions": [],
+}
 
-if not quiz_raw:
-    print("  [ERROR] JSON parsed successfully but no 'quiz' array found.")
-    sys.exit(1)
-
-# ── Build structured output ───────────────────────────────────────────────────
-
-questions = []
-
-for i, q in enumerate(quiz_raw, 1):
-    stem    = clean_math(q.get('question', ''))
-    hint    = clean_math(q.get('hint', ''))
-    options = q.get('answerOptions', [])
+# Interactive quiz questions
+for i, q in enumerate(quiz_questions, 1):
+    question = clean_math(q.get('question', ''))
+    hint     = clean_math(q.get('hint', ''))
+    options  = q.get('answerOptions', [])
 
     correct_letter = None
     built_options  = []
 
     for j, opt in enumerate(options):
-        letter   = chr(65 + j)   # A, B, C, …
+        letter   = chr(65 + j)
         opt_text = clean_math(opt.get('text', ''))
         rat      = clean_math(opt.get('rationale', ''))
-        is_right = bool(opt.get('isCorrect', False))
-
+        is_right = opt.get('isCorrect', False)
         if is_right:
             correct_letter = letter
-
         built_options.append({
             "letter":     letter,
             "text":       opt_text,
@@ -178,38 +225,33 @@ for i, q in enumerate(quiz_raw, 1):
             "rationale":  rat,
         })
 
-    questions.append({
+    output["interactive_quiz"].append({
         "number":         i,
-        "stem":           stem,
+        "stem":           question,
         "options":        built_options,
         "correct_answer": correct_letter,
         "hint":           hint,
     })
 
-output = {
-    "total_questions": len(questions),
-    "questions":       questions,
-}
+# Chat questions (plain-text blocks)
+for i, block in enumerate(chat_questions, 1):
+    block = re.sub(r' {2,}', ' ', block).strip()
+    output["chat_questions"].append({
+        "number": i,
+        "text":   block,
+    })
 
-# ── Write JSON ────────────────────────────────────────────────────────────────
-
+# Write output
 with open(output_path, 'w') as f:
     json.dump(output, f, indent=2, ensure_ascii=False)
 
-print(f"\n  Written to : {output_path}")
-print(f"  File size  : {os.path.getsize(output_path):,} bytes")
-print()
-
-# Quick preview of first question
-q0 = questions[0]
-print(f"  ── Preview: Question 1 ──")
-print(f"  {q0['stem'][:100]}{'...' if len(q0['stem']) > 100 else ''}")
-for opt in q0['options']:
-    tick = "✓" if opt['is_correct'] else " "
-    print(f"    [{tick}] {opt['letter']}. {opt['text'][:70]}")
-print(f"  Hint: {q0['hint'][:80]}")
+print(f"\n  Written to: {output_path}")
+print(f"  File size : {os.path.getsize(output_path):,} bytes")
 
 PYEOF
 
 echo ""
-success "Done! Quiz JSON saved to: $OUTPUT"
+success "Done! Quiz saved to: $OUTPUT"
+echo ""
+echo -e "  ${CYAN}Preview first question:${NC}"
+head -30 "$OUTPUT"
