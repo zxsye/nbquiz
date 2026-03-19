@@ -98,14 +98,17 @@ if os.path.isdir(input_path):
 elif input_path.endswith('.mhtml'):
     mhtml_file = input_path
 elif input_path.endswith(('.htm', '.html')):
-    # Check if this file IS a shim (contains data-app-data= signature)
+    # Quick check: if we can detect it's a chat/main page in first 8KB, treat it as such.
+    # Otherwise default to shim — that's the most common single-file download.
     with open(input_path, 'r', errors='replace') as _f:
-        _sample = _f.read(8192)
+        _sample = _f.read(10000)
     if 'data-app-data=' in _sample:
         shim_file = input_path
-    else:
+    elif 'Question 1:' in _sample or 'Question 1: Clinical' in _sample:
         main_file = input_path
-    # Also look for accompanying _files folder
+    else:
+        shim_file = input_path  # default: assume shim
+    # Also look for accompanying _files folder with a separate shim
     base = re.sub(r'\.(htm|html)$', '', input_path)
     for suffix in ['_files', ' Files', '_Files']:
         folder = base + suffix
