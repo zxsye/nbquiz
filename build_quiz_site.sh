@@ -4,8 +4,10 @@
 # Converts a JSON quiz file into a self-contained HTML quiz app.
 #
 # USAGE:
-#   ./build_quiz_site.sh <quiz.json> [output.html]
+#   ./build_quiz_site.sh <quiz.json> <output.html>
 #
+# Expects input path in the form: quizzes/W7/neuro/v1.json
+# Derives week, topic, version from the path automatically.
 # Requires template.html in the same directory as this script.
 # =============================================================================
 
@@ -21,12 +23,12 @@ OUTPUT="${2:-quiz.html}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE="$SCRIPT_DIR/template.html"
 
-[[ -z "$INPUT" ]]        && error "Usage: $0 <quiz.json> [output.html]"
-[[ ! -f "$INPUT" ]]      && error "File not found: $INPUT"
-[[ ! -f "$TEMPLATE" ]]   && error "template.html not found in $SCRIPT_DIR"
+[[ -z "$INPUT" ]]      && error "Usage: $0 <quiz.json> <output.html>"
+[[ ! -f "$INPUT" ]]    && error "File not found: $INPUT"
+[[ ! -f "$TEMPLATE" ]] && error "template.html not found in $SCRIPT_DIR"
 command -v python3 >/dev/null 2>&1 || error "python3 is required."
 
-info "Parsing JSON: $INPUT"
+info "Building: $INPUT → $OUTPUT"
 
 python3 - "$INPUT" "$OUTPUT" "$TEMPLATE" << 'PYEOF'
 import sys, json, os
@@ -35,12 +37,36 @@ md_path       = sys.argv[1]
 out_path      = sys.argv[2]
 template_path = sys.argv[3]
 
+# ── Derive week / topic / version from path ───────────────────────────────────
+# Expects something like: quizzes/W7/neuro/v1.json
+# Falls back gracefully if path doesn't match the convention.
+parts = md_path.replace('\\', '/').split('/')
+# Strip 'quizzes/' prefix if present
+if parts[0] == 'quizzes':
+    parts = parts[1:]
+
+version = os.path.splitext(parts[-1])[0] if parts else 'v1'
+topic   = parts[-2].capitalize()         if len(parts) >= 2 else 'Quiz'
+week    = parts[-3].upper()              if len(parts) >= 3 else ''
+
+# Display title: "W7 · Neuro · v1"
+if week:
+    display_title = f"{week} · {topic} · {version}"
+else:
+    display_title = f"{topic} · {version}"
+
+# Firestore quiz_id: unique path-based key e.g. "W7/neuro/v1"
+# Using the last 3 path segments (without extension) joined by /
+raw_parts = [p for p in parts if p]
+quiz_id_parts = [os.path.splitext(p)[0] if p == raw_parts[-1] else p for p in raw_parts[-3:]]
+quiz_id = '/'.join(quiz_id_parts)
+
 # ── Parse quiz JSON ────────────────────────────────────────────────────────────
 try:
     with open(md_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 except json.JSONDecodeError as e:
-    print(f"  [ERROR] Invalid JSON file: {e}")
+    print(f"  [ERROR] Invalid JSON: {e}")
     sys.exit(1)
 
 all_questions = []
@@ -66,29 +92,32 @@ if 'interactive_quiz' in data:
         })
 
 if not all_questions:
-    print("  [ERROR] No questions found in the 'interactive_quiz' array.")
+    print("  [ERROR] No questions found in 'interactive_quiz'.")
     sys.exit(1)
 
-print(f"  Total mapped : {len(all_questions)} questions")
+print(f"  Quiz ID      : {quiz_id}")
+print(f"  Title        : {display_title}")
+print(f"  Questions    : {len(all_questions)}")
 
-# ── Build substitution values ─────────────────────────────────────────────────
+# ── Inject into template ──────────────────────────────────────────────────────
 quiz_json = json.dumps(all_questions, ensure_ascii=False).replace("</", "<\\/")
-title     = os.path.splitext(os.path.basename(md_path))[0].replace('_', ' ').title()
 total     = str(len(all_questions))
 
-# ── Read template and inject ──────────────────────────────────────────────────
 with open(template_path, 'r', encoding='utf-8') as f:
     html = f.read()
 
-html = html.replace('__QUIZ_TITLE__', title)
-html = html.replace('__QUIZ_TOTAL__', total)
+html = html.replace('__QUIZ_TITLE__',    display_title)
+html = html.replace('__QUIZ_ID__',       quiz_id)
+html = html.replace('__QUIZ_TOTAL__',    total)
 html = html.replace('__QUESTIONS_JSON__', quiz_json)
+
+os.makedirs(os.path.dirname(out_path) or '.', exist_ok=True)
 
 with open(out_path, 'w', encoding='utf-8') as f:
     f.write(html)
 
-print(f"  Output file  : {out_path}")
-print(f"  File size    : {os.path.getsize(out_path):,} bytes")
+print(f"  Output       : {out_path}")
+print(f"  Size         : {os.path.getsize(out_path):,} bytes")
 PYEOF
 
-ok "Done! Open in your browser: $OUTPUT"
+ok "Done → $OUTPUT"
