@@ -450,7 +450,10 @@ body {{
     </div>
     <div class="stem" id="stem"></div>
     <div class="hint-wrap" id="hintWrap">
-      <button class="hint-toggle" onclick="toggleHint()">💡 Show hint</button>
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <button class="hint-toggle" onclick="toggleHint()">💡 Show hint</button>
+        <button class="btn btn-ghost" id="flagBtn" onclick="toggleFlag()" style="padding: 5px 14px; font-size: 0.8rem;">⚑ Flag</button>
+      </div>
       <div class="hint-body" id="hintBody"></div>
     </div>
     <div class="options" id="options"></div>
@@ -464,16 +467,6 @@ body {{
       </div>
     </div>
     
-    <div class="card-footer">
-      <div style="display:flex; align-items:center; gap: 12px;">
-        <button class="btn btn-ghost" id="flagBtn" onclick="toggleFlag()" style="padding: 6px 14px; font-size: 0.8rem;">⚑ Flag</button>
-        <div id="feedbackMsg" class="feedback-msg" style="visibility:hidden">–</div>
-      </div>
-      <div style="display:flex;gap:10px;margin-left:auto;">
-        <button class="btn btn-ghost" id="skipBtn" onclick="nextQuestion()">Skip →</button>
-        <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()" disabled>Check answer</button>
-      </div>
-    </div>
   </div>
 
   <div class="results-screen" id="resultsScreen">
