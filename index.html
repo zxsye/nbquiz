@@ -139,6 +139,26 @@ body {
 
 <main class="grid">
 <div class="week-card">
+      <div class="week-label">W1</div>
+      <div class="topic-list"><div class="topic-row">
+          <span class="topic-name">Vascular</span>
+          <div class="pill-group"><div class="quiz-pill" data-quiz-id="W1/Vascular/vascular1.1">
+              <a href="W1/Vascular/vascular1.1.html" class="pill-link">
+                <span class="pill-name">vascular1.1</span>
+                <span class="pill-count">30q</span>
+              </a>
+              <div class="progress-wrap" id="prog_W1__Vascular__vascular1.1">
+                <div class="prog-bar">
+                  <div class="seg seg-correct"  id="seg_c_W1__Vascular__vascular1.1"></div>
+                  <div class="seg seg-wrong"    id="seg_w_W1__Vascular__vascular1.1"></div>
+                  <div class="seg seg-unans"    id="seg_u_W1__Vascular__vascular1.1"></div>
+                </div>
+                <div class="flag-bar" id="seg_f_W1__Vascular__vascular1.1"></div>
+                <div class="prog-labels" id="lbl_W1__Vascular__vascular1.1"></div>
+              </div>
+            </div></div>
+        </div></div>
+    </div><div class="week-card">
       <div class="week-label">W7</div>
       <div class="topic-list"><div class="topic-row">
           <span class="topic-name">Neuro</span>
@@ -238,6 +258,11 @@ const auth = firebase.auth();
 const db   = firebase.firestore();
 
 const QUIZ_META = [
+  {
+    "quiz_id": "W1/Vascular/vascular1.1",
+    "path": "W1/Vascular/vascular1.1.html",
+    "total": 30
+  },
   {
     "quiz_id": "W7/Neuro/v1",
     "path": "W7/Neuro/v1.html",
