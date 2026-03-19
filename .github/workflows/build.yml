@@ -11,11 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
     steps:
       # ── Checkout main (source) ──────────────────────────────────────────────
       - name: Checkout main
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 2   # need HEAD~1 to diff changed files
 
@@ -29,7 +31,7 @@ jobs:
 
       # ── Checkout gh-pages into a subfolder ─────────────────────────────────
       - name: Checkout gh-pages
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
         with:
           ref: gh-pages
           path: gh-pages-out
