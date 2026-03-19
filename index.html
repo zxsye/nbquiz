@@ -334,10 +334,90 @@ body {
   .results-grade { font-size: 3.5rem; }
   .results-stats { gap: 24px; }
 }
+/* ── Login screen ── */
+#loginScreen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+#loginScreen.hidden { display: none; }
+.login-logo {
+  font-family: var(--font-serif);
+  font-size: 2.4rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+  text-align: center;
+}
+.login-logo span { color: var(--accent); }
+.login-sub {
+  font-size: .85rem;
+  color: var(--text-3);
+  margin-bottom: 48px;
+  text-align: center;
+}
+.google-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 28px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  font-family: var(--font-sans);
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+}
+.google-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+.login-error {
+  margin-top: 16px;
+  font-size: .8rem;
+  color: var(--wrong);
+  min-height: 1em;
+  text-align: center;
+}
+.made-by-login {
+  position: fixed;
+  bottom: 20px;
+  font-size: .72rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  text-align: center;
+}
+/* ── Persistent credit ── */
+.made-by {
+  font-size: .68rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  text-align: center;
+  padding-top: 12px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
 
 </style>
 </head>
 <body>
+
+<div id="loginScreen">
+  <div class="login-logo">NB <span>Quiz</span></div>
+  <div class="login-sub">Your personal medical study companion</div>
+  <button class="google-btn" onclick="signInWithGoogle()">
+    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+    Continue with Google
+  </button>
+  <div class="login-error" id="loginError"></div>
+  <div class="made-by-login">made by Zi Lin</div>
+</div>
 
 <aside class="sidebar">
   <div class="sidebar-header">
@@ -349,14 +429,18 @@ body {
   <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
     <button class="btn btn-ghost" id="sidebarCopyBtn" style="width:100%; border: 1.5px solid var(--border); padding: 8px; font-size: 0.85rem;" onclick="copySidebarResults()">📋 Copy Status</button>
     <button class="btn btn-primary" style="width:100%; margin-top:0;" onclick="showResults()">Finish Quiz</button>
+    <div class="made-by">made by Zi Lin</div>
   </div>
 </aside>
 
 <div class="main-content">
   <header class="app-header">
-    <div class="app-title">🧠 <span>Neuro</span>Quiz</div>
-    <div class="score-badge">
-      Score&nbsp;<span class="score-num" id="scoreDisplay">0 / 0</span>
+    <div class="app-title">NB <span>Quiz</span></div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="score-badge">
+        Score&nbsp;<span class="score-num" id="scoreDisplay">0 / 0</span>
+      </div>
+      <button class="btn btn-ghost" onclick="signOut()" style="padding:6px 14px; font-size:0.8rem;" title="Sign out">Sign out</button>
     </div>
   </header>
 
@@ -375,10 +459,7 @@ body {
     </div>
     <div class="stem" id="stem"></div>
     <div class="hint-wrap" id="hintWrap">
-      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-        <button class="hint-toggle" onclick="toggleHint()">💡 Show hint</button>
-        <button class="btn btn-ghost" id="flagBtn" onclick="toggleFlag()" style="padding: 5px 14px; font-size: 0.8rem;">⚑ Flag</button>
-      </div>
+      <button class="hint-toggle" onclick="toggleHint()">💡 Show hint</button>
       <div class="hint-body" id="hintBody"></div>
     </div>
     <div class="options" id="options"></div>
@@ -392,6 +473,16 @@ body {
       </div>
     </div>
     
+    <div class="card-footer">
+      <div style="display:flex; align-items:center; gap: 12px;">
+        <button class="btn btn-ghost" id="flagBtn" onclick="toggleFlag()" style="padding: 6px 14px; font-size: 0.8rem;">⚑ Flag</button>
+        <div id="feedbackMsg" class="feedback-msg" style="visibility:hidden">–</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-left:auto;">
+        <button class="btn btn-ghost" id="skipBtn" onclick="nextQuestion()">Skip →</button>
+        <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()" disabled>Check answer</button>
+      </div>
+    </div>
   </div>
 
   <div class="results-screen" id="resultsScreen">
@@ -577,7 +668,7 @@ function updateSidebar() {
 }
 
 function copySidebarResults() {
-  let text = "Quiz Status:\n\n";
+  let text = "Quiz Status:\\n\\n";
   
   QUESTIONS.forEach((q, idx) => {
     const r = results[idx];
@@ -588,7 +679,7 @@ function copySidebarResults() {
     }
     
     let flagText = flagged[idx] ? " (flagged)" : "";
-    text += `${idx + 1}. ${status}${flagText}\n`;
+    text += `${idx + 1}. ${status}${flagText}\\n`;
   });
 
   navigator.clipboard.writeText(text).then(() => {
@@ -893,7 +984,7 @@ function renderReviewList() {
 }
 
 function copyResults() {
-  let text = "Quiz Results Summary:\n\n";
+  let text = "Quiz Results Summary:\\n\\n";
   
   QUESTIONS.forEach((q, idx) => {
     const r = results[idx];
@@ -903,7 +994,7 @@ function copyResults() {
       else if (!r.skipped) status = "Wrong";
     }
     let flagText = flagged[idx] ? " [FLAGGED]" : "";
-    text += "Q" + (idx + 1) + ": " + status + flagText + "\n";
+    text += "Q" + (idx + 1) + ": " + status + flagText + "\\n";
   });
 
   navigator.clipboard.writeText(text).then(() => {
@@ -958,31 +1049,50 @@ function escHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── Auth ──────────────────────────────────────────────────────────────────────
+const provider = new firebase.auth.GoogleAuthProvider();
+
+function signInWithGoogle() {
+  document.getElementById('loginError').textContent = '';
+  auth.signInWithPopup(provider).catch(err => {
+    document.getElementById('loginError').textContent = 'Sign-in failed. Please try again.';
+    console.error(err);
+  });
+}
+
+function signOut() {
+  auth.signOut();
+}
+
+async function startQuiz(user) {
+  uid = user.uid;
+  document.getElementById('loginScreen').classList.add('hidden');
+  const restored = await loadState();
+  await loadNotes();
+  initSidebar();
+  if (restored && results.some(r => r !== null)) {
+    renderQuestion(current);
+    const r = results[current];
+    if (r && !r.skipped) {
+      selected = r.chosen;
+      submitAnswer();
+    }
+    updateProgress();
+  } else {
+    renderQuestion(0);
+  }
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────────────
 initSidebar();
 
-auth.signInAnonymously()
-  .then(async (cred) => {
-    uid = cred.user.uid;
-    const restored = await loadState();
-    await loadNotes();
-    if (restored && results.some(r => r !== null)) {
-      initSidebar();
-      renderQuestion(current);
-      const r = results[current];
-      if (r && !r.skipped) {
-        selected = r.chosen;
-        submitAnswer();
-      }
-      updateProgress();
-    } else {
-      renderQuestion(0);
-    }
-  })
-  .catch(err => {
-    console.error('Firebase sign-in failed, running offline:', err);
-    renderQuestion(0);
-  });
+auth.onAuthStateChanged(user => {
+  if (user) {
+    startQuiz(user);
+  } else {
+    document.getElementById('loginScreen').classList.remove('hidden');
+  }
+});
 </script>
 </body>
 </html>
