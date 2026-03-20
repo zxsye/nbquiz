@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NB Quiz — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:           #f7f5f0;
+  --surface:      #ffffff;
+  --surface-2:    #f0ede6;
+  --border:       #e2ddd5;
+  --text:         #1a1714;
+  --text-2:       #5a534a;
+  --text-3:       #9a8f83;
+  --accent:       #2563a8;
+  --accent-light: #dbeafe;
+  --correct:      #166534;
+  --correct-bg:   #dcfce7;
+  --correct-ring: #4ade80;
+  --wrong:        #991b1b;
+  --wrong-bg:     #fee2e2;
+  --wrong-ring:   #f87171;
+  --radius:       10px;
+  --radius-lg:    16px;
+  --shadow:       0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.06);
+  --font-serif:   'Crimson Pro', Georgia, serif;
+  --font-sans:    'DM Sans', system-ui, sans-serif;
+  --font-mono:    'DM Mono', monospace;
+  --transition:   200ms cubic-bezier(.4,0,.2,1);
+}
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── Screens ── */
+.screen { display: none; }
+.screen.active { display: flex; }
+.centered-screen { min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+.logo     { font-family: var(--font-serif); font-size: 2.2rem; font-weight: 600; color: var(--text); margin-bottom: 4px; text-align: center; }
+.logo span { color: var(--accent); }
+.logo-tag  { font-family: var(--font-mono); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); margin-bottom: 40px; }
+.google-btn { display: flex; align-items: center; gap: 10px; padding: 13px 28px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 99px; font-family: var(--font-sans); font-size: .9rem; font-weight: 600; color: var(--text); cursor: pointer; transition: border-color var(--transition), background var(--transition); }
+.google-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+.screen-err { color: var(--wrong); font-size: .82rem; margin-top: 14px; min-height: 1em; text-align: center; }
+.denied-icon  { font-size: 3rem; margin-bottom: 16px; }
+.denied-title { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 600; margin-bottom: 8px; }
+.denied-sub   { font-size: .85rem; color: var(--text-2); margin-bottom: 28px; text-align: center; }
+
+/* ── Buttons ── */
+.btn         { font-family: var(--font-sans); font-size: .85rem; font-weight: 600; border-radius: 99px; padding: 9px 22px; cursor: pointer; border: 1.5px solid transparent; transition: all var(--transition); display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #1d4f8a; border-color: #1d4f8a; }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-ghost  { background: transparent; color: var(--text-2); border-color: var(--border); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn-danger { background: var(--wrong-bg); color: var(--wrong); border-color: var(--wrong-ring); }
+.btn-danger:hover { background: #fecaca; }
+.btn-sm { padding: 5px 14px; font-size: .78rem; }
+
+/* ── Admin layout ── */
+.admin-layout  { flex-direction: column; min-height: 100vh; }
+.admin-header  { background: var(--surface); border-bottom: 1.5px solid var(--border); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.header-left   { display: flex; align-items: center; gap: 14px; }
+.header-logo   { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 600; color: var(--text); text-decoration: none; }
+.header-logo span { color: var(--accent); }
+.admin-badge   { font-family: var(--font-mono); font-size: .62rem; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 2px 8px; }
+.header-right  { display: flex; align-items: center; gap: 12px; }
+.user-email    { font-size: .75rem; color: var(--text-3); font-family: var(--font-mono); }
+.admin-body    { flex: 1; padding: 32px; max-width: 820px; margin: 0 auto; width: 100%; }
+.credit        { font-size: .7rem; color: var(--text-3); font-family: var(--font-mono); text-align: center; padding: 16px; }
+
+/* ── Tabs ── */
+.tabs       { display: flex; gap: 4px; margin-bottom: 28px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 4px; width: fit-content; }
+.tab        { padding: 8px 20px; border-radius: 7px; border: none; background: transparent; font-family: var(--font-sans); font-size: .88rem; font-weight: 500; color: var(--text-2); cursor: pointer; transition: all var(--transition); }
+.tab.active { background: var(--accent); color: #fff; }
+.tab-panel  { display: none; }
+.tab-panel.active { display: block; }
+.section-title { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; margin-bottom: 4px; }
+.section-sub   { font-size: .82rem; color: var(--text-2); margin-bottom: 24px; }
+
+/* ── Form ── */
+.form-group    { margin-bottom: 18px; }
+.form-label    { font-size: .72rem; font-weight: 600; color: var(--text-2); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 7px; display: block; }
+.input-row     { display: flex; gap: 8px; align-items: center; }
+.sel, .txt     { flex: 1; padding: 10px 14px; font-family: var(--font-sans); font-size: .9rem; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); outline: none; transition: border-color var(--transition); }
+.sel:focus, .txt:focus { border-color: var(--accent); }
+.sel:disabled  { opacity: .45; cursor: not-allowed; }
+.new-wrap      { display: none; align-items: center; gap: 8px; margin-top: 8px; }
+.new-wrap.open { display: flex; }
+.new-txt       { flex: 1; padding: 8px 12px; font-family: var(--font-sans); font-size: .88rem; border: 1.5px solid var(--accent); border-radius: var(--radius); background: var(--accent-light); color: var(--text); outline: none; }
+
+/* ── Dropzone ── */
+.dropzone { border: 2px dashed var(--border); border-radius: var(--radius-lg); padding: 44px 24px; text-align: center; cursor: pointer; transition: all var(--transition); background: var(--surface); }
+.dropzone:hover, .dropzone.over  { border-color: var(--accent); background: var(--accent-light); }
+.dropzone.has-file { border-color: var(--correct-ring); background: var(--correct-bg); border-style: solid; }
+.dropzone.has-error { border-color: var(--wrong-ring); background: var(--wrong-bg); border-style: solid; }
+.dz-icon  { font-size: 2rem; margin-bottom: 8px; }
+.dz-label { font-size: .9rem; color: var(--text-2); font-weight: 500; margin-bottom: 3px; }
+.dz-sub   { font-size: .75rem; color: var(--text-3); font-family: var(--font-mono); }
+.dropzone input[type=file] { display: none; }
+
+/* ── Status ── */
+.status     { padding: 12px 16px; border-radius: var(--radius); font-size: .85rem; margin-top: 16px; display: none; line-height: 1.5; }
+.status.on  { display: block; }
+.status.ok  { background: var(--correct-bg); color: var(--correct); border: 1px solid var(--correct-ring); }
+.status.err { background: var(--wrong-bg);   color: var(--wrong);   border: 1px solid var(--wrong-ring); }
+.status.inf { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent); }
+
+/* ── Quiz list ── */
+.week-block  { margin-bottom: 20px; }
+.week-head   { font-family: var(--font-mono); font-size: .68rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 10px 16px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; }
+.topic-block { border: 1.5px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
+.topic-head  { font-size: .72rem; font-weight: 600; color: var(--text-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .05em; padding: 7px 16px 5px; background: var(--surface-2); border-top: 1px solid var(--border); }
+.quiz-row      { display: flex; align-items: center; padding: 12px 16px; background: var(--surface); border-top: 1px solid var(--border); gap: 12px; }
+.quiz-row-name { font-size: .9rem; font-weight: 500; color: var(--text); font-family: var(--font-mono); flex: 1; }
+.quiz-row-meta { font-size: .7rem; color: var(--text-3); margin-top: 2px; }
+.empty { text-align: center; padding: 48px; color: var(--text-3); font-size: .9rem; }
+
+/* ── Modal ── */
+.modal-bg      { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
+.modal-bg.open { display: flex; }
+.modal         { background: var(--surface); border-radius: var(--radius-lg); padding: 32px; max-width: 380px; width: 100%; box-shadow: 0 16px 48px rgba(0,0,0,.18); }
+.modal-title   { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; margin-bottom: 10px; }
+.modal-body    { font-size: .86rem; color: var(--text-2); margin-bottom: 24px; line-height: 1.6; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+</style>
+</head>
+<body>
+
+<!-- ── Login ── -->
+<div class="screen centered-screen active" id="sLogin">
+  <div class="logo">NB <span>Quiz</span></div>
+  <div class="logo-tag">Admin Portal</div>
+  <button class="google-btn" onclick="signInGoogle()">
+    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+    Sign in with Google
+  </button>
+  <div class="screen-err" id="loginErr"></div>
+</div>
+
+<!-- ── Access denied ── -->
+<div class="screen centered-screen" id="sDenied">
+  <div class="denied-icon">🚫</div>
+  <div class="denied-title">Access denied</div>
+  <div class="denied-sub" id="deniedMsg">This portal is restricted to authorised admins.</div>
+  <button class="btn btn-ghost" onclick="doSignOut()">Sign out</button>
+</div>
+
+<!-- ── Admin ── -->
+<div class="screen admin-layout" id="sAdmin">
+  <header class="admin-header">
+    <div class="header-left">
+      <a href="/" class="header-logo">NB <span>Quiz</span></a>
+      <span class="admin-badge">Admin</span>
+    </div>
+    <div class="header-right">
+      <span class="user-email" id="userEmail"></span>
+      <button class="btn btn-ghost btn-sm" onclick="doSignOut()">Sign out</button>
+    </div>
+  </header>
+
+  <div class="admin-body">
+    <div class="tabs">
+      <button class="tab active" id="tabBtnUpload" onclick="switchTab('upload')">⬆ Upload</button>
+      <button class="tab"        id="tabBtnManage" onclick="switchTab('manage')">🗂 Manage</button>
+    </div>
+
+    <!-- Upload panel -->
+    <div class="tab-panel active" id="panelUpload">
+      <div class="section-title">Upload a quiz</div>
+      <div class="section-sub">Drop a NotebookLM shim .html or pre-extracted .json — questions are extracted in the browser and saved instantly to Firestore.</div>
+
+      <div class="form-group">
+        <label class="form-label">Week</label>
+        <div class="input-row">
+          <select class="sel" id="selWeek" onchange="onWeekChange()">
+            <option value="">— select —</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="toggleNew('week')">+ New</button>
+        </div>
+        <div class="new-wrap" id="newWeekWrap">
+          <input class="new-txt" id="newWeekTxt" placeholder="e.g. W8" oninput="onNewInput('week')">
+          <button class="btn btn-ghost btn-sm" onclick="cancelNew('week')">✕</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Topic</label>
+        <div class="input-row">
+          <select class="sel" id="selTopic" onchange="onTopicChange()" disabled>
+            <option value="">— select week first —</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="toggleNew('topic')">+ New</button>
+        </div>
+        <div class="new-wrap" id="newTopicWrap">
+          <input class="new-txt" id="newTopicTxt" placeholder="e.g. Trauma" oninput="onNewInput('topic')">
+          <button class="btn btn-ghost btn-sm" onclick="cancelNew('topic')">✕</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Quiz name</label>
+        <div class="input-row">
+          <select class="sel" id="selName" onchange="checkReady()" disabled>
+            <option value="">— select topic first —</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="toggleNew('name')">+ New</button>
+        </div>
+        <div class="new-wrap" id="newNameWrap">
+          <input class="new-txt" id="newNameTxt" placeholder="e.g. SAH" oninput="onNewInput('name')">
+          <button class="btn btn-ghost btn-sm" onclick="cancelNew('name')">✕</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">File</label>
+        <div class="dropzone" id="dropzone"
+          onclick="document.getElementById('fileInput').click()"
+          ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event)">
+          <div class="dz-icon"  id="dzIcon">📄</div>
+          <div class="dz-label" id="dzLabel">Click to browse or drag &amp; drop</div>
+          <div class="dz-sub"   id="dzSub">Accepts .html (shim) or .json</div>
+          <input type="file" id="fileInput" accept=".html,.htm,.json" onchange="onFilePick(event)">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="uploadBtn" onclick="doUpload()" disabled>Save to Firestore →</button>
+      <div class="status" id="uploadStatus"></div>
+    </div>
+
+    <!-- Manage panel -->
+    <div class="tab-panel" id="panelManage">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <div>
+          <div class="section-title">Manage quizzes</div>
+          <div class="section-sub">All quizzes stored in Firestore</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadManage()">↺ Refresh</button>
+      </div>
+      <div class="status" id="manageStatus"></div>
+      <div id="quizList"><div class="empty">Loading…</div></div>
+    </div>
+  </div>
+  <div class="credit">made by Zi Lin</div>
+</div>
+
+<!-- ── Confirm delete modal ── -->
+<div class="modal-bg" id="confirmBg">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Delete quiz?</div>
+    <div class="modal-body"  id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost"  onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="modalOK">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+// ── Firebase init ─────────────────────────────────────────────────────────────
+firebase.initializeApp({
+  apiKey:            'AIzaSyCNnvrEli5lzU3sUFvttTsQPIYQXYK1_WE',
+  authDomain:        'nbquiz-6faf9.firebaseapp.com',
+  projectId:         'nbquiz-6faf9',
+  storageBucket:     'nbquiz-6faf9.firebasestorage.app',
+  messagingSenderId: '913114740758',
+  appId:             '1:913114740758:web:a856bb9c8eedf3cd629d37',
+});
+const auth     = firebase.auth();
+const db       = firebase.firestore();
+const provider = new firebase.auth.GoogleAuthProvider();
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let extractedQuestions = null;   // parsed questions from dropped file
+let newVals   = { week: '', topic: '', name: '' };
+let allMeta   = [];              // [{id, week, topic, name}] — loaded on enter
+let pendingDel = null;
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function signInGoogle() {
+  document.getElementById('loginErr').textContent = '';
+  auth.signInWithPopup(provider).catch(() => {
+    document.getElementById('loginErr').textContent = 'Sign-in failed. Please try again.';
+  });
+}
+function doSignOut() { auth.signOut(); }
+
+// On auth change: check Firestore admins collection
+auth.onAuthStateChanged(async user => {
+  if (!user) { show('sLogin'); return; }
+  let isAdmin = false;
+  try {
+    const snap = await db.collection('admins').doc(user.email).get();
+    isAdmin = snap.exists;
+  } catch(e) { console.error('Admin check failed:', e); }
+  if (!isAdmin) {
+    document.getElementById('deniedMsg').textContent =
+      `${user.email} is not an authorised admin. Contact Zi Lin to request access.`;
+    show('sDenied');
+    return;
+  }
+  document.getElementById('userEmail').textContent = user.email;
+  enterAdmin();
+});
+
+async function enterAdmin() {
+  show('sAdmin');
+  await loadAllMeta();
+  populateWeekDropdown();
+  loadManage();
+}
+
+// ── Load all quiz metadata from Firestore ─────────────────────────────────────
+async function loadAllMeta() {
+  const snap = await db.collection('quizzes').get();
+  allMeta = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+// ── Dropdowns ─────────────────────────────────────────────────────────────────
+function getWeek()  { return newVals.week  || document.getElementById('selWeek').value; }
+function getTopic() { return newVals.topic || document.getElementById('selTopic').value; }
+function getName()  { return newVals.name  || document.getElementById('selName').value; }
+
+function populateWeekDropdown() {
+  const weeks = [...new Set(allMeta.map(q => q.week))]
+    .sort((a,b) => (parseInt(a.replace(/\D/g,''))||0) - (parseInt(b.replace(/\D/g,''))||0));
+  const sel = document.getElementById('selWeek');
+  sel.innerHTML = '<option value="">— select —</option>';
+  weeks.forEach(w => sel.innerHTML += `<option value="${w}">${w}</option>`);
+}
+
+function onWeekChange() {
+  const week = getWeek();
+  const tSel = document.getElementById('selTopic');
+  const nSel = document.getElementById('selName');
+  tSel.disabled = true; nSel.disabled = true;
+  nSel.innerHTML = '<option value="">— select topic first —</option>';
+
+  if (!week) {
+    tSel.innerHTML = '<option value="">— select week first —</option>';
+    checkReady(); return;
+  }
+  const topics = [...new Set(allMeta.filter(q => q.week === week).map(q => q.topic))].sort();
+  tSel.innerHTML = '<option value="">— select —</option>';
+  topics.forEach(t => tSel.innerHTML += `<option value="${t}">${t}</option>`);
+  tSel.disabled = false;
+  checkReady();
+}
+
+function onTopicChange() {
+  const week = getWeek(), topic = getTopic();
+  const nSel = document.getElementById('selName');
+  nSel.disabled = true;
+  if (!week || !topic) {
+    nSel.innerHTML = '<option value="">— select topic first —</option>';
+    checkReady(); return;
+  }
+  const names = allMeta.filter(q => q.week === week && q.topic === topic).map(q => q.name).sort();
+  nSel.innerHTML = '<option value="">— select or add new —</option>';
+  names.forEach(n => nSel.innerHTML += `<option value="${n}">${n}</option>`);
+  nSel.disabled = false;
+  checkReady();
+}
+
+function toggleNew(field) {
+  const wrap = document.getElementById(`new${cap(field)}Wrap`);
+  wrap.classList.toggle('open');
+  if (!wrap.classList.contains('open')) cancelNew(field);
+}
+function cancelNew(field) {
+  newVals[field] = '';
+  document.getElementById(`new${cap(field)}Wrap`).classList.remove('open');
+  document.getElementById(`new${cap(field)}Txt`).value = '';
+  checkReady();
+}
+function onNewInput(field) {
+  newVals[field] = document.getElementById(`new${cap(field)}Txt`).value.trim().replace(/[^a-zA-Z0-9_\-]/g, '');
+  checkReady();
+}
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function checkReady() {
+  document.getElementById('uploadBtn').disabled = !(getWeek() && getTopic() && getName() && extractedQuestions);
+}
+
+// ── Dropzone ──────────────────────────────────────────────────────────────────
+function dzOver(e)   { e.preventDefault(); document.getElementById('dropzone').classList.add('over'); }
+function dzLeave(e)  { document.getElementById('dropzone').classList.remove('over'); }
+function dzDrop(e)   { e.preventDefault(); document.getElementById('dropzone').classList.remove('over'); if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); }
+function onFilePick(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
+
+async function processFile(file) {
+  const dz = document.getElementById('dropzone');
+  dz.classList.remove('has-file', 'has-error');
+  document.getElementById('dzIcon').textContent  = '⏳';
+  document.getElementById('dzLabel').textContent = `Reading ${file.name}…`;
+  document.getElementById('dzSub').textContent   = '';
+  extractedQuestions = null;
+  checkReady();
+
+  try {
+    const questions = await extractFile(file);
+    extractedQuestions = questions;
+    dz.classList.add('has-file');
+    document.getElementById('dzIcon').textContent  = '✅';
+    document.getElementById('dzLabel').textContent = file.name;
+    document.getElementById('dzSub').textContent   = `${questions.length} questions extracted`;
+  } catch(err) {
+    dz.classList.add('has-error');
+    document.getElementById('dzIcon').textContent  = '❌';
+    document.getElementById('dzLabel').textContent = 'Extraction failed';
+    document.getElementById('dzSub').textContent   = err.message;
+  }
+  checkReady();
+}
+
+// ── JS Quiz extraction (port of extract_notebooklm_quiz_json.sh) ──────────────
+function cleanMath(text) {
+  if (!text) return '';
+  return text
+    .replace(/\$GCS\$/g,   'GCS').replace(/\$CT\$/g,    'CT')
+    .replace(/\$MRI\$/g,   'MRI').replace(/\$SpO_2\$/g, 'SpO2')
+    .replace(/\$PaO_2\$/g, 'PaO2').replace(/\$PaCO_2\$/g,'PaCO2')
+    .replace(/\$FiO_2\$/g, 'FiO2').replace(/\$Na\^\+\$/g,'Na+')
+    .replace(/\$K\^\+\$/g, 'K+').replace(/\\\%/g,'%')
+    .replace(/\\text\{([^}]+)\}/g, '$1')
+    .replace(/\$([^$]+)\$/g, '$1')
+    .replace(/\\u0027/g, "'");
+}
+
+function extractFromShim(htmlText) {
+  const marker = 'data-app-data="';
+  const idx    = htmlText.indexOf(marker);
+  if (idx === -1) throw new Error('No data-app-data attribute found. Make sure this is a NotebookLM shim.html file.');
+
+  const rawStart = idx + marker.length;
+  let pos = rawStart;
+  while (pos < htmlText.length) {
+    if (htmlText.slice(pos, pos + 6) === '&quot;') { pos += 6; continue; }
+    if (htmlText[pos] === '"') break;
+    pos++;
+  }
+
+  const rawAttr = htmlText.slice(rawStart, pos);
+  const decoded = rawAttr
+    .replace(/&quot;/g, '"').replace(/&amp;/g, '&')
+    .replace(/&lt;/g,   '<').replace(/&gt;/g,  '>');
+
+  let data;
+  try { data = JSON.parse(decoded); }
+  catch(e) { throw new Error('Failed to parse JSON from shim.html: ' + e.message); }
+
+  const quizArr = data.quiz || [];
+  if (!quizArr.length) throw new Error('No questions found in shim.html. The quiz may not have loaded yet when you saved the page.');
+
+  return quizArr.map(q => {
+    const options = {}, rationales = {};
+    let correct = null;
+    (q.answerOptions || []).forEach((opt, j) => {
+      const letter = String.fromCharCode(65 + j);
+      options[letter] = cleanMath(opt.text || '');
+      if (opt.rationale) rationales[letter] = cleanMath(opt.rationale);
+      if (opt.isCorrect) correct = letter;
+    });
+    return { stem: cleanMath(q.question || ''), options, correct, rationales, hint: cleanMath(q.hint || ''), part: 1 };
+  });
+}
+
+function extractFromNBJSON(jsonText) {
+  let data;
+  try { data = JSON.parse(jsonText); }
+  catch(e) { throw new Error('Invalid JSON: ' + e.message); }
+
+  const quizArr = data.interactive_quiz || [];
+  if (!quizArr.length) throw new Error('No questions found in interactive_quiz array.');
+
+  return quizArr.map(q => {
+    const options = {}, rationales = {};
+    (q.options || []).forEach(opt => {
+      if (!opt.letter) return;
+      options[opt.letter] = opt.text || '';
+      if (opt.rationale) rationales[opt.letter] = opt.rationale;
+    });
+    return { stem: q.stem || '', options, rationales, correct: q.correct_answer || '', hint: q.hint || '', part: 1 };
+  });
+}
+
+async function extractFile(file) {
+  const text = await file.text();
+  const name = file.name.toLowerCase();
+  if (name.endsWith('.json'))                        return extractFromNBJSON(text);
+  if (name.endsWith('.html') || name.endsWith('.htm')) return extractFromShim(text);
+  throw new Error('Unsupported file type. Please upload .html (shim) or .json.');
+}
+
+// ── Upload to Firestore ───────────────────────────────────────────────────────
+async function doUpload() {
+  const week = getWeek(), topic = getTopic(), name = getName();
+  if (!week || !topic || !name || !extractedQuestions) return;
+
+  // QuizId: W7__Neuro__SAH (double underscore, safe Firestore doc ID)
+  const quizId = `${week}__${topic}__${name}`;
+  const title  = `${week.toUpperCase()} · ${topic} · ${name}`;
+
+  document.getElementById('uploadBtn').disabled = true;
+  setStatus('uploadStatus', 'inf', `Saving ${quizId} to Firestore…`);
+
+  try {
+    const batch = db.batch();
+
+    // Metadata document
+    const metaRef = db.collection('quizzes').doc(quizId);
+    batch.set(metaRef, {
+      week:          week.toUpperCase(),
+      topic,
+      name,
+      title,
+      questionCount: extractedQuestions.length,
+      updatedAt:     firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Questions subcollection document
+    const qRef = metaRef.collection('data').doc('questions');
+    batch.set(qRef, { questions: extractedQuestions });
+
+    await batch.commit();
+
+    setStatus('uploadStatus', 'ok',
+      `✅ Saved "${title}" (${extractedQuestions.length} questions). It's live immediately.`);
+
+    // Update local meta cache and refresh dropdowns
+    allMeta = allMeta.filter(m => m.id !== quizId);
+    allMeta.push({ id: quizId, week: week.toUpperCase(), topic, name });
+    populateWeekDropdown();
+
+    // Reset file
+    extractedQuestions = null;
+    document.getElementById('dropzone').classList.remove('has-file', 'has-error');
+    document.getElementById('dzIcon').textContent  = '📄';
+    document.getElementById('dzLabel').textContent = 'Click to browse or drag & drop';
+    document.getElementById('dzSub').textContent   = 'Accepts .html (shim) or .json';
+    document.getElementById('fileInput').value     = '';
+
+  } catch(err) {
+    setStatus('uploadStatus', 'err', `❌ Save failed: ${err.message}`);
+  }
+
+  document.getElementById('uploadBtn').disabled = false;
+  checkReady();
+}
+
+// ── Manage / list quizzes ─────────────────────────────────────────────────────
+async function loadManage() {
+  const container = document.getElementById('quizList');
+  hideStatus('manageStatus');
+  container.innerHTML = '<div class="empty">Loading…</div>';
+
+  try {
+    const snap = await db.collection('quizzes').get();
+    if (snap.empty) { container.innerHTML = '<div class="empty">No quizzes yet.</div>'; return; }
+
+    // Group: week → topic → [{id, name, questionCount}]
+    const groups = {};
+    snap.forEach(doc => {
+      const d = doc.data();
+      const w = (d.week || 'Unknown').toUpperCase();
+      const t = d.topic || 'General';
+      if (!groups[w])    groups[w]    = {};
+      if (!groups[w][t]) groups[w][t] = [];
+      groups[w][t].push({ id: doc.id, name: d.name || doc.id, questionCount: d.questionCount || 0, title: d.title || doc.id });
+    });
+
+    let html = '';
+    Object.keys(groups)
+      .sort((a,b) => (parseInt(a.replace(/\D/g,''))||0) - (parseInt(b.replace(/\D/g,''))||0))
+      .forEach(week => {
+        html += `<div class="week-block"><div class="week-head">${week}</div><div class="topic-block">`;
+        Object.keys(groups[week]).sort().forEach(topic => {
+          html += `<div class="topic-head">${topic}</div>`;
+          groups[week][topic].sort((a,b) => a.name.localeCompare(b.name)).forEach(({ id, name, questionCount }) => {
+            html += `<div class="quiz-row">
+              <div style="flex:1">
+                <div class="quiz-row-name">${escHtml(name)}</div>
+                <div class="quiz-row-meta">${questionCount} questions · <a href="/quiz?id=${id}" target="_blank" style="color:var(--accent);">preview ↗</a></div>
+              </div>
+              <button class="btn btn-danger btn-sm" onclick="confirmDel('${id}','${escHtml(name)}')">Delete</button>
+            </div>`;
+          });
+        });
+        html += `</div></div>`;
+      });
+    container.innerHTML = html;
+
+  } catch(err) {
+    container.innerHTML = `<div class="empty">Error: ${err.message}</div>`;
+  }
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+function confirmDel(quizId, name) {
+  pendingDel = quizId;
+  document.getElementById('modalTitle').textContent = 'Delete quiz?';
+  document.getElementById('modalBody').innerHTML =
+    `This will permanently delete <strong>${escHtml(name)}</strong> from Firestore. This cannot be undone.`;
+  document.getElementById('modalOK').onclick = executeDel;
+  document.getElementById('confirmBg').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('confirmBg').classList.remove('open');
+  pendingDel = null;
+}
+async function executeDel() {
+  const quizId = pendingDel;
+  closeModal();
+  setStatus('manageStatus', 'inf', `Deleting ${quizId}…`);
+  try {
+    // Delete questions subcollection doc first, then the parent
+    await db.collection('quizzes').doc(quizId).collection('data').doc('questions').delete();
+    await db.collection('quizzes').doc(quizId).delete();
+    allMeta = allMeta.filter(m => m.id !== quizId);
+    setStatus('manageStatus', 'ok', `✅ Deleted ${quizId}.`);
+    await loadManage();
+  } catch(err) {
+    setStatus('manageStatus', 'err', `❌ Delete failed: ${err.message}`);
+  }
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  ['upload','manage'].forEach(t => {
+    document.getElementById(`tabBtn${cap(t)}`).classList.toggle('active', t === tab);
+    document.getElementById(`panel${cap(t)}`).classList.toggle('active',  t === tab);
+  });
+  if (tab === 'manage') loadManage();
+}
+
+// ── Status helpers ────────────────────────────────────────────────────────────
+function setStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `status on ${type}`;
+  el.textContent = msg;
+}
+function hideStatus(id) { document.getElementById(id).className = 'status'; }
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

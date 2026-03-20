@@ -1,89 +1,304 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NB Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:           #f7f5f0;
+  --surface:      #ffffff;
+  --border:       #e2ddd5;
+  --text:         #1a1714;
+  --text-2:       #5a534a;
+  --text-3:       #9a8f83;
+  --accent:       #2563a8;
+  --accent-light: #dbeafe;
+  --correct-bar:  #4ade80;
+  --wrong-bar:    #f87171;
+  --radius:       10px;
+  --radius-lg:    16px;
+  --shadow:       0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.06);
+  --font-serif:   'Crimson Pro', Georgia, serif;
+  --font-sans:    'DM Sans', system-ui, sans-serif;
+  --font-mono:    'DM Mono', monospace;
+}
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 48px 24px 80px; }
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/12.11.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/12.11.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/12.11.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/12.11.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/12.11.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/12.11.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/12.11.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/12.11.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/12.11.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/12.11.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+/* ── Header ── */
+.page-header { max-width: 760px; margin: 0 auto 48px; display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 20px; border-bottom: 1.5px solid var(--border); }
+.logo { font-family: var(--font-serif); font-size: 2rem; font-weight: 600; color: var(--text); }
+.logo span { color: var(--accent); }
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.credit { font-size: .72rem; color: var(--text-3); font-family: var(--font-mono); }
+.user-info  { font-size: .75rem; color: var(--text-3); font-family: var(--font-mono); display: none; }
+.signout-btn { font-size: .72rem; color: var(--text-3); background: none; border: none; cursor: pointer; font-family: var(--font-mono); padding: 0; display: none; }
+.signout-btn:hover { color: var(--accent); }
+.admin-link { font-size: .72rem; font-family: var(--font-mono); font-weight: 500; color: var(--accent); text-decoration: none; border: 1px solid var(--accent); border-radius: 99px; padding: 3px 10px; display: none; align-items: center; gap: 4px; transition: background 150ms; }
+.admin-link:hover { background: var(--accent-light); }
 
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
+/* ── Grid ── */
+.grid { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.week-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
+.week-label { font-family: var(--font-mono); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 14px 20px 10px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.topic-list { padding: 8px 0; }
+.topic-row { display: flex; align-items: flex-start; padding: 12px 20px; gap: 16px; border-bottom: 1px solid var(--border); }
+.topic-row:last-child { border-bottom: none; }
+.topic-name { font-size: .95rem; font-weight: 500; color: var(--text); min-width: 100px; padding-top: 10px; }
+.pill-group { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; }
+.quiz-pill { display: flex; flex-direction: column; gap: 5px; min-width: 130px; max-width: 200px; flex: 1; }
+.pill-link { display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; border: 1.5px solid var(--border); border-radius: var(--radius); text-decoration: none; background: var(--bg); transition: border-color .15s, background .15s; }
+.pill-link:hover { border-color: var(--accent); background: var(--accent-light); }
+.pill-name  { font-family: var(--font-mono); font-size: .8rem; font-weight: 500; color: var(--accent); }
+.pill-count { font-size: .68rem; color: var(--text-3); font-family: var(--font-mono); }
+
+/* ── Progress bars ── */
+.progress-wrap { display: flex; flex-direction: column; gap: 2px; }
+.prog-bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: #e2ddd5; }
+.seg { height: 100%; transition: width .4s ease; }
+.seg-correct { background: var(--correct-bar); }
+.seg-wrong   { background: var(--wrong-bar); }
+.seg-unans   { background: #e2ddd5; }
+.flag-bar { height: 3px; border-radius: 99px; background: linear-gradient(90deg,#f59e0b,#fbbf24,#fde68a,#f59e0b,#fbbf24); background-size: 200% 100%; animation: shimmer 2s linear infinite; width: 0%; transition: width .4s ease; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.prog-labels { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.prog-label  { font-size: .65rem; font-family: var(--font-mono); color: var(--text-3); display: flex; align-items: center; gap: 3px; }
+.prog-label .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.dot-correct { background: var(--correct-bar); }
+.dot-wrong   { background: var(--wrong-bar); }
+.dot-unans   { background: #b4b0a8; }
+.dot-flag    { background: #f59e0b; }
+.prog-pct    { font-size: .65rem; font-family: var(--font-mono); color: var(--text-3); margin-left: auto; }
+.empty { text-align: center; color: var(--text-3); font-size: .9rem; padding: 48px; }
+
+/* ── Skeleton loading ── */
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.skel { animation: pulse 1.5s ease infinite; background: var(--border); border-radius: 6px; }
+.skel-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
+.skel-bar  { height: 10px; margin-bottom: 8px; }
+.skel-pill { height: 36px; border-radius: var(--radius); flex: 1; min-width: 120px; max-width: 180px; }
+
+/* ── Login overlay ── */
+#loginScreen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
+#loginScreen.hidden { display: none; }
+.login-logo { font-family: var(--font-serif); font-size: 2.4rem; font-weight: 600; color: var(--text); margin-bottom: 6px; text-align: center; }
+.login-logo span { color: var(--accent); }
+.login-sub  { font-size: .85rem; color: var(--text-3); margin-bottom: 48px; text-align: center; }
+.google-btn { display: flex; align-items: center; gap: 10px; padding: 13px 28px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 99px; font-family: var(--font-sans); font-size: .9rem; font-weight: 600; color: var(--text); cursor: pointer; transition: border-color .15s, background .15s; }
+.google-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+.login-error { margin-top: 16px; font-size: .8rem; color: #991b1b; min-height: 1em; text-align: center; }
+.made-by-login { position: fixed; bottom: 20px; font-size: .72rem; color: var(--text-3); font-family: var(--font-mono); }
+
+@media (max-width: 520px) {
+  .topic-row { flex-direction: column; gap: 8px; }
+  .topic-name { min-width: unset; padding-top: 0; }
+  .quiz-pill { max-width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-logo">NB <span>Quiz</span></div>
+  <div class="login-sub">Your personal medical study companion</div>
+  <button class="google-btn" onclick="signInWithGoogle()">
+    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+    Continue with Google
+  </button>
+  <div class="login-error" id="loginError"></div>
+  <div class="made-by-login">made by Zi Lin</div>
+</div>
+
+<header class="page-header">
+  <div class="logo">NB <span>Quiz</span></div>
+  <div class="header-right">
+    <a class="admin-link" id="adminLink" href="/admin">⚙ Admin</a>
+    <div class="credit">made by Zi Lin</div>
+    <div class="user-info"  id="userInfo"></div>
+    <button class="signout-btn" id="signoutBtn" onclick="signOut()">sign out</button>
+  </div>
+</header>
+
+<main class="grid" id="grid">
+  <!-- Skeleton while loading -->
+  <div class="skel-card" id="skeleton">
+    <div class="skel skel-bar" style="width:40px;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div class="skel skel-pill"></div>
+      <div class="skel skel-pill"></div>
+      <div class="skel skel-pill"></div>
     </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
+  </div>
+</main>
 
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:            'AIzaSyCNnvrEli5lzU3sUFvttTsQPIYQXYK1_WE',
+  authDomain:        'nbquiz-6faf9.firebaseapp.com',
+  projectId:         'nbquiz-6faf9',
+  storageBucket:     'nbquiz-6faf9.firebasestorage.app',
+  messagingSenderId: '913114740758',
+  appId:             '1:913114740758:web:a856bb9c8eedf3cd629d37',
+});
+const auth = firebase.auth();
+const db   = firebase.firestore();
 
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
-        }
+const provider = new firebase.auth.GoogleAuthProvider();
+function signInWithGoogle() {
+  document.getElementById('loginError').textContent = '';
+  auth.signInWithPopup(provider).catch(() => {
+    document.getElementById('loginError').textContent = 'Sign-in failed. Please try again.';
+  });
+}
+function signOut() { auth.signOut(); }
+
+auth.onAuthStateChanged(async user => {
+  if (user) {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('userInfo').textContent = user.email;
+    document.getElementById('userInfo').style.display = 'block';
+    document.getElementById('signoutBtn').style.display = 'block';
+    // Check admin status (silently — non-admins just don't see the link)
+    try {
+      const snap = await db.collection('admins').doc(user.email).get();
+      if (snap.exists) document.getElementById('adminLink').style.display = 'inline-flex';
+    } catch(e) {}
+    await loadQuizzes(user.uid);
+  } else {
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('userInfo').style.display = 'none';
+    document.getElementById('signoutBtn').style.display = 'none';
+    document.getElementById('adminLink').style.display = 'none';
+  }
+});
+
+// ── Load quizzes from Firestore ───────────────────────────────────────────────
+async function loadQuizzes(uid) {
+  try {
+    const snap = await db.collection('quizzes').get();
+
+    // Group: week → topic → [{id, name, questionCount}]
+    const groups = {};
+    snap.forEach(doc => {
+      const d = doc.data();
+      const w = (d.week  || 'Unknown').toUpperCase();
+      const t = d.topic  || 'General';
+      if (!groups[w])    groups[w]    = {};
+      if (!groups[w][t]) groups[w][t] = [];
+      groups[w][t].push({ id: doc.id, name: d.name || doc.id, questionCount: d.questionCount || 0 });
+    });
+
+    if (!Object.keys(groups).length) {
+      document.getElementById('grid').innerHTML = '<p class="empty">No quizzes yet.</p>';
+      return;
+    }
+
+    renderGrid(groups);
+    await loadAllProgress(uid, snap.docs.map(d => ({ id: d.id, questionCount: d.data().questionCount || 0 })));
+  } catch(e) {
+    document.getElementById('grid').innerHTML = `<p class="empty">Error loading quizzes: ${e.message}</p>`;
+  }
+}
+
+function weekSortKey(w) {
+  const m = w.match(/^W(\d+)$/i);
+  return m ? parseInt(m[1]) : 9999;
+}
+
+function renderGrid(groups) {
+  const sortedWeeks = Object.keys(groups).sort((a, b) => weekSortKey(a) - weekSortKey(b));
+  let html = '';
+
+  sortedWeeks.forEach(week => {
+    let rows = '';
+    Object.keys(groups[week]).sort().forEach(topic => {
+      const versions = groups[week][topic].sort((a,b) => a.name.localeCompare(b.name));
+      let pills = '';
+      versions.forEach(q => {
+        const safe = q.id.replace(/__/g, '_');
+        pills += `<div class="quiz-pill" data-quiz-id="${q.id}">
+          <a href="/quiz?id=${q.id}" class="pill-link">
+            <span class="pill-name">${escHtml(q.name)}</span>
+            <span class="pill-count">${q.questionCount}q</span>
+          </a>
+          <div class="progress-wrap" id="prog_${safe}">
+            <div class="prog-bar">
+              <div class="seg seg-correct" id="seg_c_${safe}"></div>
+              <div class="seg seg-wrong"   id="seg_w_${safe}"></div>
+              <div class="seg seg-unans"   id="seg_u_${safe}"></div>
+            </div>
+            <div class="flag-bar" id="seg_f_${safe}"></div>
+            <div class="prog-labels" id="lbl_${safe}"></div>
+          </div>
+        </div>`;
       });
-    </script>
-  </body>
+      rows += `<div class="topic-row">
+        <span class="topic-name">${escHtml(topic)}</span>
+        <div class="pill-group">${pills}</div>
+      </div>`;
+    });
+    html += `<div class="week-card">
+      <div class="week-label">${escHtml(week)}</div>
+      <div class="topic-list">${rows}</div>
+    </div>`;
+  });
+
+  document.getElementById('grid').innerHTML = html;
+}
+
+// ── Progress bars ─────────────────────────────────────────────────────────────
+async function loadAllProgress(uid, quizMeta) {
+  const fetches = quizMeta.map(async ({ id, questionCount }) => {
+    try {
+      const snap = await db.collection('quizSessions').doc(uid)
+        .collection('quizzes').doc(id).get();
+      return { id, questionCount, data: snap.exists ? snap.data() : null };
+    } catch(e) {
+      return { id, questionCount, data: null };
+    }
+  });
+  const results = await Promise.all(fetches);
+  results.forEach(r => renderBar(r.id, r.questionCount, r.data));
+}
+
+function renderBar(quizId, total, data) {
+  const safe = quizId.replace(/__/g, '_');
+  if (!document.getElementById('prog_' + safe)) return;
+  if (!data || !total) return;
+
+  const results = data.results || [];
+  const flagged = data.flagged || [];
+
+  const correct = results.filter(r => r && r.wasCorrect).length;
+  const wrong   = results.filter(r => r && !r.wasCorrect && !r.skipped).length;
+  const unans   = total - correct - wrong;
+  const flags   = flagged.filter(Boolean).length;
+  const pct     = Math.round(correct / total * 100);
+
+  document.getElementById('seg_c_' + safe).style.width = (correct/total*100).toFixed(1) + '%';
+  document.getElementById('seg_w_' + safe).style.width = (wrong/total*100).toFixed(1)   + '%';
+  document.getElementById('seg_u_' + safe).style.width = (unans/total*100).toFixed(1)   + '%';
+  document.getElementById('seg_f_' + safe).style.width = (flags/total*100).toFixed(1)   + '%';
+
+  document.getElementById('lbl_' + safe).innerHTML = `
+    <span class="prog-label"><span class="dot dot-correct"></span>${correct} correct</span>
+    <span class="prog-label"><span class="dot dot-wrong"></span>${wrong} wrong</span>
+    <span class="prog-label"><span class="dot dot-unans"></span>${unans} left</span>
+    ${flags > 0 ? `<span class="prog-label"><span class="dot dot-flag"></span>${flags} flagged</span>` : ''}
+    <span class="prog-pct">${pct}%</span>
+  `;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
 </html>
