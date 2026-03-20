@@ -1,0 +1,21 @@
+[debug] [2026-03-20T22:01:59.971Z] ----------------------------------------------------------------------
+[debug] [2026-03-20T22:01:59.972Z] Command:       /usr/local/bin/node /usr/local/bin/firebase deploy
+[debug] [2026-03-20T22:01:59.972Z] CLI Version:   15.11.0
+[debug] [2026-03-20T22:01:59.972Z] Platform:      darwin
+[debug] [2026-03-20T22:01:59.972Z] Node Version:  v24.14.0
+[debug] [2026-03-20T22:01:59.972Z] Time:          Sat Mar 21 2026 09:01:59 GMT+1100 (Australian Eastern Daylight Time)
+[debug] [2026-03-20T22:01:59.972Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-03-20T22:02:00.557Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-03-20T22:02:00.557Z] > authorizing via signed-in user (zilinwang15333@gmail.com)
+[debug] [2026-03-20T22:02:00.557Z] [iam] checking project nbquiz-6faf9 for permissions ["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]
+[debug] [2026-03-20T22:02:00.557Z] Checked if tokens are valid: true, expires at: 1774047619699
+[debug] [2026-03-20T22:02:00.557Z] Checked if tokens are valid: true, expires at: 1774047619699
+[debug] [2026-03-20T22:02:00.558Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/nbquiz-6faf9:testIamPermissions [none]
+[debug] [2026-03-20T22:02:00.558Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/nbquiz-6faf9:testIamPermissions  x-goog-user-project=nbquiz-6faf9
+[debug] [2026-03-20T22:02:00.558Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/nbquiz-6faf9:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-03-20T22:02:01.746Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/nbquiz-6faf9:testIamPermissions 200
+[debug] [2026-03-20T22:02:01.747Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/nbquiz-6faf9:testIamPermissions {"permissions":["datastore.indexes.create","datastore.indexes.delete","datastore.indexes.list","datastore.indexes.update","firebase.projects.get","firebasehosting.sites.update"]}
+[debug] [2026-03-20T22:02:01.747Z] Checked if tokens are valid: true, expires at: 1774047619699
+[debug] [2026-03-20T22:02:01.748Z] Checked if tokens are valid: true, expires at: 1774047619699
+[debug] [2026-03-20T22:02:01.748Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/nbquiz-6faf9 [none]

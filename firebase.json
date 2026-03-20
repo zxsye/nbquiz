@@ -1,0 +1,11 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": ["firebase.json", "firestore.rules", "firestore.indexes.json", ".firebaserc", "**/.*", "**/*.sh", "**/*.py"],
+    "cleanUrls": true
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
