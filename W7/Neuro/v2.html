@@ -768,8 +768,10 @@ function renderQuestion(idx) {
   });
 
   // Footer
-  document.getElementById('submitBtn').disabled  = true;
-  document.getElementById('submitBtn').textContent = 'Check answer';
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled   = true;
+  submitBtn.textContent = 'Check answer';
+  submitBtn.onclick    = submitAnswer;
   document.getElementById('skipBtn').textContent = 'Skip →';
   document.getElementById('skipBtn').style.display = '';
   setFeedback('', '');

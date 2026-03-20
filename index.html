@@ -54,6 +54,21 @@ body {
 .user-info { font-size: .75rem; color: var(--text-3); font-family: var(--font-mono); display: none; }
 .signout-btn { font-size: .72rem; color: var(--text-3); background: none; border: none; cursor: pointer; font-family: var(--font-mono); padding: 0; display: none; }
 .signout-btn:hover { color: var(--accent); }
+.admin-link {
+  font-size: .72rem;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+  border: 1px solid var(--accent);
+  border-radius: 99px;
+  padding: 3px 10px;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  transition: background 150ms;
+}
+.admin-link:hover { background: var(--accent-light); }
 .grid { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
 .week-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
 .week-label { font-family: var(--font-mono); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 14px 20px 10px; border-bottom: 1px solid var(--border); background: var(--bg); }
@@ -131,6 +146,7 @@ body {
 <header class="page-header">
   <div class="logo">NB <span>Quiz</span></div>
   <div class="header-right">
+    <a class="admin-link" id="adminLink" href="admin/">⚙ Admin</a>
     <div class="credit">made by Zi Lin</div>
     <div class="user-info" id="userInfo"></div>
     <button class="signout-btn" id="signoutBtn" onclick="signOut()">sign out</button>
@@ -142,7 +158,21 @@ body {
       <div class="week-label">W1</div>
       <div class="topic-list"><div class="topic-row">
           <span class="topic-name">Vascular</span>
-          <div class="pill-group"><div class="quiz-pill" data-quiz-id="W1/Vascular/vascular1.1">
+          <div class="pill-group"><div class="quiz-pill" data-quiz-id="W1/Vascular/v1">
+              <a href="W1/Vascular/v1.html" class="pill-link">
+                <span class="pill-name">v1</span>
+                <span class="pill-count">30q</span>
+              </a>
+              <div class="progress-wrap" id="prog_W1__Vascular__v1">
+                <div class="prog-bar">
+                  <div class="seg seg-correct"  id="seg_c_W1__Vascular__v1"></div>
+                  <div class="seg seg-wrong"    id="seg_w_W1__Vascular__v1"></div>
+                  <div class="seg seg-unans"    id="seg_u_W1__Vascular__v1"></div>
+                </div>
+                <div class="flag-bar" id="seg_f_W1__Vascular__v1"></div>
+                <div class="prog-labels" id="lbl_W1__Vascular__v1"></div>
+              </div>
+            </div><div class="quiz-pill" data-quiz-id="W1/Vascular/vascular1.1">
               <a href="W1/Vascular/vascular1.1.html" class="pill-link">
                 <span class="pill-name">vascular1.1</span>
                 <span class="pill-count">30q</span>
@@ -259,6 +289,11 @@ const db   = firebase.firestore();
 
 const QUIZ_META = [
   {
+    "quiz_id": "W1/Vascular/v1",
+    "path": "W1/Vascular/v1.html",
+    "total": 30
+  },
+  {
     "quiz_id": "W1/Vascular/vascular1.1",
     "path": "W1/Vascular/vascular1.1.html",
     "total": 30
@@ -305,11 +340,21 @@ auth.onAuthStateChanged(async user => {
     document.getElementById('userInfo').textContent = user.email;
     document.getElementById('userInfo').style.display = 'block';
     document.getElementById('signoutBtn').style.display = 'block';
+    // Show admin link if user is in the admins collection
+    try {
+      const adminSnap = await db.collection('admins').doc(user.email).get();
+      if (adminSnap.exists) {
+        document.getElementById('adminLink').style.display = 'inline-flex';
+      }
+    } catch(e) {
+      // Silently ignore — non-admins simply don't see the link
+    }
     await loadAllProgress(user.uid);
   } else {
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('userInfo').style.display = 'none';
     document.getElementById('signoutBtn').style.display = 'none';
+    document.getElementById('adminLink').style.display = 'none';
   }
 });
 
