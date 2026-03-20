@@ -2,7 +2,9 @@
 """
 generate_index.py
 Scans gh-pages output dir for quiz HTML files, reads .meta.json sidecars,
-and generates index.html with Firebase-powered live progress bars.
+and generates:
+  - index.html          : quiz listing with Firebase progress bars + admin link
+  - admin/index.html    : admin portal (copied from admin_template.html)
 """
 
 import sys, os, re, json
@@ -24,6 +26,8 @@ for root, dirs, files in os.walk(out_dir):
         if len(parts) != 3:
             continue
         week, topic, vfile = parts
+        if week == 'admin':
+            continue
         name = os.path.splitext(vfile)[0]
 
         meta_path = os.path.join(root, name + '.meta.json')
@@ -159,6 +163,21 @@ body {{
 .user-info {{ font-size: .75rem; color: var(--text-3); font-family: var(--font-mono); display: none; }}
 .signout-btn {{ font-size: .72rem; color: var(--text-3); background: none; border: none; cursor: pointer; font-family: var(--font-mono); padding: 0; display: none; }}
 .signout-btn:hover {{ color: var(--accent); }}
+.admin-link {{
+  font-size: .72rem;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+  border: 1px solid var(--accent);
+  border-radius: 99px;
+  padding: 3px 10px;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  transition: background 150ms;
+}}
+.admin-link:hover {{ background: var(--accent-light); }}
 .grid {{ max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }}
 .week-card {{ background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }}
 .week-label {{ font-family: var(--font-mono); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 14px 20px 10px; border-bottom: 1px solid var(--border); background: var(--bg); }}
@@ -236,6 +255,7 @@ body {{
 <header class="page-header">
   <div class="logo">NB <span>Quiz</span></div>
   <div class="header-right">
+    <a class="admin-link" id="adminLink" href="admin/">⚙ Admin</a>
     <div class="credit">made by Zi Lin</div>
     <div class="user-info" id="userInfo"></div>
     <button class="signout-btn" id="signoutBtn" onclick="signOut()">sign out</button>
@@ -280,11 +300,21 @@ auth.onAuthStateChanged(async user => {{
     document.getElementById('userInfo').textContent = user.email;
     document.getElementById('userInfo').style.display = 'block';
     document.getElementById('signoutBtn').style.display = 'block';
+    // Show admin link if user is in the admins collection
+    try {{
+      const adminSnap = await db.collection('admins').doc(user.email).get();
+      if (adminSnap.exists) {{
+        document.getElementById('adminLink').style.display = 'inline-flex';
+      }}
+    }} catch(e) {{
+      // Silently ignore — non-admins simply don't see the link
+    }}
     await loadAllProgress(user.uid);
   }} else {{
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('userInfo').style.display = 'none';
     document.getElementById('signoutBtn').style.display = 'none';
+    document.getElementById('adminLink').style.display = 'none';
   }}
 }});
 
@@ -350,3 +380,19 @@ with open(index_path, 'w', encoding='utf-8') as f:
 
 total_quizzes = sum(len(v) for w in quizzes.values() for v in w.values())
 print(f"  index.html → {index_path}  ({len(sorted_weeks)} weeks, {total_quizzes} quizzes)")
+
+# ── Generate admin/index.html ─────────────────────────────────────────────────
+script_dir          = os.path.dirname(os.path.abspath(__file__))
+admin_template_path = os.path.join(script_dir, 'admin_template.html')
+
+if os.path.exists(admin_template_path):
+    admin_dir = os.path.join(out_dir, 'admin')
+    os.makedirs(admin_dir, exist_ok=True)
+    admin_out = os.path.join(admin_dir, 'index.html')
+    with open(admin_template_path, 'r', encoding='utf-8') as f:
+        admin_html = f.read()
+    with open(admin_out, 'w', encoding='utf-8') as f:
+        f.write(admin_html)
+    print(f"  admin/index.html → {admin_out}")
+else:
+    print(f"  [WARN] admin_template.html not found in {script_dir} — admin panel skipped")
