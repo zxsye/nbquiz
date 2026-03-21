@@ -292,6 +292,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
         <div id="feedbackMsg" class="feedback-msg" style="visibility:hidden">–</div>
       </div>
       <div style="display:flex;gap:10px;margin-left:auto;">
+        <button class="btn btn-ghost" id="backBtn" onclick="goBack()" style="display:none;">← Back</button>
         <button class="btn btn-ghost" id="skipBtn" onclick="nextQuestion()">Skip →</button>
         <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()" disabled>Check answer</button>
       </div>
@@ -606,6 +607,7 @@ function renderQuestion(idx) {
   submitBtn.textContent = 'Check answer';
   submitBtn.onclick    = submitAnswer;
   document.getElementById('skipBtn').style.display = '';
+  document.getElementById('backBtn').style.display = idx > 0 ? '' : 'none';
   setFeedback('', '');
   updateSidebar();
   updateProgress();
@@ -687,6 +689,18 @@ function submitAnswer() {
   updateProgress();
   saveState();
 }
+
+function goBack() {
+  if (current <= 0) return;
+  if (!answered)
+    results[current] = null; // discard unanswered state so skipping back doesn't record a skip
+  current--;
+  answered = false; selected = null;
+  renderQuestion(current);
+  const r = results[current];
+  if (r && !r.skipped) { selected = r.chosen; submitAnswer(); }
+}
+
 
 function nextQuestion() {
   if (!answered)
