@@ -185,6 +185,35 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .made-by-login { position:fixed; bottom:20px; font-size:.72rem; color:var(--text-3); font-family:var(--font-mono); }
 .made-by { font-size:.68rem; color:var(--text-3); font-family:var(--font-mono); text-align:center; padding-top:12px; margin-top:8px; border-top:1px solid var(--border); }
 
+/* ── Keyboard hints ── */
+.kbd-hints {
+  width: 100%; max-width: 1060px; margin: 10px auto 0;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding: 0 4px;
+  opacity: 0; animation: fadeIn .4s ease .3s forwards;
+}
+.kbd-group {
+  display: flex; align-items: center; gap: 4px;
+  font-size: .68rem; color: var(--text-3); font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.kbd-sep { color: var(--border); margin: 0 2px; }
+kbd {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border);
+  border-bottom: 2px solid var(--border);
+  border-radius: 4px; padding: 1px 5px;
+  font-family: var(--font-mono); font-size: .65rem;
+  color: var(--text-2); min-width: 20px; line-height: 1.6;
+  box-shadow: 0 1px 0 rgba(0,0,0,.06);
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+kbd.pressed {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* ── Responsive ── */
 @media (max-width: 800px) {
   body { flex-direction:column; overflow-y:auto; }
@@ -199,6 +228,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   .note-body { display:none; flex:none; margin-top:10px; }
   .note-body.open { display:flex; flex-direction:column; animation:fadeIn .2s ease; }
   .note-textarea { min-height:90px; resize:vertical; flex:none; }
+  .kbd-hints { display: none; }
 }
 @media (max-width: 520px) {
   .stem { font-size:1.1rem; padding:14px 20px 20px; }
@@ -304,6 +334,41 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
         <button class="btn btn-ghost" id="skipBtn" onclick="nextQuestion()">→ <span class="btn-label">Next</span></button>
         <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()" disabled>Check answer</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ── Keyboard hints bar ── -->
+  <div class="kbd-hints" id="kbdHints">
+    <div class="kbd-group">
+      <kbd id="kbdQ">Q</kbd><kbd id="kbdW">W</kbd><kbd id="kbdE">E</kbd><kbd id="kbdR">R</kbd><kbd id="kbdT">T</kbd>
+      <span style="margin-left:2px;">or</span>
+      <kbd id="kbd1">1</kbd><kbd id="kbd2">2</kbd><kbd id="kbd3">3</kbd><kbd id="kbd4">4</kbd><kbd id="kbd5">5</kbd>
+      <span style="margin-left:4px;">choose option</span>
+    </div>
+    <div class="kbd-sep">·</div>
+    <div class="kbd-group">
+      <kbd id="kbdEnter">↵</kbd>
+      <span>submit / next</span>
+    </div>
+    <div class="kbd-sep">·</div>
+    <div class="kbd-group">
+      <kbd id="kbdLeft">←</kbd><kbd id="kbdRight">→</kbd>
+      <span>navigate</span>
+    </div>
+    <div class="kbd-sep">·</div>
+    <div class="kbd-group">
+      <kbd id="kbdF">F</kbd>
+      <span>flag</span>
+    </div>
+    <div class="kbd-sep">·</div>
+    <div class="kbd-group">
+      <kbd id="kbdH">H</kbd>
+      <span>hint</span>
+    </div>
+    <div class="kbd-sep">·</div>
+    <div class="kbd-group">
+      <kbd id="kbdN">N</kbd>
+      <span>note</span>
     </div>
   </div>
 
@@ -700,19 +765,7 @@ function submitAnswer() {
 
 function goBack() {
   if (current <= 0) return;
-  if (!answered)
-    results[current] = null; // discard unanswered state so skipping back doesn't record a skip
-  current--;
-  answered = false; selected = null;
-  renderQuestion(current);
-  const r = results[current];
-  if (r && !r.skipped) { selected = r.chosen; submitAnswer(); }
-}
-
-
-function goBack() {
-  if (current <= 0) return;
-  if (!answered) results[current] = null;
+  if (!answered) results[current] = null; // discard unanswered so going back doesn't record a skip
   current--;
   answered = false; selected = null;
   renderQuestion(current);
@@ -749,6 +802,7 @@ function setFeedback(msg, cls) {
 function showResults() {
   document.getElementById('quizCard').classList.add('hidden');
   document.getElementById('progressWrap').classList.add('hidden');
+  document.getElementById('kbdHints').classList.add('hidden');
 
   const total   = QUESTIONS.length;
   const correct = results.filter(r => r?.wasCorrect).length;
@@ -836,6 +890,7 @@ function jumpTo(idx) {
   document.getElementById('resultsScreen').classList.remove('visible');
   document.getElementById('quizCard').classList.remove('hidden');
   document.getElementById('progressWrap').classList.remove('hidden');
+  document.getElementById('kbdHints').classList.remove('hidden');
   current = idx; answered = false; selected = null;
   renderQuestion(idx);
   const r = results[idx];
@@ -850,6 +905,7 @@ function restartQuiz() {
   document.getElementById('reviewSection').classList.add('hidden');
   document.getElementById('quizCard').classList.remove('hidden');
   document.getElementById('progressWrap').classList.remove('hidden');
+  document.getElementById('kbdHints').classList.remove('hidden');
   document.getElementById('submitBtn').onclick = submitAnswer;
   saveState();
   initSidebar();
@@ -859,6 +915,189 @@ function restartQuiz() {
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ── Keyboard Shortcut System ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// API:
+//   keys.register(combo, description, handler)  — add a shortcut
+//   keys.unregister(combo)                       — remove a shortcut
+//   keys.pause() / keys.resume()                 — disable/re-enable all
+//   keys.list()                                  — array of { combo, description }
+//
+// Combo syntax:
+//   'q'            plain key  (case-sensitive: 'q' ≠ 'Q')
+//   'ArrowLeft'    special key (matches e.key exactly)
+//   'ctrl+s'       modifier + key
+//   'shift+Enter'  shift + Enter
+//   Modifiers are always normalised as: ctrl → meta → shift → alt
+//
+// To add a new shortcut, scroll to "── Register shortcuts ──" below.
+
+class ShortcutManager {
+  constructor() {
+    this._bindings = new Map(); // combo → { description, action }
+    this._paused   = false;
+    document.addEventListener('keydown', e => this._handle(e));
+  }
+
+  /** Register a shortcut. Returns `this` for chaining. */
+  register(combo, description, action) {
+    this._bindings.set(combo, { description, action });
+    return this;
+  }
+
+  /** Remove a previously registered shortcut. */
+  unregister(combo) {
+    this._bindings.delete(combo);
+    return this;
+  }
+
+  /** Temporarily suppress all shortcuts (e.g. when a modal is open). */
+  pause()  { this._paused = true;  return this; }
+  resume() { this._paused = false; return this; }
+
+  /** Returns all bindings as [{ combo, description }] — useful for a help panel. */
+  list() {
+    return [...this._bindings.entries()].map(([combo, { description }]) => ({ combo, description }));
+  }
+
+  _handle(e) {
+    if (this._paused) return;
+    // Never intercept when focus is inside a text field
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+    // Build canonical combo string: ctrl+meta+shift+alt+key
+    const combo = [
+      e.ctrlKey  ? 'ctrl+'  : '',
+      e.metaKey  ? 'meta+'  : '',
+      e.shiftKey ? 'shift+' : '',
+      e.altKey   ? 'alt+'   : '',
+      e.key,
+    ].join('');
+
+    const binding = this._bindings.get(combo);
+    if (binding) {
+      e.preventDefault();
+      binding.action(e);
+    }
+  }
+}
+
+
+// ── Action helpers ─────────────────────────────────────────────────────────────
+
+/** Select an answer option by 0-based visual index. */
+function selectByIndex(idx) {
+  if (answered) return;
+  const opts = document.querySelectorAll('#options .option');
+  if (idx < opts.length) selectOption(opts[idx].dataset.letter);
+}
+
+/**
+ * Keyboard-aware advance:
+ *   • if answered (or skipped)       → next question
+ *   • if an option is selected       → submit
+ *   • otherwise                      → no-op
+ */
+function keyboardAdvance() {
+  if (answered)      nextQuestion();
+  else if (selected) submitAnswer();
+}
+
+
+// ── Visual feedback: flash the matching kbd badge ─────────────────────────────
+
+const KBD_IDS = {
+  'q': 'kbdQ', 'w': 'kbdW', 'e': 'kbdE', 'r': 'kbdR', 't': 'kbdT',
+  '1': 'kbd1', '2': 'kbd2', '3': 'kbd3', '4': 'kbd4', '5': 'kbd5',
+  'f': 'kbdF',
+  'h': 'kbdH',
+  'n': 'kbdN',
+  'Enter':      'kbdEnter',
+  'ArrowLeft':  'kbdLeft',
+  'ArrowRight': 'kbdRight',
+};
+
+function flashKbd(key) {
+  const id = KBD_IDS[key];
+  if (!id) return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('pressed');
+  setTimeout(() => el.classList.remove('pressed'), 180);
+}
+
+
+// ── Register shortcuts ────────────────────────────────────────────────────────
+//
+// Add entries here to extend the system.
+// Format: keys.register(combo, description, action)
+
+const keys = new ShortcutManager();
+
+// Option selection by number (1–5)
+[1, 2, 3, 4, 5].forEach(n => {
+  keys.register(String(n), `Select option ${n}`, () => {
+    flashKbd(String(n));
+    selectByIndex(n - 1);
+  });
+});
+
+// Option selection by QWERTY top-row keys (q w e r t)
+['q', 'w', 'e', 'r', 't'].forEach((k, i) => {
+  keys.register(k, `Select option ${i + 1}`, () => {
+    flashKbd(k);
+    selectByIndex(i);
+  });
+});
+
+// Submit / advance
+keys.register('Enter', 'Submit answer or advance to next question', () => {
+  flashKbd('Enter');
+  keyboardAdvance();
+});
+
+// Navigation
+keys.register('ArrowRight', 'Next question / skip', () => {
+  flashKbd('ArrowRight');
+  keyboardAdvance();
+});
+keys.register('ArrowLeft', 'Previous question', () => {
+  flashKbd('ArrowLeft');
+  goBack();
+});
+
+// Flag current question
+keys.register('f', 'Toggle flag on current question', () => {
+  flashKbd('f');
+  toggleFlag();
+});
+
+// Toggle hint
+keys.register('h', 'Toggle hint', () => {
+  flashKbd('h');
+  if (document.getElementById('hintWrap').style.display !== 'none') toggleHint();
+});
+
+// Toggle note panel
+keys.register('n', 'Open / close note panel', () => {
+  flashKbd('n');
+  toggleNote();
+});
+
+// Close note panel
+keys.register('Escape', 'Close note panel', () => {
+  const nb = document.getElementById('noteBody');
+  if (nb.classList.contains('open')) nb.classList.remove('open');
+});
+
+// ── To add more shortcuts, copy a block above. Examples: ─────────────────────
+// keys.register('ctrl+f', 'Focus search', () => { /* ... */ });
+// keys.register('shift+ArrowRight', 'Jump 5 questions forward', () => { /* ... */ });
+
 </script>
 </body>
 </html>
