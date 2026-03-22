@@ -998,13 +998,14 @@ function selectByIndex(idx) {
 
 /**
  * Keyboard-aware advance:
- *   • if answered (or skipped)       → next question
- *   • if an option is selected       → submit
- *   • otherwise                      → no-op
+ *   • if answered                → next question
+ *   • if an option is selected   → submit
+ *   • otherwise                  → skip (same as clicking Skip →)
  */
 function keyboardAdvance() {
   if (answered)      nextQuestion();
   else if (selected) submitAnswer();
+  else               nextQuestion(); // skip unanswered
 }
 
 
