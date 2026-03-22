@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NB Quiz</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="NB Quiz">
+<meta name="theme-color" content="#f7f5f0">
+<link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -137,36 +143,6 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .feedback-msg.correct { color:var(--correct); }
 .feedback-msg.wrong   { color:var(--wrong); }
 
-/* ── Keyboard hints ── */
-.kbd-hints {
-  width: 100%; max-width: 1060px; margin: 10px auto 0;
-  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-  padding: 0 4px;
-  opacity: 0; animation: fadeIn .4s ease .3s forwards;
-}
-.kbd-group {
-  display: flex; align-items: center; gap: 4px;
-  font-size: .68rem; color: var(--text-3); font-family: var(--font-mono);
-  white-space: nowrap;
-}
-.kbd-sep { color: var(--border); margin: 0 2px; }
-kbd {
-  display: inline-flex; align-items: center; justify-content: center;
-  background: var(--surface); border: 1px solid var(--border);
-  border-bottom: 2px solid var(--border);
-  border-radius: 4px; padding: 1px 5px;
-  font-family: var(--font-mono); font-size: .65rem;
-  color: var(--text-2); min-width: 20px; line-height: 1.6;
-  box-shadow: 0 1px 0 rgba(0,0,0,.06);
-  transition: background var(--transition), border-color var(--transition), color var(--transition);
-}
-/* Flash animation when a key is pressed */
-kbd.pressed {
-  background: var(--accent-light);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
 /* ── Results screen ── */
 .results-screen { width:100%; max-width:780px; margin:0 auto; display:none; flex-direction:column; gap:24px; animation:fadeUp .4s ease both; }
 .results-screen.visible { display:flex; }
@@ -215,26 +191,26 @@ kbd.pressed {
   .sidebar { width:100%; height:auto; max-height:250px; border-right:none; border-bottom:1.5px solid var(--border); padding:16px; flex-shrink:0; }
   .main-content { width:100%; height:auto; overflow:visible; padding:20px 16px 80px; }
   .card { display:flex; flex-direction:column; }
-  .note-wrap { grid-column:unset; grid-row:unset; border-left:none; border-top:1.5px solid var(--border); background:var(--surface-2); padding:14px 20px; }
+  .note-wrap { grid-column:unset; grid-row:unset; border-left:none; border-top:1.5px solid var(--border); background:var(--surface); padding:14px 20px; }
   .note-side-header { display:none; }
-  .note-toggle { display:inline-flex; align-items:center; gap:7px; font-size:.8rem; font-weight:500; color:var(--text-2); cursor:pointer; background:none; border:1.5px solid var(--border); border-radius:99px; padding:5px 14px; transition:all var(--transition); }
-  .note-toggle:hover { background:var(--surface); }
+  .note-toggle { display:inline-flex; align-items:center; gap:7px; font-size:.8rem; font-weight:500; color:var(--text-2); cursor:pointer; background:var(--surface-2); border:1.5px solid var(--border); border-radius:99px; padding:5px 14px; transition:all var(--transition); }
+  .note-toggle:hover { background:var(--border); }
   .note-toggle.has-note { color:var(--accent); border-color:var(--accent); background:var(--accent-light); }
   .note-body { display:none; flex:none; margin-top:10px; }
   .note-body.open { display:flex; flex-direction:column; animation:fadeIn .2s ease; }
   .note-textarea { min-height:90px; resize:vertical; flex:none; }
-  /* Hide keyboard hints on touch/mobile — not useful there */
-  .kbd-hints { display: none; }
 }
 @media (max-width: 520px) {
   .stem { font-size:1.1rem; padding:14px 20px 20px; }
   .options { padding:16px 20px 20px; }
-  .card-footer { padding:0 20px 20px; flex-wrap:wrap; }
+  .card-footer { padding:0 20px 20px; flex-wrap:wrap; border-top: 1.5px solid var(--border); padding-top: 16px; margin-top: 4px; }
   .card-header { padding:16px 20px 0; }
   .hint-wrap { padding:0 20px; }
   .note-wrap { padding:12px 20px; }
   .results-grade { font-size:3.5rem; }
   .results-stats { gap:24px; }
+  #backBtn .btn-label, #skipBtn .btn-label { display:none; }
+  #backBtn, #skipBtn { padding:11px 16px; font-size:1rem; }
 }
 </style>
 </head>
@@ -324,29 +300,10 @@ kbd.pressed {
         <div id="feedbackMsg" class="feedback-msg" style="visibility:hidden">–</div>
       </div>
       <div style="display:flex;gap:10px;margin-left:auto;">
-        <button class="btn btn-ghost" id="skipBtn" onclick="nextQuestion()">Skip →</button>
+        <button class="btn btn-ghost" id="backBtn" onclick="goBack()" style="display:none;">← <span class="btn-label">Back</span></button>
+        <button class="btn btn-ghost" id="skipBtn" onclick="nextQuestion()">→ <span class="btn-label">Next</span></button>
         <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()" disabled>Check answer</button>
       </div>
-    </div>
-  </div>
-
-  <!-- ── Keyboard hints bar ── -->
-  <div class="kbd-hints" id="kbdHints">
-    <div class="kbd-group">
-      <kbd id="kbdA">A</kbd><kbd id="kbdS">S</kbd><kbd id="kbdD">D</kbd><kbd id="kbdF">F</kbd>
-      <span style="margin-left:2px;">or</span>
-      <kbd id="kbd1">1</kbd><kbd id="kbd2">2</kbd><kbd id="kbd3">3</kbd><kbd id="kbd4">4</kbd>
-      <span style="margin-left:4px;">choose option</span>
-    </div>
-    <div class="kbd-sep">·</div>
-    <div class="kbd-group">
-      <kbd id="kbdEnter">↵</kbd>
-      <span>submit / next</span>
-    </div>
-    <div class="kbd-sep">·</div>
-    <div class="kbd-group">
-      <kbd id="kbdLeft">←</kbd><kbd id="kbdRight">→</kbd>
-      <span>navigate</span>
     </div>
   </div>
 
@@ -448,10 +405,12 @@ async function loadQuiz() {
   try {
     document.getElementById('loadingScreen').classList.remove('hidden');
 
+    // Fetch metadata
     const metaSnap = await db.collection('quizzes').doc(QUIZ_ID).get();
     if (!metaSnap.exists) { showError(`Quiz "${QUIZ_ID}" not found.`); return; }
     const meta = metaSnap.data();
 
+    // Fetch questions from subcollection
     const qSnap = await db.collection('quizzes').doc(QUIZ_ID)
       .collection('data').doc('questions').get();
     if (!qSnap.exists) { showError('Questions not found for this quiz.'); return; }
@@ -462,6 +421,7 @@ async function loadQuiz() {
     document.title = (meta.title || QUIZ_ID) + ' — NB Quiz';
     document.getElementById('totalQ').textContent = QUESTIONS.length;
 
+    // Init state arrays
     results = new Array(QUESTIONS.length).fill(null);
     flagged = new Array(QUESTIONS.length).fill(false);
     notes   = new Array(QUESTIONS.length).fill('');
@@ -655,6 +615,7 @@ function renderQuestion(idx) {
   submitBtn.textContent = 'Check answer';
   submitBtn.onclick    = submitAnswer;
   document.getElementById('skipBtn').style.display = '';
+  document.getElementById('backBtn').style.display = idx > 0 ? '' : 'none';
   setFeedback('', '');
   updateSidebar();
   updateProgress();
@@ -737,6 +698,28 @@ function submitAnswer() {
   saveState();
 }
 
+function goBack() {
+  if (current <= 0) return;
+  if (!answered)
+    results[current] = null; // discard unanswered state so skipping back doesn't record a skip
+  current--;
+  answered = false; selected = null;
+  renderQuestion(current);
+  const r = results[current];
+  if (r && !r.skipped) { selected = r.chosen; submitAnswer(); }
+}
+
+
+function goBack() {
+  if (current <= 0) return;
+  if (!answered) results[current] = null;
+  current--;
+  answered = false; selected = null;
+  renderQuestion(current);
+  const r = results[current];
+  if (r && !r.skipped) { selected = r.chosen; submitAnswer(); }
+}
+
 function nextQuestion() {
   if (!answered)
     results[current] = { q: current, chosen: null, correct: QUESTIONS[current].correct, wasCorrect: false, skipped: true };
@@ -766,7 +749,6 @@ function setFeedback(msg, cls) {
 function showResults() {
   document.getElementById('quizCard').classList.add('hidden');
   document.getElementById('progressWrap').classList.add('hidden');
-  document.getElementById('kbdHints').classList.add('hidden');
 
   const total   = QUESTIONS.length;
   const correct = results.filter(r => r?.wasCorrect).length;
@@ -854,7 +836,6 @@ function jumpTo(idx) {
   document.getElementById('resultsScreen').classList.remove('visible');
   document.getElementById('quizCard').classList.remove('hidden');
   document.getElementById('progressWrap').classList.remove('hidden');
-  document.getElementById('kbdHints').classList.remove('hidden');
   current = idx; answered = false; selected = null;
   renderQuestion(idx);
   const r = results[idx];
@@ -869,7 +850,6 @@ function restartQuiz() {
   document.getElementById('reviewSection').classList.add('hidden');
   document.getElementById('quizCard').classList.remove('hidden');
   document.getElementById('progressWrap').classList.remove('hidden');
-  document.getElementById('kbdHints').classList.remove('hidden');
   document.getElementById('submitBtn').onclick = submitAnswer;
   saveState();
   initSidebar();
@@ -879,189 +859,6 @@ function restartQuiz() {
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ── Keyboard Shortcut System ──────────────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
-//
-// Usage:
-//   keys.register('X', 'Description', handler)   — add a shortcut
-//   keys.unregister('X')                          — remove a shortcut
-//   keys.pause() / keys.resume()                  — temporarily disable all
-//   keys.list()                                   — array of registered bindings
-//
-// Combo syntax:
-//   'a'            plain key (case-sensitive: 'a' ≠ 'A')
-//   'ArrowLeft'    special key (matches e.key values)
-//   'ctrl+s'       modifier + key
-//   'shift+Enter'  shift + Enter
-//   'ctrl+shift+z' chained modifiers (always in ctrl→meta→shift→alt order)
-//
-// To add a new shortcut, scroll to "── Register shortcuts ──" below.
-
-class ShortcutManager {
-  constructor() {
-    this._bindings = new Map(); // combo → { description, action }
-    this._paused   = false;
-    document.addEventListener('keydown', e => this._handle(e));
-  }
-
-  /** Register a shortcut. Returns `this` for chaining. */
-  register(combo, description, action) {
-    this._bindings.set(combo, { description, action });
-    return this;
-  }
-
-  /** Remove a previously registered shortcut. */
-  unregister(combo) {
-    this._bindings.delete(combo);
-    return this;
-  }
-
-  /** Temporarily suppress all shortcuts (e.g. when a modal is open). */
-  pause()  { this._paused = true;  return this; }
-  resume() { this._paused = false; return this; }
-
-  /** Returns an array of { combo, description } for display / help screen. */
-  list() {
-    return [...this._bindings.entries()].map(([combo, { description }]) => ({ combo, description }));
-  }
-
-  _handle(e) {
-    if (this._paused) return;
-    // Never intercept when focus is inside a text field
-    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
-
-    // Build a canonical combo string: ctrl+meta+shift+alt+key
-    const combo = [
-      e.ctrlKey  ? 'ctrl+'  : '',
-      e.metaKey  ? 'meta+'  : '',
-      e.shiftKey ? 'shift+' : '',
-      e.altKey   ? 'alt+'   : '',
-      e.key,
-    ].join('');
-
-    const binding = this._bindings.get(combo);
-    if (binding) {
-      e.preventDefault();
-      binding.action(e);
-    }
-  }
-}
-
-
-// ── Action helpers ─────────────────────────────────────────────────────────────
-
-/** Select an answer option by 0-based visual index. */
-function selectByIndex(idx) {
-  if (answered) return;
-  const opts = document.querySelectorAll('#options .option');
-  if (idx < opts.length) selectOption(opts[idx].dataset.letter);
-}
-
-/**
- * Keyboard-aware advance:
- *   • if a question is answered (or skipped)  → move to next
- *   • if an option is selected but unsubmitted → submit it
- *   • otherwise                               → no-op
- */
-function keyboardAdvance() {
-  if (answered)      nextQuestion();
-  else if (selected) submitAnswer();
-}
-
-/** Go to the previous question (restoring its answered state). */
-function prevQuestion() {
-  if (current <= 0) return;
-  // Restore quiz card if we came from the results screen
-  document.getElementById('resultsScreen').classList.remove('visible');
-  document.getElementById('quizCard').classList.remove('hidden');
-  document.getElementById('progressWrap').classList.remove('hidden');
-  document.getElementById('kbdHints').classList.remove('hidden');
-
-  const idx = current - 1;
-  current   = idx;
-  answered  = false;
-  selected  = null;
-  renderQuestion(idx);
-
-  // Re-apply the saved answer so the user sees what they chose
-  const r = results[idx];
-  if (r && !r.skipped) { selected = r.chosen; submitAnswer(); }
-}
-
-
-// ── Visual feedback: flash the corresponding kbd badge ────────────────────────
-
-const KBD_IDS = {
-  // number row
-  '1': 'kbd1', '2': 'kbd2', '3': 'kbd3',
-  '4': 'kbd4', '5': 'kbd5', '6': 'kbd6',
-  // home-row letters
-  'a': 'kbdA', 's': 'kbdS', 'd': 'kbdD',
-  'f': 'kbdF', 'g': 'kbdG', 'h': 'kbdH',
-  // navigation
-  'Enter':      'kbdEnter',
-  'ArrowLeft':  'kbdLeft',
-  'ArrowRight': 'kbdRight',
-};
-
-function flashKbd(key) {
-  const id = KBD_IDS[key];
-  if (!id) return;
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.add('pressed');
-  setTimeout(() => el.classList.remove('pressed'), 180);
-}
-
-
-// ── Register shortcuts ────────────────────────────────────────────────────────
-//
-// Add or remove entries here to extend the shortcut system.
-// Each call: keys.register(combo, description, action)
-
-const keys = new ShortcutManager();
-
-// Option selection by number (1–6)
-[1, 2, 3, 4, 5, 6].forEach(n => {
-  keys.register(String(n), `Select option ${n}`, () => {
-    flashKbd(String(n));
-    selectByIndex(n - 1);
-  });
-});
-
-// Option selection by home-row keys (a s d f g h)
-['q', 'w', 'e', 'r', 't', 'y'].forEach((k, i) => {
-  keys.register(k, `Select option ${i + 1}`, () => {
-    flashKbd(k);
-    selectByIndex(i);
-  });
-});
-
-// Submit / advance
-keys.register('Enter', 'Submit answer or go to next question', () => {
-  flashKbd('Enter');
-  keyboardAdvance();
-});
-
-// Navigation
-keys.register('ArrowRight', 'Next question / skip', () => {
-  flashKbd('ArrowRight');
-  keyboardAdvance();
-});
-keys.register('ArrowLeft', 'Previous question', () => {
-  flashKbd('ArrowLeft');
-  prevQuestion();
-});
-
-// ── Examples of further shortcuts you might add ───────────────────────────────
-keys.register('f', 'Toggle flag on current question', () => toggleFlag());
-keys.register('h', 'Toggle hint', () => { if (document.getElementById('hintWrap').style.display !== 'none') toggleHint(); });
-keys.register('n', 'Open note panel', () => { const nb = document.getElementById('noteBody'); if (!nb.classList.contains('open')) toggleNote(); });
-keys.register('Escape', 'Close note panel', () => { document.getElementById('noteBody').classList.remove('open'); });
-
 </script>
 </body>
 </html>
