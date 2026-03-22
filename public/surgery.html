@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Year 4 MD Surgery Handbook 2026</title>
+
+<!-- PWA: iOS Safari "Add to Home Screen" support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Surgery">
+<meta name="theme-color" content="#1c1a17">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Apple Touch Icon (inline SVG → data URI) -->
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMWMxYTE3Ii8+PHJlY3QgeD0iNzYiIHk9IjQwIiB3aWR0aD0iMjgiIGhlaWdodD0iMTAwIiByeD0iNiIgZmlsbD0iI2QwNDAzMCIvPjxyZWN0IHg9IjQwIiB5PSI3NiIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIyOCIgcng9IjYiIGZpbGw9IiNkMDQwMzAiLz48L3N2Zz4=">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMWMxYTE3Ii8+PHJlY3QgeD0iNzYiIHk9IjQwIiB3aWR0aD0iMjgiIGhlaWdodD0iMTAwIiByeD0iNiIgZmlsbD0iI2QwNDAzMCIvPjxyZWN0IHg9IjQwIiB5PSI3NiIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIyOCIgcng9IjYiIGZpbGw9IiNkMDQwMzAiLz48L3N2Zz4=">
+<link rel="manifest" id="pwa-manifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f4f0;--bg-mid:#eeecea;--crimson:#b03020;--crimson-lt:#d04030;--gold:#a0783a;--gold-lt:#c49a4a;--teal:#1a7a6a;--ink:#1c1a17;--ink-mid:#3d3a35;--muted:#8a8680;--card:#ffffff;--sidebar-bg:#1c1a17;--border:rgba(28,26,23,0.1);--sidebar-w:280px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden}
+
+/* SIDEBAR */
+#sidebar{position:fixed;top:0;left:0;width:var(--sidebar-w);height:100vh;background:var(--sidebar-bg);display:flex;flex-direction:column;z-index:100;overflow-y:auto;transition:transform .35s cubic-bezier(.4,0,.2,1)}
+#sidebar::-webkit-scrollbar{width:3px}
+#sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+.sb-logo{padding:28px 22px 20px;border-bottom:1px solid rgba(255,255,255,.07)}
+.sb-logo .cross{display:inline-block;width:24px;height:24px;position:relative;margin-bottom:10px}
+.sb-logo .cross::before,.sb-logo .cross::after{content:'';position:absolute;background:var(--crimson-lt);border-radius:2px}
+.sb-logo .cross::before{width:24px;height:7px;top:8px;left:0}
+.sb-logo .cross::after{width:7px;height:24px;top:0;left:8px}
+.sb-logo h2{font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:#d4c9b4;letter-spacing:.08em;text-transform:uppercase;line-height:1.4}
+.sb-logo p{font-size:11px;color:rgba(200,196,188,.4);margin-top:3px}
+#sb-search{padding:10px 18px;border-top:1px solid rgba(255,255,255,.06)}
+#sb-search input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:5px;padding:8px 12px;font-size:12px;color:#e0dbd2;font-family:'DM Sans',sans-serif;outline:none}
+#sb-search input::placeholder{color:rgba(200,196,188,.35)}
+.sb-nav{padding:12px 0;flex:1}
+.sb-sec{font-size:9px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:rgba(200,196,188,.35);padding:10px 22px 5px}
+.sb-item{display:flex;align-items:center;gap:9px;padding:9px 22px;font-size:12.5px;color:rgba(200,196,188,.55);cursor:pointer;border-left:2px solid transparent;transition:all .2s}
+.sb-item:hover,.sb-item.active{color:#f0ece4;background:rgba(255,255,255,.05);border-left-color:var(--crimson-lt)}
+.sb-item .dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.5;flex-shrink:0}
+.sb-item.active .dot{opacity:1;background:var(--crimson-lt)}
+.sb-footer{padding:16px 22px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;color:rgba(200,196,188,.35);line-height:1.5}
+
+/* HAMBURGER */
+#hamburger{display:none;position:fixed;top:14px;left:14px;z-index:200;background:var(--card);border:1px solid var(--border);border-radius:7px;width:42px;height:42px;cursor:pointer;flex-direction:column;align-items:center;justify-content:center;gap:5px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+#hamburger span{display:block;width:18px;height:2px;background:var(--ink);border-radius:1px}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99}
+#overlay.show{display:block}
+
+/* MAIN */
+#main{margin-left:var(--sidebar-w);min-height:100vh}
+#progress{position:fixed;top:0;left:var(--sidebar-w);right:0;height:3px;background:linear-gradient(90deg,var(--crimson),var(--gold-lt));transform-origin:left;transform:scaleX(0);z-index:99;transition:transform .1s}
+
+/* HERO */
+#hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:80px 80px 60px;position:relative;overflow:hidden;background:linear-gradient(135deg,#f0ece4 0%,#ede7dc 50%,#e8e0d2 100%)}
+#hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 80% 50%,rgba(176,48,32,.05) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 20% 80%,rgba(160,120,58,.06) 0%,transparent 60%)}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(28,26,23,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(28,26,23,.04) 1px,transparent 1px);background-size:60px 60px}
+.hero-tag{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;position:relative;display:inline-flex;align-items:center;gap:12px}
+.hero-tag::before{content:'';display:block;width:28px;height:2px;background:var(--crimson)}
+.hero-title{font-family:'Playfair Display',serif;font-size:clamp(44px,6vw,84px);font-weight:900;line-height:1;position:relative;color:var(--ink)}
+.hero-title .accent{color:var(--crimson)}
+.hero-title .sub{font-size:clamp(22px,3vw,40px);font-weight:400;color:var(--gold)}
+.hero-sub{font-size:15.5px;color:var(--ink-mid);max-width:540px;line-height:1.75;margin-top:22px;position:relative}
+.hero-ctas{display:flex;gap:14px;margin-top:36px;flex-wrap:wrap;position:relative}
+.btn-pri{background:var(--crimson);color:#fff;padding:13px 26px;border-radius:6px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;transition:all .2s;box-shadow:0 2px 12px rgba(176,48,32,.22)}
+.btn-pri:hover{background:var(--crimson-lt);transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--gold);padding:13px 26px;border-radius:6px;font-size:13.5px;font-weight:500;cursor:pointer;border:1.5px solid rgba(160,120,58,.35);transition:all .2s}
+.btn-ghost:hover{background:rgba(160,120,58,.07)}
+.hero-stats{display:flex;gap:44px;margin-top:52px;position:relative;flex-wrap:wrap}
+.stat-num{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;line-height:1}
+.stat-label{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.05em}
+.hero-badge{position:absolute;top:60px;right:80px;width:130px;height:130px;border-radius:50%;border:1.5px solid rgba(160,120,58,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:rgba(255,255,255,.5)}
+.hero-badge span:first-child{font-family:'Playfair Display',serif;font-size:38px;font-weight:900;color:var(--gold);line-height:1}
+.hero-badge span:last-child{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:5px}
+
+/* SECTION */
+.section{padding:70px 80px;border-top:1px solid var(--border)}
+.sec-hdr{display:flex;align-items:flex-end;gap:18px;margin-bottom:44px}
+.sec-label{font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--crimson);margin-bottom:7px}
+.sec-title{font-family:'Playfair Display',serif;font-size:clamp(26px,3vw,40px);font-weight:700;line-height:1.15;color:var(--ink)}
+.sec-line{flex:1;height:1px;background:linear-gradient(90deg,rgba(160,120,58,.25),transparent);margin-bottom:7px}
+#learning-tips,#specialties{background:var(--bg)}
+#schedule,#principles{background:var(--bg-mid)}
+
+/* TIPS */
+.tips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px}
+.tip-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:26px;transition:all .3s;position:relative;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.tip-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--crimson);transform:scaleY(0);transform-origin:bottom;transition:transform .3s}
+.tip-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.08)}
+.tip-card:hover::before{transform:scaleY(1)}
+.tip-num{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--muted);margin-bottom:10px}
+.tip-icon{font-size:22px;margin-bottom:13px}
+.tip-card h3{font-size:15px;font-weight:600;margin-bottom:10px}
+.tip-card p{font-size:13px;color:var(--ink-mid);line-height:1.72}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:11px;border:1px solid var(--border);box-shadow:0 1px 5px rgba(0,0,0,.04)}
+.sched-tbl{width:100%;border-collapse:collapse;font-size:13px;background:var(--card)}
+.sched-tbl th{background:#f5f2ec;color:var(--gold);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:13px 18px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.sched-tbl td{padding:15px 18px;border-bottom:1px solid rgba(28,26,23,.05);color:var(--ink-mid);vertical-align:top;line-height:1.6}
+.sched-tbl tr:last-child td{border-bottom:none}
+.sched-tbl tr:hover td{background:#faf8f5}
+.wk-badge{display:inline-block;background:var(--crimson);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;margin-bottom:3px}
+.wk-spec{font-weight:600;color:var(--ink);font-size:13px}
+.res-list{list-style:none}
+.res-list li{font-size:12px;color:var(--muted);padding:2px 0 2px 11px;position:relative}
+.res-list li::before{content:'›';position:absolute;left:0;color:var(--gold)}
+
+/* TABS */
+.spec-tabs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:36px}
+.tab-btn{padding:8px 16px;border-radius:5px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif}
+.tab-btn:hover{color:var(--ink);border-color:rgba(176,48,32,.25)}
+.tab-btn.active{background:var(--crimson);border-color:var(--crimson);color:#fff;box-shadow:0 2px 8px rgba(176,48,32,.18)}
+.spec-pane{display:none}
+.spec-pane.active{display:block;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* SPEC GRID */
+.spec-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.spec-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:26px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.spec-card h4{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;margin-bottom:5px}
+.spec-card .csub{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.cat-lbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin:12px 0 7px}
+.cat-lbl.acute{color:var(--gold)}.cat-lbl.norm{color:var(--muted)}
+.spec-card ul{list-style:none}
+.spec-card ul li{font-size:12.5px;color:var(--ink-mid);padding:4px 0 4px 15px;position:relative;line-height:1.5;border-bottom:1px solid rgba(28,26,23,.03)}
+.spec-card ul li:last-child{border-bottom:none}
+.spec-card ul li::before{content:'·';position:absolute;left:4px;color:var(--crimson);font-size:15px;line-height:1.3}
+.spec-card ul li.ac::before{color:var(--gold)}
+.full{grid-column:1/-1}
+
+/* ACCORDION */
+.acc-item{border-bottom:1px solid var(--border)}
+.acc-hdr{display:flex;align-items:center;justify-content:space-between;padding:15px 0;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--ink-mid);transition:color .2s;user-select:none}
+.acc-hdr:hover{color:var(--ink)}
+.acc-arr{width:18px;height:18px;border:1px solid rgba(160,120,58,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--gold);transition:transform .3s;flex-shrink:0}
+.acc-hdr.open .acc-arr{transform:rotate(180deg)}
+.acc-body{display:none;padding-bottom:16px;font-size:13px;color:var(--ink-mid);line-height:1.8}
+.acc-body.show{display:block}
+
+/* CARD TYPES */
+.card-learn{background:#f0f8f5;border-color:rgba(26,122,106,.18)}
+.card-learn h4{color:var(--teal)}
+.card-revise{background:#fdf9f0;border-color:rgba(160,120,58,.2)}
+.card-revise h4{color:var(--gold)}
+.card-ai{background:#fdf8f3;border-color:rgba(176,48,32,.15)}
+.card-ai h4{color:var(--crimson)}
+
+/* RESOURCE COLS */
+.res-cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:16px;margin-top:4px}
+.rg-title{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;padding-bottom:5px;border-bottom:1px solid var(--border)}
+.res-group ul{list-style:none}
+.res-group ul li{font-size:12.5px;color:var(--ink-mid);padding:3px 0 3px 12px;position:relative;line-height:1.5}
+.res-group ul li::before{content:'›';position:absolute;left:1px;color:var(--muted)}
+
+/* AI PROMPTS */
+.prompt-wrap{margin-bottom:13px}
+.prompt-block{background:#f5f0e8;border-radius:7px;padding:13px 17px;font-family:'DM Mono',monospace;font-size:11.5px;color:#2a5040;line-height:1.7;border-left:3px solid var(--teal);margin-bottom:7px}
+.copy-btn{font-size:11px;background:transparent;border:1px solid rgba(26,122,106,.3);color:var(--teal);padding:3px 11px;border-radius:4px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s}
+.copy-btn:hover{background:rgba(26,122,106,.07)}
+.copy-btn.copied{color:var(--gold);border-color:rgba(160,120,58,.3)}
+.ai-note{font-size:11.5px;color:var(--muted);font-style:italic;margin-top:12px;line-height:1.6;padding:11px;background:rgba(0,0,0,.03);border-radius:5px}
+
+/* PRINCIPLES */
+.princ-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px}
+.princ-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:22px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.princ-card h4{font-size:13.5px;font-weight:600;color:var(--gold);margin-bottom:11px}
+.princ-card ul{list-style:none}
+.princ-card ul li{font-size:12.5px;color:var(--ink-mid);padding:3px 0 3px 13px;position:relative;line-height:1.5}
+.princ-card ul li::before{content:'—';position:absolute;left:0;color:rgba(176,48,32,.4);font-size:10px;top:5px}
+
+/* FOOTER */
+#footer{background:var(--sidebar-bg);padding:36px 80px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.ft-left p{font-size:11.5px;color:rgba(200,196,188,.45);line-height:1.6}
+.ft-right{display:flex;gap:18px}
+.ft-link{font-size:12px;color:rgba(200,196,188,.45);cursor:pointer;transition:color .2s}
+.ft-link:hover{color:#d4c9b4}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  #hamburger{display:flex}
+  #sidebar{transform:translateX(-100%)}
+  #sidebar.open{transform:translateX(0)}
+  #main{margin-left:0}
+  #progress{left:0}
+  .section{padding:52px 20px}
+  #hero{padding:70px 20px 52px}
+  .hero-badge{display:none}
+  .hero-stats{gap:24px}
+  .spec-grid{grid-template-columns:1fr}
+  .full{grid-column:auto}
+  #footer{padding:28px 20px;flex-direction:column;align-items:flex-start}
+}
+
+/* FADE IN */
+.fi{opacity:0;transform:translateY(14px);transition:opacity .45s ease,transform .45s ease}
+.fi.v{opacity:1;transform:translateY(0)}
+
+/* PWA / Safe-area support for iPhone notch & home indicator */
+:root{
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+@media all and (display-mode: standalone){
+  #sidebar{padding-top: var(--sat);}
+  #hamburger{top: calc(14px + var(--sat));}
+  #progress{top: var(--sat);}
+  #main{padding-bottom: var(--sab);}
+  #footer{padding-bottom: calc(28px + var(--sab));}
+}
+@media(max-width:900px){
+  #sidebar{padding-left: var(--sal);}
+}
+</style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <div class="sb-logo">
+    <div class="cross"></div>
+    <h2>Year 4 Surgery<br>Handbook</h2>
+    <p>University of Sydney · 2026</p>
+  </div>
+  <div id="sb-search"><input type="text" placeholder="Search handbook…"></div>
+  <div class="sb-nav">
+    <div class="sb-sec">Overview</div>
+    <div class="sb-item active" onclick="goTo('hero')"><span class="dot"></span>Introduction</div>
+    <div class="sb-item" onclick="goTo('learning-tips')"><span class="dot"></span>Learning Tips</div>
+    <div class="sb-item" onclick="goTo('schedule')"><span class="dot"></span>Study Schedule</div>
+    <div class="sb-sec">Specialties</div>
+    <div class="sb-item" onclick="goTo('specialties');switchTab('vasc')"><span class="dot"></span>Vascular &amp; Cardiothoracic</div>
+    <div class="sb-item" onclick="goTo('specialties');switchTab('ortho')"><span class="dot"></span>Orthopaedics &amp; Burns</div>
+    <div class="sb-item" onclick="goTo('specialties');switchTab('lgi')"><span class="dot"></span>Lower GI Surgery</div>
+    <div class="sb-item" onclick="goTo('specialties');switchTab('ugi')"><span class="dot"></span>Upper GI Surgery</div>
+    <div class="sb-item" onclick="goTo('specialties');switchTab('uro')"><span class="dot"></span>Urology &amp; Transplant</div>
+    <div class="sb-item" onclick="goTo('specialties');switchTab('breast')"><span class="dot"></span>Breast, ENT &amp; Head/Neck</div>
+    <div class="sb-item" onclick="goTo('specialties');switchTab('trauma')"><span class="dot"></span>Trauma &amp; Neurosurgery</div>
+    <div class="sb-sec">Perioperative</div>
+    <div class="sb-item" onclick="goTo('principles')"><span class="dot"></span>Overarching Principles</div>
+  </div>
+  <div class="sb-footer">MD Program · Surgery Term<br>Year 4 Clinical Handbook</div>
+</nav>
+<div id="overlay" onclick="closeSidebar()"></div>
+<button id="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+<div id="progress"></div>
+
+<main id="main">
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-tag">MD Program · Surgery Term</div>
+  <h1 class="hero-title"><span class="accent">Surgery</span><br>Handbook<br><span class="sub">2026</span></h1>
+  <p class="hero-sub">Year 4 is designed as <em>clinical immersion</em>. Your learning is built around real surgical experiences — developing recognition, diagnosis, and clinical reasoning across all specialties to prepare you for practice as an intern caring for surgical patients.</p>
+  <div class="hero-ctas">
+    <button class="btn-pri" onclick="goTo('specialties')">Browse Specialties</button>
+    <button class="btn-ghost" onclick="goTo('schedule')">View Study Plan</button>
+  </div>
+  <div class="hero-stats">
+    <div><div class="stat-num">7</div><div class="stat-label">Surgical Specialties</div></div>
+    <div><div class="stat-num">7</div><div class="stat-label">Week Program</div></div>
+    <div><div class="stat-num">7</div><div class="stat-label">Clinical Tutorials</div></div>
+    <div><div class="stat-num">5</div><div class="stat-label">Unscrubbed Podcasts</div></div>
+  </div>
+  <div class="hero-badge"><span>Y4</span><span>MD<br>Program</span></div>
+</section>
+
+<!-- LEARNING TIPS -->
+<section id="learning-tips" class="section">
+  <div class="sec-hdr"><div><div class="sec-label">How to Learn</div><h2 class="sec-title">Approach to Learning</h2></div><div class="sec-line"></div></div>
+  <div class="tips-grid">
+    <div class="tip-card fi"><div class="tip-icon">📋</div><div class="tip-num">01 / 06</div><h3>Develop a Strong Study Plan</h3><p>The provided example schedule (Table 1) integrates the overarching principles with specialty surgical topics — adapt it based on your clinical rotations, other commitments, and learning needs. Do not rely on last-minute revision; there is too much to cover. You should have a mix of different study techniques and resources that you draw on.</p></div>
+    <div class="tip-card fi"><div class="tip-icon">🏥</div><div class="tip-num">02 / 06</div><h3>Deliberately Make Learning Opportunities</h3><p>Use the 'On the Wards' section to cover key competencies in clinical environments. Go into ward rounds and clinics with purpose — set yourself goals each day (e.g. interpreting AXRs or diabetes management in surgical patients) and then discuss with the team. Many acute or serious surgical conditions are rare, so your reading must cover these. You may not have rotations in all specialties — seek common principles across surgery and supplement with focused didactic learning.</p></div>
+    <div class="tip-card fi"><div class="tip-icon">📝</div><div class="tip-num">03 / 06</div><h3>Use WBAs as Learning Opportunities</h3><p>Long cases are great case-based learning — read up about the patient's condition and identify key overarching principles to explore (e.g. pain management in a patient with long-term opioid use). Use handover WBAs for microlearning (discuss postoperative fever) and blood round WBAs to discuss postoperative anaemia. The viva requires practice in clinical history taking, interpretation of symptoms, signs and investigations, and development of management plans. The best practice is being on the wards and in theatres, talking with patients, nurses, and the surgical team.</p></div>
+    <div class="tip-card fi"><div class="tip-icon">💻</div><div class="tip-num">04 / 06</div><h3>Make Efficient Use of Canvas</h3><p>Canvas resources supplement ward-based and self-directed study and clarify areas where students often have difficulty — they are not exhaustive. The surgery assessment blueprint shows how assessment is structured across specialties. The 'Unscrubbed Podcasts' are interviews with junior doctors — great to listen to during your commute. Canvas also links Year 2 lectures from the GEL blocks for revision (deliberately not repeated in Year 4). Textbooks are available as ebooks from the USYD library (no purchase needed) with high-yield chapter descriptions.</p></div>
+    <div class="tip-card fi"><div class="tip-icon">🎓</div><div class="tip-num">05 / 06</div><h3>Use Your Clinical Tutorials</h3><p>Clinical Scenario Tutorials give you the opportunity to discuss more detailed aspects of surgical management and cover the overarching principles of surgery — ask questions and clarify approaches to common perioperative issues. Bedside clinical history and examination tutorials are a chance to practise the skills you need for your viva exams. Use your tutor's knowledge to develop your clinical reasoning skills.</p></div>
+    <div class="tip-card fi"><div class="tip-icon">🤖</div><div class="tip-num">06 / 06</div><h3>Web Resources, Flash Cards &amp; AI</h3><p>Flash cards help with rote learning for KAT exam MCQs but not clinical reasoning (which is what the Viva tests) — because language is provided to you, you get less practice speaking and explaining concepts. Use other modalities alongside them. AI (ChatGPT, CoPilot) can be helpful for practice Viva and MCQ questions but can lead you astray — use cautiously and do not rely on it as a primary source. Geeky Medics (clinical examination guides), TeachMeSurgery (Key Points), eMedici, and AccessSurgery (MCQs and infographics) are excellent; free content is very good. Advanced features often require a subscription — Year 4 Surgery requirements do not require access and it is not necessary to pay. SUMS has an institutional login trial for 2026.</p></div>
+  </div>
+</section>
+
+<!-- SCHEDULE -->
+<section id="schedule" class="section">
+  <div class="sec-hdr"><div><div class="sec-label">7-Week Program</div><h2 class="sec-title">Suggested Study Schedule</h2></div><div class="sec-line"></div></div>
+  <div class="tbl-wrap">
+    <table class="sched-tbl">
+      <thead><tr><th>Week / Specialty</th><th>Overarching Principles</th><th>Tutorial</th><th>Online Resources</th></tr></thead>
+      <tbody>
+        <tr><td><span class="wk-badge">Week 1</span><br><span class="wk-spec">Vascular &amp; Cardiothoracic</span></td><td>Preoperative assessment and investigations</td><td>Preoperative assessment</td><td><ul class="res-list"><li>AAA surgery · Peripheral Artery Disease · Venous Disease</li><li>🎙 Acute limb ischaemia (Podcast)</li></ul></td></tr>
+        <tr><td><span class="wk-badge">Week 2</span><br><span class="wk-spec">Orthopaedics, Hand, Plastics &amp; Burns</span></td><td>IV fluids in surgical patients. Interpretation of fracture xrays. Wound healing. Local anaesthetic doses and administration. Surgical approaches and techniques for wound closure.</td><td>Fluid management &amp; resuscitation</td><td><ul class="res-list"><li>Hip replacement · TKR · Osteoarthritis of the shoulder · Proximal humerus fracture · Rotator cuff tears · Shoulder instability · Common fractures</li><li>Melanoma · Skin grafting and closure · Skin lesion excision</li><li>🎙 IV fluids (Podcast)</li></ul></td></tr>
+        <tr><td><span class="wk-badge">Week 3</span><br><span class="wk-spec">Lower GI Surgery</span></td><td>Preparing patients for surgery including fasting, VTE prophylaxis, Consent/bookings. Fever and infections in post-surgical patients.</td><td>Fever in the postoperative patient</td><td><ul class="res-list"><li>Bowel obstruction · Diverticular disease · Lower GI bleeding · RIF pain</li></ul></td></tr>
+        <tr><td><span class="wk-badge">Week 4</span><br><span class="wk-spec">Upper GI Surgery</span></td><td>Management of common perioperative complications (eg bleeding/anaemia, pneumonia, PE/DVT, delirium etc).</td><td>Bleeding and breathing after surgery</td><td><ul class="res-list"><li>Biliary Obstruction</li><li>🎙 Postoperative bleeding · Chest Pain (Podcasts)</li></ul></td></tr>
+        <tr><td><span class="wk-badge">Week 5</span><br><span class="wk-spec">Urology &amp; Transplant</span></td><td>Management of medications in the perioperative setting (eg antiglycaemics, anticoagulants, analgesics). Management of postsurgical voiding issues.</td><td>Anti-thrombotic medications in surgery</td><td><ul class="res-list"><li>Transplantation · Prostate Cancer</li></ul></td></tr>
+        <tr><td><span class="wk-badge">Week 6</span><br><span class="wk-spec">Breast, OTO, Head &amp; Neck</span></td><td>Management of post-surgical pain. Role of other specialties/models of care in the management of surgical patients. Perioperative nutrition.</td><td>Perioperative care (DM, Pain, nutrition)</td><td><ul class="res-list"><li>Breast Cancer · Thyroid Surgery · Chronic pain after surgery</li><li>🎙 Post-operative pain (Podcast)</li></ul></td></tr>
+        <tr><td><span class="wk-badge">Week 7</span><br><span class="wk-spec">Neurosurgery &amp; Trauma</span></td><td>Surgical emergencies. Theatre etiquette and safety. Rehabilitation, mobility and function after surgery.</td><td>Emergency Surgical care</td><td><ul class="res-list"><li>Brain tumours · Trauma management · Compartment Syndrome</li><li>🎙 Decreased LOC (Podcast)</li></ul></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- SPECIALTIES -->
+<section id="specialties" class="section">
+  <div class="sec-hdr"><div><div class="sec-label">Curriculum Content</div><h2 class="sec-title">Surgical Specialties</h2></div><div class="sec-line"></div></div>
+  <div class="spec-tabs">
+    <button class="tab-btn active" onclick="switchTab('vasc')">Vascular &amp; CT</button>
+    <button class="tab-btn" onclick="switchTab('ortho')">Orthopaedics &amp; Burns</button>
+    <button class="tab-btn" onclick="switchTab('lgi')">Lower GI</button>
+    <button class="tab-btn" onclick="switchTab('ugi')">Upper GI</button>
+    <button class="tab-btn" onclick="switchTab('uro')">Urology &amp; Transplant</button>
+    <button class="tab-btn" onclick="switchTab('breast')">Breast, ENT &amp; Head/Neck</button>
+    <button class="tab-btn" onclick="switchTab('trauma')">Trauma &amp; Neuro</button>
+  </div>
+
+  <!-- VASCULAR -->
+  <div id="pane-vasc" class="spec-pane active"><div class="spec-grid">
+    <div class="spec-card fi">
+      <h4>Vascular &amp; Cardiothoracic Surgery</h4><div class="csub">Curriculum Topics</div>
+      <div class="cat-lbl acute">⚡ Acute Surgical Conditions</div>
+      <ul><li class="ac">Ruptured AAA</li><li class="ac">Acute Aortic Syndromes (dissection, penetrating ulcer)</li><li class="ac">Acute Limb Ischaemia</li><li class="ac">Deep venous thrombosis</li></ul>
+      <div class="cat-lbl norm">Vascular Diseases</div>
+      <ul><li>Peripheral artery disease (atherosclerosis related PAD including intermittent claudication and chronic-limb threatening ischaemia)</li><li>Aortic aneurysm</li><li>Diabetes-related foot disease (ulcers, sepsis, osteomyelitis)</li><li>Venous disease (superficial venous disease and varicose veins, venous ulcers, deep venous disease)</li><li>Carotid stenosis</li></ul>
+      <div class="cat-lbl norm">Cardiothoracic Surgery</div>
+      <ul><li>Surgical approaches to ischaemic heart disease</li><li>Valvular surgery</li><li>Pneumothorax</li><li>Lung cancer</li><li>Lung abscess / empyema</li></ul>
+    </div>
+    <div class="spec-card fi">
+      <h4>On the Wards</h4><div class="csub">Clinical Competencies</div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Patients presenting with leg pain <span class="acc-arr">▾</span></div><div class="acc-body">Differentiate between acute and chronic arterial ischaemia, venous insufficiency, neurological and musculoskeletal causes of leg pain.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Lower limb swelling <span class="acc-arr">▾</span></div><div class="acc-body">Recognise signs and symptoms of venous insufficiency, venous thrombosis and metabolic causes of peripheral oedema.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Lower limb / foot ulceration <span class="acc-arr">▾</span></div><div class="acc-body">Identify common causes of ulcers including arterial, venous and neuroischaemic ulcers related to diabetes; recognise superimposed infection with cellulitis or osteomyelitis; when surgery is indicated; initiate appropriate wound care.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Aortic aneurysm or dissection <span class="acc-arr">▾</span></div><div class="acc-body">Recognise acute symptomatic and asymptomatic presentations; screening and investigation; thresholds for treatment; common perioperative management issues.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Ischaemic heart disease — coronary surgery <span class="acc-arr">▾</span></div><div class="acc-body">Patients with ischaemic heart disease in whom surgery for coronary disease is considered: potential graft conduits; pre-surgical work up and investigations.</div></div>
+    </div>
+    <div class="spec-card full card-learn fi">
+      <h4>📚 Learning Opportunities</h4><div class="csub">Tutorials, Lectures &amp; Podcasts</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Clinical Scenario Tutorial</div><ul><li>Preoperative assessment (Week 1)</li></ul></div>
+        <div class="res-group"><div class="rg-title">Year 4 'My Approach To' Lectures</div><ul><li>Abdominal Aortic Aneurysms</li><li>Peripheral Artery Disease</li><li>Venous Disease</li></ul></div>
+        <div class="res-group"><div class="rg-title">🎙 Unscrubbed Podcast</div><ul><li>Acute limb ischaemia</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-revise fi">
+      <h4>🔁 Revision Resources from Prior Years</h4><div class="csub">Lectures, Grand Rounds &amp; Clinical Examinations</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Lectures for Revision</div><ul><li>AAA, PADx3, Carotid</li><li>Oncology block, Week 3: Lung Cancer</li></ul></div>
+        <div class="res-group"><div class="rg-title">Year 2 Surgical Grand Rounds</div><ul><li>Gel block 1, wk 4: Acute aortic syndromes</li><li>Gel block 1, wk 5: Chronic Limb-threatening Ischaemia</li><li>Gel Block 1, wk 3: Pneumothorax</li><li>Gel Block 1, wk 6: Valve replacement</li></ul></div>
+        <div class="res-group"><div class="rg-title">Year 2 History &amp; Clinical Examination</div><ul><li>Gel Block 1, Wk 5: History and clinical examination of lower limb ischaemia</li><li>Gel Block 1, Wk 6: History and Examination of lower limb swelling</li><li>Gel Block 1, Wk 8: History and Examination of complications of diabetes</li><li>Gel Block 1, Wk 3: History and examination of haemoptysis</li><li>Oncology Block, Wk 4.3: Integrated clinical assessment in lung cancer</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-ai fi">
+      <h4>🤖 AI Prompts for Revision</h4><div class="csub">Copy and use in Microsoft CoPilot</div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pv1">"I am a final year Australian medical student completing my VASCULAR SURGERY rotation. Provide me with a high level summary about [varicose veins | aortic aneurysm | chronic limb threatening ischaemia | acute limb ischaemia] including pathophysiology, clinical presentation, complications/red flags, investigations and management."</div><button class="copy-btn" onclick="copyP('pv1',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pv2">"Please provide me with five practice MCQs that involve a clinical scenario oriented around [varicose veins | aortic aneurysm | chronic limb threatening ischaemia | acute limb ischaemia]. Provide answers and explanation only after I have answered."</div><button class="copy-btn" onclick="copyP('pv2',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pv3">"Please provide me with a clinical scenario suitable for a clinical viva on [varicose veins | aortic aneurysm | chronic limb threatening ischaemia | acute limb ischaemia]. Provide answers and explanation only after I have provided an answer."</div><button class="copy-btn" onclick="copyP('pv3',this)">Copy Prompt</button></div>
+      <div class="ai-note">Results may vary. Critically appraise all information received. AI may not cover all assessable content or resemble exam questions.</div>
+    </div>
+  </div></div>
+
+  <!-- ORTHO -->
+  <div id="pane-ortho" class="spec-pane"><div class="spec-grid">
+    <div class="spec-card fi">
+      <h4>Orthopaedics, Hand, Plastics &amp; Burns</h4><div class="csub">Curriculum Topics</div>
+      <div class="cat-lbl acute">⚡ Acute Surgical Conditions</div>
+      <ul><li class="ac">Neck of femur fracture</li><li class="ac">Acute extremity fracture</li><li class="ac">Acute lacerations and tendon injuries</li><li class="ac">Wound closure</li></ul>
+      <div class="cat-lbl norm">Orthopaedic Conditions</div>
+      <ul><li>Surgical management of osteoarthritis (hip and knee)</li><li>Common shoulder conditions (including dislocation)</li><li>Bone and joint infections (septic joint, osteomyelitis)</li><li>Complications of fractures (non-union, nerve injuries, bleeding, compartment syndrome, contractures)</li></ul>
+      <div class="cat-lbl norm">Hand Surgery</div>
+      <ul><li>Carpal tunnel syndrome</li><li>Hand injuries, lacerations, tendon disruption</li></ul>
+      <div class="cat-lbl norm">Plastics &amp; Burns</div>
+      <ul><li>Common reconstructive surgical techniques</li><li>Wound healing</li><li>Skin cancers (SCC/BCC, Melanoma)</li><li>Benign subcutaneous lumps (lipoma, sebaceous cysts, ganglion)</li><li>Subcutaneous abscesses</li><li>Soft tissue tumours (including sarcomas)</li><li>Acute and longer-term management of burns</li><li>Wound closure and complications of healing</li><li>Acute management of burns</li></ul>
+    </div>
+    <div class="spec-card fi">
+      <h4>On the Wards</h4><div class="csub">Clinical Competencies</div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Interpreting an x-ray to describe a fracture or dislocation <span class="acc-arr">▾</span></div><div class="acc-body">Including describing relevant anatomy, potential complications, and morphology of the fracture.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Recognise and manage complications of orthopaedic trauma <span class="acc-arr">▾</span></div><div class="acc-body">Including compartment syndrome (also trauma surgery), nerve and vessel injury, open fracture, haemarthrosis, infections such as osteomyelitis.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Examine a hand, hip, knee, shoulder <span class="acc-arr">▾</span></div><div class="acc-body">Including relevant anatomy and functional deficits.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Recovery after joint replacement <span class="acc-arr">▾</span></div><div class="acc-body">Venous thromboembolism prevention; mobilisation; multidisciplinary approaches to rehabilitation including orthogeriatrics.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Benign vs malignant skin lesions <span class="acc-arr">▾</span></div><div class="acc-body">Recognise melanoma; describe common surgical approaches to skin lesion excision and safe margins; recommend appropriate wound management.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Methods of skin grafting <span class="acc-arr">▾</span></div><div class="acc-body">Split skin, full-thickness, flaps, and synthetic grafts.</div></div>
+    </div>
+    <div class="spec-card full card-learn fi">
+      <h4>📚 Learning Opportunities</h4><div class="csub">Tutorials &amp; Lectures</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Clinical Scenario Tutorial</div><ul><li>IV Fluids in surgical patients (Week 2)</li></ul></div>
+        <div class="res-group"><div class="rg-title">Year 4 'My Approach To' Lectures</div><ul><li>Hip replacement · TKR</li><li>Osteoarthritis of the shoulder</li><li>Proximal humerus fracture</li><li>Rotator cuff tears · Shoulder instability</li><li>Common fractures · Melanoma</li><li>Skin grafting and closure</li><li>Skin lesion excision</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-revise fi">
+      <h4>🔁 Revision Resources from Prior Years</h4><div class="csub">Lectures, Grand Rounds, Clinical Examinations &amp; Procedural Skills</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Lectures for Review</div><ul><li>Year 1 skeletal anatomy</li><li>Oncology block, Week 1: Melanoma</li></ul></div>
+        <div class="res-group"><div class="rg-title">Year 2 Surgical Grand Rounds</div><ul><li>Gel block 1, wk 2: Fractured NOF</li></ul></div>
+        <div class="res-group"><div class="rg-title">History &amp; Clinical Examination</div><ul><li>Gel block 1, wk 2: Examination of 'lumps and bumps'</li><li>Gel block 1, wk 2: History and examination of hip pain; History and examination of shoulder pain</li><li>Gel block 1, wk 8: History and examination of minimal trauma fracture</li></ul></div>
+        <div class="res-group"><div class="rg-title">Procedural Skills</div><ul><li>Year 2, Gel block 5: Administration of IV fluids and IV medication</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-ai fi">
+      <h4>🤖 AI Prompts for Revision</h4><div class="csub">Copy and use in Microsoft CoPilot</div>
+      <div class="prompt-wrap"><div class="prompt-block" id="po1">"I am a final year Australian medical student completing my ORTHOPAEDIC SURGERY rotation. Provide me with a high level summary about [hip fracture | colles fracture | knee replacement | shoulder instability | Acute laceration | Burn | skin graft | melanoma] including pathophysiology, clinical presentation, complications/red flags, investigations and management."</div><button class="copy-btn" onclick="copyP('po1',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="po2">"Please provide me with five practice MCQs that involve a clinical scenario oriented around [hip fracture | colles fracture | knee replacement | shoulder instability | Acute laceration | Burn | skin graft | melanoma]. Provide answers and explanation only after I have answered."</div><button class="copy-btn" onclick="copyP('po2',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="po3">"Please provide me with a clinical scenario suitable for a clinical viva on [hip fracture | colles fracture | knee replacement | shoulder instability | Acute laceration | Burn | skin graft | melanoma]. Provide answers and explanation only after I have provided an answer."</div><button class="copy-btn" onclick="copyP('po3',this)">Copy Prompt</button></div>
+      <div class="ai-note">Results may vary. Critically appraise all information received.</div>
+    </div>
+  </div></div>
+
+  <!-- LOWER GI -->
+  <div id="pane-lgi" class="spec-pane"><div class="spec-grid">
+    <div class="spec-card fi">
+      <h4>Lower GI Surgery</h4><div class="csub">Curriculum Topics</div>
+      <div class="cat-lbl acute">⚡ Acute Surgical Conditions</div>
+      <ul><li class="ac">Acute appendicitis</li><li class="ac">Bowel obstruction (small and large)</li><li class="ac">Bowel ischaemia (including mesenteric ischaemia)</li><li class="ac">Sigmoid volvulus</li></ul>
+      <div class="cat-lbl norm">Colorectal Conditions</div>
+      <ul><li>Colon and rectal cancer (and benign polyps)</li><li>Inflammatory bowel disease</li><li>Diverticular disease and complications</li><li>Anorectal disease (fissures, abscesses, haemorrhoids)</li></ul>
+    </div>
+    <div class="spec-card fi">
+      <h4>On the Wards</h4><div class="csub">Clinical Competencies</div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Assessment of acute abdominal pain <span class="acc-arr">▾</span></div><div class="acc-body">Clinical history and physical examination; role of investigations; key differentiating symptoms/signs to identify source of pain; indications for surgery.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Patient with acute peritonitis <span class="acc-arr">▾</span></div><div class="acc-body">Recognise clinical signs and symptoms; differential diagnoses for source of peritonitis; acute management including pain relief; role of investigations and surgical interventions.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Per rectal bleeding <span class="acc-arr">▾</span></div><div class="acc-body">Recognise causes of both chronic and large volume bleeding; acute management and investigations; red flags.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Non-surgical management of bowel obstruction <span class="acc-arr">▾</span></div><div class="acc-body">Fluid resuscitation/replacement and electrolyte management; quantifying fluid losses; when to consider surgical intervention.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Surgical treatment of bowel cancer <span class="acc-arr">▾</span></div><div class="acc-body">Different operations performed; screening and surveillance; ERAS pathways.</div></div>
+    </div>
+    <div class="spec-card full card-learn fi">
+      <h4>📚 Learning Opportunities</h4><div class="csub">Tutorials &amp; Lectures</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Clinical Scenario Tutorial</div><ul><li>Fever in the postoperative patient (Week 3)</li></ul></div>
+        <div class="res-group"><div class="rg-title">Year 4 'My Approach To' Lectures</div><ul><li>Bowel obstruction</li><li>Diverticular disease</li><li>Lower GI bleeding</li><li>RIF pain</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-revise fi">
+      <h4>🔁 Revision Resources from Prior Years</h4><div class="csub">Grand Rounds, Clinical Examinations &amp; Procedural Skills</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Year 2 Surgical Grand Rounds</div><ul><li>Gel block 2, wk 6: Bowel ischaemia</li><li>Gel block 2, wk 7: Lower GI bleeding</li></ul></div>
+        <div class="res-group"><div class="rg-title">History &amp; Clinical Examination</div><ul><li>Oncology block, wk 2: Integrated clinical assessment in colorectal cancer</li><li>Year 2, Gel block 5: History and examination of patient presenting with abdominal pain</li><li>Year 2, Gel block 5: History and examination of GI bleed</li><li>Year 2, Gel block 5: History and examination of altered bowel habit</li></ul></div>
+        <div class="res-group"><div class="rg-title">Procedural Skills</div><ul><li>Oncology Block: Stoma care</li><li>Year 2, Gel block 5: Rectal examination</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-ai fi">
+      <h4>🤖 AI Prompts for Revision</h4><div class="csub">Copy and use in Microsoft CoPilot</div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pl1">"I am a final year Australian medical student completing my COLORECTAL SURGERY rotation. Provide me with a high level summary about [bowel obstruction | appendicitis | colon cancer | diverticulitis] including pathophysiology, clinical presentation, complications/red flags, investigations and management."</div><button class="copy-btn" onclick="copyP('pl1',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pl2">"Please provide me with five practice MCQs that involve a clinical scenario oriented around [bowel obstruction | appendicitis | colon cancer | diverticulitis]. Provide answers and explanation only after I have answered."</div><button class="copy-btn" onclick="copyP('pl2',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pl3">"Please provide me with a clinical scenario suitable for a clinical viva [bowel obstruction | appendicitis | colon cancer | diverticulitis]. Provide answers and explanation only after I have provided an answer."</div><button class="copy-btn" onclick="copyP('pl3',this)">Copy Prompt</button></div>
+      <div class="ai-note">Results may vary. Critically appraise all information received.</div>
+    </div>
+  </div></div>
+
+  <!-- UPPER GI -->
+  <div id="pane-ugi" class="spec-pane"><div class="spec-grid">
+    <div class="spec-card fi">
+      <h4>Upper GI Surgery</h4><div class="csub">Curriculum Topics</div>
+      <div class="cat-lbl acute">⚡ Acute Surgical Conditions</div>
+      <ul><li class="ac">Acute pancreatitis</li><li class="ac">Acute cholecystitis / cholangitis</li><li class="ac">Peptic ulcer perforation and bleeding</li><li class="ac">Incarcerated / strangulated hernia</li></ul>
+      <div class="cat-lbl norm">Gastro-oesophageal Disease</div>
+      <ul><li>Oesophageal stricture</li><li>Oesophageal and gastric cancer (incl. Barrett's oesophagitis)</li></ul>
+      <div class="cat-lbl norm">Disorders of the Pancreas</div>
+      <ul><li>Pancreatic cancer</li><li>Chronic pancreatitis (incl. pseudocysts)</li></ul>
+      <div class="cat-lbl norm">Liver, Gallbladder &amp; Biliary Tree</div>
+      <ul><li>Cholelithiasis and choledocholithiasis</li><li>Cholecystitis · Cholangitis</li><li>Cholangiocarcinoma</li><li>Benign and malignant liver tumours</li></ul>
+      <div class="cat-lbl norm">Hernias</div>
+      <ul><li>Femoral · Inguinal (direct and indirect)</li><li>Abdominal wall hernia · Hiatus hernias</li></ul>
+    </div>
+    <div class="spec-card fi">
+      <h4>On the Wards</h4><div class="csub">Clinical Competencies</div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Interpretation of abdominal / chest x-rays <span class="acc-arr">▾</span></div><div class="acc-body">Including recognition of common pathology such as perforated viscus, bowel obstruction.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Patient presenting with acute Cholecystitis / Cholangitis <span class="acc-arr">▾</span></div><div class="acc-body">Including role of antimicrobials; investigations; gall bladder surgery indications and timing.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Patient presenting with Obstructive jaundice <span class="acc-arr">▾</span></div><div class="acc-body">Including clinical history and physical examination; interpreting laboratory investigations including disordered coagulation and INR; ordering appropriate imaging.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Patient diagnosed with pancreatitis <span class="acc-arr">▾</span></div><div class="acc-body">Key risk factors; fluid resuscitation/replacement; acute pain management; staging/severity of pancreatitis; longer-term sequalae after pancreatitis.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Groin hernia <span class="acc-arr">▾</span></div><div class="acc-body">Recognise anatomical site/location of hernia; identification of complications of hernias including strangulation/incarceration; consider indication and timing of surgical options for hernia repair.</div></div>
+    </div>
+    <div class="spec-card full card-learn fi">
+      <h4>📚 Learning Opportunities</h4><div class="csub">Tutorials, Lectures &amp; Podcasts</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Clinical Scenario Tutorial</div><ul><li>Bleeding and breathing after surgery (Week 4)</li></ul></div>
+        <div class="res-group"><div class="rg-title">Year 4 'My Approach To' Lectures</div><ul><li>Biliary Obstruction</li></ul></div>
+        <div class="res-group"><div class="rg-title">🎙 Unscrubbed Podcasts</div><ul><li>Postoperative bleeding</li><li>Chest Pain</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-revise fi">
+      <h4>🔁 Revision Resources from Prior Years</h4><div class="csub">Grand Rounds, Clinical Investigations &amp; Examinations</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Year 2 Surgical Grand Rounds</div><ul><li>Gel block 1, Wk 1: Hernia</li><li>Gel block 2, wk 8: Obstructive Jaundice</li></ul></div>
+        <div class="res-group"><div class="rg-title">Clinical Investigation Sessions</div><ul><li>Year 2 block 1: Abdominal imaging</li><li>Year 2 block 2, wk 5.8: Abdominal CT investigation</li></ul></div>
+        <div class="res-group"><div class="rg-title">History &amp; Clinical Examination</div><ul><li>Gel Block 1, wk 1: History and examination of abdominal wall hernia</li><li>Year 2, Gel block 5: History and examination of patient with jaundice</li><li>Year 2, Gel block 5: History and examination of a patient presenting with abdominal distension or mass</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-ai fi">
+      <h4>🤖 AI Prompts for Revision</h4><div class="csub">Copy and use in Microsoft CoPilot</div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pu1">"I am a final year Australian medical student completing my UPPER GI SURGERY rotation. Provide me with a high level summary about [pancreatitis | gallstone disease | inguinal hernia] including pathophysiology, clinical presentation, complications/red flags, investigations and management."</div><button class="copy-btn" onclick="copyP('pu1',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pu2">"Please provide me with five practice MCQs that involve a clinical scenario oriented around [pancreatitis | gallstone disease | inguinal hernia]. Provide answers and explanation only after I have answered."</div><button class="copy-btn" onclick="copyP('pu2',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pu3">"Please provide me with a clinical scenario suitable for a clinical viva [pancreatitis | gallstone disease | inguinal hernia]. Provide answers and explanation only after I have provided an answer."</div><button class="copy-btn" onclick="copyP('pu3',this)">Copy Prompt</button></div>
+      <div class="ai-note">Results may vary. Critically appraise all information received.</div>
+    </div>
+  </div></div>
+
+  <!-- UROLOGY -->
+  <div id="pane-uro" class="spec-pane"><div class="spec-grid">
+    <div class="spec-card fi">
+      <h4>Urology &amp; Transplant Surgery</h4><div class="csub">Curriculum Topics</div>
+      <div class="cat-lbl acute">⚡ Acute Surgical Conditions</div>
+      <ul><li class="ac">Renal colic (urolithiasis)</li><li class="ac">Urinary obstruction and hydronephrosis</li><li class="ac">Testicular torsion</li></ul>
+      <div class="cat-lbl norm">Prostate, Testes &amp; Scrotum</div>
+      <ul><li>Prostate cancer</li><li>Benign prostatic hypertrophy</li><li>Hydrocele / epididymitis / varicocele</li><li>Testicular cancer</li></ul>
+      <div class="cat-lbl norm">Kidney, Bladder &amp; Voiding</div>
+      <ul><li>Urinary incontinence and obstruction</li><li>Urethral stricture</li><li>Bladder cancer · Renal cancer · Renal calculi</li><li>Adrenal masses</li></ul>
+      <div class="cat-lbl norm">Transplant Surgery</div>
+      <ul><li>Solid organ transplantation (kidney, liver, pancreas)</li><li>Organ donation and matching</li></ul>
+    </div>
+    <div class="spec-card fi">
+      <h4>On the Wards</h4><div class="csub">Clinical Competencies</div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Patient presenting with renal colic <span class="acc-arr">▾</span></div><div class="acc-body">Diagnosis and imaging modalities; acute pain management options; recognising complications of urolithiasis including when ureteric decompression (stenting/nephrostomy) is indicated.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Management of urinary retention and urinary catheters <span class="acc-arr">▾</span></div><div class="acc-body">Interpretation of bladder scans; indications for catheterisation; complications such as haematuria, clots, infection.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Surgical and non-surgical treatments for prostate cancer <span class="acc-arr">▾</span></div><div class="acc-body">Screening and surveillance; complications of treatment such as voiding and erectile dysfunction.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Discussing voiding dysfunction with patients <span class="acc-arr">▾</span></div><div class="acc-body">Differentiating between obstructive and overactive causes of incontinence.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Transplant patient management <span class="acc-arr">▾</span></div><div class="acc-body">Risks associated with immunosuppression; options and pathways in organ donation (cadaveric vs living donors).</div></div>
+    </div>
+    <div class="spec-card full card-learn fi">
+      <h4>📚 Learning Opportunities</h4><div class="csub">Tutorials &amp; Lectures</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Clinical Scenario Tutorial</div><ul><li>Anti-thrombotic medications in surgery (Week 5)</li></ul></div>
+        <div class="res-group"><div class="rg-title">Year 4 'My Approach To' Lectures</div><ul><li>Transplantation</li><li>Prostate cancer</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-revise fi">
+      <h4>🔁 Revision Resources from Prior Years</h4><div class="csub">Lectures, Grand Rounds, Clinical Examinations &amp; Procedural Skills</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Lectures for Revision</div><ul><li>Oncology block, wk 5: Prostate cancer</li></ul></div>
+        <div class="res-group"><div class="rg-title">Year 2 Surgical Grand Rounds</div><ul><li>Gel block 1, wk 7: Adrenal masses</li><li>Gel block 5, wk 4: Loin pain / stones / renal tumours</li><li>Gel block, wk 5: Benign and malignant testicular and scrotal pathology</li></ul></div>
+        <div class="res-group"><div class="rg-title">History &amp; Clinical Examination</div><ul><li>Oncology Block, wk 4.5: Integrated clinical assessment in prostate cancer</li><li>Year 2, Gel block 5: History and examination of lower urinary tract symptoms</li><li>Year 2, Gel block 5: History and examination of haematuria</li><li>Year 2, Gel block 5: History and examination of oliguria</li></ul></div>
+        <div class="res-group"><div class="rg-title">Procedural Skills</div><ul><li>Oncology Block: Urinary catheterization</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-ai fi">
+      <h4>🤖 AI Prompts for Revision</h4><div class="csub">Copy and use in Microsoft CoPilot</div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pur1">"I am a final year Australian medical student completing my UROLOGICAL SURGERY rotation. Provide me with a high level summary about [prostate cancer | LUTS | Urinary retention | renal colic] including pathophysiology, clinical presentation, complications/red flags, investigations and management."</div><button class="copy-btn" onclick="copyP('pur1',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pur2">"Please provide me with five practice MCQs that involve a clinical scenario oriented around [prostate cancer | LUTS | Urinary retention | renal colic]. Provide answers and explanation only after I have answered."</div><button class="copy-btn" onclick="copyP('pur2',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pur3">"Please provide me with a clinical scenario suitable for a clinical viva [prostate cancer | LUTS | Urinary retention | renal colic]. Provide answers and explanation only after I have provided an answer."</div><button class="copy-btn" onclick="copyP('pur3',this)">Copy Prompt</button></div>
+      <div class="ai-note">Results may vary. Critically appraise all information received.</div>
+    </div>
+  </div></div>
+
+  <!-- BREAST / ENT -->
+  <div id="pane-breast" class="spec-pane"><div class="spec-grid">
+    <div class="spec-card fi">
+      <h4>Breast Surgery, Otolaryngology, Head &amp; Neck</h4><div class="csub">Curriculum Topics</div>
+      <div class="cat-lbl acute">⚡ Acute Surgical Conditions</div>
+      <ul><li class="ac">Epistaxis</li><li class="ac">Airway obstruction</li></ul>
+      <div class="cat-lbl norm">Breast Surgery</div>
+      <ul><li>Breast cancer</li><li>Benign breast disease (cysts, fibroadenoma)</li></ul>
+      <div class="cat-lbl norm">Neck Surgery</div>
+      <ul><li>Multinodular goitre · Thyroid cancer</li><li>Lymphadenopathy</li><li>Thyroglossal / branchial cysts</li></ul>
+      <div class="cat-lbl norm">Ear, Nose &amp; Throat Surgery</div>
+      <ul><li>Surgical management of otitis media</li><li>Surgical management of hearing loss (incl. cochlear implants)</li><li>Sinus surgery</li><li>Tonsillectomy / Adenoidectomy</li><li>Disorders of the larynx (epiglottis, vocal cord dysfunction)</li></ul>
+    </div>
+    <div class="spec-card fi">
+      <h4>On the Wards</h4><div class="csub">Clinical Competencies</div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Potential airway obstruction <span class="acc-arr">▾</span></div><div class="acc-body">Recognise signs of obstruction (stridor, drooling, angioedema, neck haematoma); approach to acute airway management.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Patient presenting with a neck mass <span class="acc-arr">▾</span></div><div class="acc-body">Clinical history and physical examination; identifying relevant differential diagnoses both benign and malignant.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Surgical treatment for breast cancer <span class="acc-arr">▾</span></div><div class="acc-body">Triple-testing; patient-centred treatment paradigms and multidisciplinary team involvement; resection and reconstructive options.</div></div>
+    </div>
+    <div class="spec-card full card-learn fi">
+      <h4>📚 Learning Opportunities</h4><div class="csub">Tutorials &amp; Lectures</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Clinical Scenario Tutorial</div><ul><li>Perioperative care — DM, Pain, nutrition (Week 6)</li></ul></div>
+        <div class="res-group"><div class="rg-title">Year 4 'My Approach To' Lectures</div><ul><li>Breast cancer</li><li>Thyroid surgery</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-revise fi">
+      <h4>🔁 Revision Resources from Prior Years</h4><div class="csub">Lectures, Clinical Examinations &amp; Procedural Skills</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Lectures for Review</div><ul><li>ENT lectures</li><li>Oncology block, Wk 3/4: Breast cancer</li><li>Back to Basics, Wk 2.6: Otitis Media / Ear Health in Aboriginal children and co-creation in Aboriginal Health Research</li></ul></div>
+        <div class="res-group"><div class="rg-title">History &amp; Clinical Examination</div><ul><li>Gel block 1, wk 8: Examination of thyroid and other neck lumps</li><li>Oncology Block, wk 4: Integrated clinical assessment in breast cancer</li><li>Year 2, Gel block 5: Examination of cranial nerves</li></ul></div>
+        <div class="res-group"><div class="rg-title">Procedural Skills</div><ul><li>Oncology Block: Guide to breast examination</li><li>Gel block 1: Procedural skills — ENT Examination</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-ai fi">
+      <h4>🤖 AI Prompts for Revision</h4><div class="csub">Copy and use in Microsoft CoPilot</div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pb1">"I am a final year Australian medical student completing my BREAST and ENDOCRINE SURGERY rotation. Provide me with a high level summary about [breast cancer | Benign breast mass | thyroid cancer | neck mass] including pathophysiology, clinical presentation, complications/red flags, investigations and management."</div><button class="copy-btn" onclick="copyP('pb1',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pb2">"Please provide me with five practice MCQs that involve a clinical scenario oriented around [breast cancer | Benign breast mass | thyroid cancer | neck mass]. Provide answers and explanation only after I have answered."</div><button class="copy-btn" onclick="copyP('pb2',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pb3">"Please provide me with a clinical scenario suitable for a clinical viva [breast cancer | Benign breast mass | thyroid cancer | neck mass]. Provide answers and explanation only after I have provided an answer."</div><button class="copy-btn" onclick="copyP('pb3',this)">Copy Prompt</button></div>
+      <div class="ai-note">Results may vary. Critically appraise all information received.</div>
+    </div>
+  </div></div>
+
+  <!-- TRAUMA -->
+  <div id="pane-trauma" class="spec-pane"><div class="spec-grid">
+    <div class="spec-card fi">
+      <h4>Trauma &amp; Neurosurgery</h4><div class="csub">Curriculum Topics</div>
+      <div class="cat-lbl acute">⚡ Acute Surgical Conditions</div>
+      <ul><li class="ac">Subarachnoid haemorrhage</li><li class="ac">Subdural / intradural haemorrhage</li><li class="ac">Raised intracranial pressure</li><li class="ac">Traumatic brain injury</li><li class="ac">Burns</li><li class="ac">Soft tissue lacerations and tendon injuries</li></ul>
+      <div class="cat-lbl norm">Neurosurgery</div>
+      <ul><li>Cerebral aneurysms</li><li>Brain tumours (primary — glioma, meningioma, glioblastoma multiforme) and secondary metastases</li></ul>
+      <div class="cat-lbl norm">Spine Surgery</div>
+      <ul><li>Surgery for chronic back pain</li></ul>
+      <div class="cat-lbl norm">Trauma Surgery</div>
+      <ul><li>Trauma-related pneumohaemothorax <em>(see also cardiothoracic)</em></li><li>Traumatic brain injury and cerebral bleeding <em>(see also neurosurgery)</em></li><li>Solid organ laceration and intra-abdominal bleeding</li></ul>
+    </div>
+    <div class="spec-card fi">
+      <h4>On the Wards</h4><div class="csub">Clinical Competencies</div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Assessment of a trauma patient <span class="acc-arr">▾</span></div><div class="acc-body">Primary, secondary and tertiary surveys; c-spine precautions; GCS assessment.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Patient presenting with post-operative decreased level of consciousness <span class="acc-arr">▾</span></div><div class="acc-body">Differentiate between neurosurgical causes (bleeding, raised ICP) and other causes such as stroke and delirium.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Interpret a CT Brain <span class="acc-arr">▾</span></div><div class="acc-body">Identify bleeding and solid masses; differentiate between subdural, extradural and intracranial bleeding.</div></div>
+      <div class="acc-item"><div class="acc-hdr" onclick="acc(this)">Identify when spinal surgery is indicated for lower back pain <span class="acc-arr">▾</span></div><div class="acc-body">Including red flags; discuss alternative treatment options and pain management.</div></div>
+    </div>
+    <div class="spec-card full card-learn fi">
+      <h4>📚 Learning Opportunities</h4><div class="csub">Tutorials, Lectures &amp; Podcasts</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Clinical Scenario Tutorial</div><ul><li>Surgical Emergencies (Week 7)</li></ul></div>
+        <div class="res-group"><div class="rg-title">Year 4 'My Approach To' Lectures</div><ul><li>Brain tumours</li><li>Surgical trauma</li><li>Compartment Syndrome</li></ul></div>
+        <div class="res-group"><div class="rg-title">🎙 Unscrubbed Podcasts</div><ul><li>Neurosurgery emergencies</li><li>Decreased LOC</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-revise fi">
+      <h4>🔁 Revision Resources from Prior Years</h4><div class="csub">Clinical Investigations, Grand Rounds &amp; Clinical Examinations</div>
+      <div class="res-cols">
+        <div class="res-group"><div class="rg-title">Clinical Investigation Sessions</div><ul><li>Gel Block 2, wk 5.1/2: Neuroradiology</li><li>Gel block 2, wk 5.3: Lumbar puncture</li></ul></div>
+        <div class="res-group"><div class="rg-title">Year 2 Surgical Grand Rounds</div><ul><li>Gel Block 2, wk 1: Intracranial haemorrhage</li><li>Gel Block 2, wk 2: Sarcoma</li><li>Gel Block 2, wk 3: Intracerebral masses</li></ul></div>
+        <div class="res-group"><div class="rg-title">History &amp; Clinical Examination</div><ul><li>Back to Basics, wk 2.4: Mass Trauma Simulation</li></ul></div>
+      </div>
+    </div>
+    <div class="spec-card full card-ai fi">
+      <h4>🤖 AI Prompts for Revision</h4><div class="csub">Copy and use in Microsoft CoPilot</div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pt1">"I am a final year Australian medical student completing my TRAUMA | NEUROSURGERY rotation. Provide me with a high level summary about [acute intracranial haemorrhage | intracranial mass] including pathophysiology, clinical presentation, complications/red flags, investigations and management."</div><button class="copy-btn" onclick="copyP('pt1',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pt2">"Please provide me with five practice MCQs that involve a clinical scenario oriented around [acute intracranial haemorrhage | intracranial mass]. Provide answers and explanation only after I have answered."</div><button class="copy-btn" onclick="copyP('pt2',this)">Copy Prompt</button></div>
+      <div class="prompt-wrap"><div class="prompt-block" id="pt3">"Please provide me with a clinical scenario suitable for a clinical viva [acute intracranial haemorrhage | intracranial mass]. Provide answers and explanation only after I have provided an answer."</div><button class="copy-btn" onclick="copyP('pt3',this)">Copy Prompt</button></div>
+      <div class="ai-note">Results may vary. Critically appraise all information received.</div>
+    </div>
+  </div></div>
+
+</section>
+
+<!-- OVERARCHING PRINCIPLES -->
+<section id="principles" class="section">
+  <div class="sec-hdr"><div><div class="sec-label">Perioperative Care</div><h2 class="sec-title">Overarching Principles of Surgery</h2></div><div class="sec-line"></div></div>
+  <div class="princ-grid">
+    <div class="princ-card fi"><h4>Pre-operative Assessment &amp; Risk</h4><ul><li>Identification of the high-risk surgical patient</li><li>Classification of perioperative risk using tools such as American Anaesthesiologist Score (ASA)</li><li>Approaches to pre-operative investigations</li><li>Diabetes management in the perioperative setting</li><li>Antithrombotic management in the perioperative setting</li><li>Management of patients with chronic pain in the pre-operative setting (including patients prescribed opioids)</li></ul></div>
+    <div class="princ-card fi"><h4>Preparation for Surgery</h4><ul><li>Perioperative Fasting (including ERAS protocols and Sip-til-send)</li><li>Venous thromboembolism prophylaxis</li><li>Surgical antimicrobial prophylaxis</li><li>Preparation for theatre, informed consent, emergency bookings</li></ul></div>
+    <div class="princ-card fi"><h4>Intraoperative Aspects</h4><ul><li>Surgical safety checklist and communication in theatre</li><li>Aseptic techniques and sterility</li><li>Local anaesthetic doses and administration</li><li>Surgical approaches and techniques for wound closure</li></ul></div>
+    <div class="princ-card fi"><h4>Post-operative Management</h4><ul><li>Pain management (acute and chronic)</li><li>IV fluid management (resuscitation, replacement, maintenance)</li><li>Common perioperative complications (HAP, MI, delirium, urinary retention, ileus, DVT/PE)</li><li>Fever in post-operative patients</li><li>Post-operative anaemia, bleeding and massive transfusions</li><li>Perioperative nutrition</li><li>Rehabilitation, mobility and function after surgery</li><li>Role of other specialties/models of care: acute surgical teams, orthogeriatrics/surgical geriatrics, anaesthesia, acute and chronic pain teams, intensive care, rehabilitation medicine, allied health</li></ul></div>
+    <div class="princ-card fi"><h4>On the Wards</h4><ul><li>Charting IV fluids for patients with surgical conditions</li><li>Management of postoperative pain: appropriate escalation of analgesics; modalities (oral, PCA, IV infusions, regional blocks); recognising common side-effects; safe prescribing practices</li><li>Patient with a postoperative fever: considering sources of infection, investigations, antimicrobial choices</li><li>Patient with postoperative anaemia: recognising if there is active bleeding or operative losses; when to initiate blood transfusion</li><li>Assess a surgical wound: recognising when healing is impaired (infection, haematoma, tension/dehiscence, ischaemia) and choose appropriate dressings</li><li>Handover of a patient before and after surgery: initiating appropriate prophylactic treatments, charting clinical history and medications, hand over to anaesthetics/ICU/recovery/afterhours team</li><li>Preparing a patient for discharge: rehabilitation requirements; discharge medications and analgesia instructions; wound care plans; surgical follow-up; GP liaison</li></ul></div>
+    <div class="princ-card fi"><h4>📚 Tutorial Series — Learning Opportunities</h4><ul><li>Week 1 — Preoperative assessment</li><li>Week 2 — IV fluids in surgical patients</li><li>Week 3 — Fever in the postoperative patient</li><li>Week 4 — Bleeding and breathing after surgery</li><li>Week 5 — Anticoagulants in surgery</li><li>Week 6 — Perioperative care (DM, pain, nutrition)</li><li>Week 7 — Surgical emergencies</li></ul></div>
+    <div class="princ-card fi"><h4>🎙 Unscrubbed Podcasts</h4><ul><li>Post-operative pain</li><li>Urinary retention</li><li>IV fluids</li><li>Chest pain</li><li>Postoperative bleeding</li></ul></div>
+    <div class="princ-card fi"><h4>Lectures</h4><ul><li>Introduction to Surgery</li><li>Chronic pain after Surgery</li></ul></div>
+    <div class="princ-card fi"><h4>Clinic Attendance &amp; Ward Rounds</h4><ul><li>Pre-surgery assessment clinics</li><li>Acute pain rounds / Chronic pain clinics</li><li>Orthogeriatrics / surgical geriatrics ward rounds</li><li>MDT meetings</li></ul></div>
+  </div>
+</section>
+
+<footer id="footer">
+  <div class="ft-left"><p>Year 4 MD Surgery Term · University of Sydney · 2026<br>For educational use within the MD Program. Canvas remains the authoritative source for all resources.</p></div>
+  <div class="ft-right"><span class="ft-link" onclick="goTo('hero')">Top ↑</span><span class="ft-link" onclick="goTo('schedule')">Schedule</span><span class="ft-link" onclick="goTo('principles')">Principles</span></div>
+</footer>
+
+</main>
+<script>
+window.addEventListener('scroll',()=>{
+  const p=window.scrollY/(document.body.scrollHeight-window.innerHeight);
+  document.getElementById('progress').style.transform=`scaleX(${p})`;
+});
+function goTo(id){document.getElementById(id)?.scrollIntoView({behavior:'smooth'});closeSidebar()}
+const tabOrder=['vasc','ortho','lgi','ugi','uro','breast','trauma'];
+function switchTab(name){
+  document.querySelectorAll('.spec-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pane-'+name)?.classList.add('active');
+  const idx=tabOrder.indexOf(name);
+  const btns=document.querySelectorAll('.tab-btn');
+  if(btns[idx])btns[idx].classList.add('active');
+  requestAnimationFrame(()=>document.querySelectorAll('.fi:not(.v)').forEach(el=>{const r=el.getBoundingClientRect();if(r.top<window.innerHeight-40)el.classList.add('v')}));
+}
+function acc(h){h.classList.toggle('open');h.nextElementSibling.classList.toggle('show')}
+function copyP(id,btn){
+  const t=document.getElementById(id)?.textContent||'';
+  const doIt=()=>{btn.textContent='✓ Copied!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='Copy Prompt';btn.classList.remove('copied')},2000)};
+  navigator.clipboard?.writeText(t).then(doIt).catch(()=>{const e=document.createElement('textarea');e.value=t;document.body.appendChild(e);e.select();document.execCommand('copy');document.body.removeChild(e);doIt()});
+}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show')}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show')}
+const io=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('v')}),{threshold:.06});
+document.querySelectorAll('.fi').forEach(el=>io.observe(el));
+
+// ── PWA: inject Web App Manifest as a blob so this single-file works offline ──
+(function(){
+  const manifest={
+    name:'Year 4 MD Surgery Handbook 2026',
+    short_name:'Surgery',
+    description:'Year 4 MD Surgery Term — University of Sydney 2026',
+    start_url:'./',
+    display:'standalone',
+    orientation:'portrait-primary',
+    background_color:'#1c1a17',
+    theme_color:'#1c1a17',
+    icons:[
+      {src:"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMWMxYTE3Ii8+PHJlY3QgeD0iNzYiIHk9IjQwIiB3aWR0aD0iMjgiIGhlaWdodD0iMTAwIiByeD0iNiIgZmlsbD0iI2QwNDAzMCIvPjxyZWN0IHg9IjQwIiB5PSI3NiIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIyOCIgcng9IjYiIGZpbGw9IiNkMDQwMzAiLz48L3N2Zz4=",sizes:"180x180",type:"image/svg+xml",purpose:"any maskable"}
+    ]
+  };
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  const el=document.getElementById('pwa-manifest');
+  if(el)el.href=URL.createObjectURL(blob);
+})();
+
+// ── Service Worker: cache the page for full offline use ──
+if('serviceWorker' in navigator){
+  const swCode=`
+const CACHE='surgery-handbook-v1';
+self.addEventListener('install',e=>{
+  e.waitUntil(caches.open(CACHE).then(c=>c.add(self.location.href)).catch(()=>{}));
+  self.skipWaiting();
+});
+self.addEventListener('activate',e=>e.waitUntil(clients.claim()));
+self.addEventListener('fetch',e=>{
+  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
+});
+  `;
+  const swBlob=new Blob([swCode],{type:'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob),{scope:'./'}).catch(()=>{});
+}
+</script>
+</body>
+</html>

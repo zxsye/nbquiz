@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>WBA Summary</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --surface: #ffffff;
+    --surface2: #f0ede6;
+    --border: rgba(0,0,0,0.09);
+    --accent: #2563a8;
+    --accent2: #3b82f6;
+    --gold: #b45309;
+    --green: #166534;
+    --red: #991b1b;
+    --text: #1a1714;
+    --muted: #5a534a;
+    --radius: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Sora', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
+    min-height: 100dvh;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(160deg, #dbeafe 0%, #f7f5f0 70%);
+    padding: calc(env(safe-area-inset-top) + 20px) 20px 28px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+
+  .header-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 6px;
+  }
+
+  .header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    line-height: 1.2;
+  }
+
+  .header-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* Progress bar */
+  .progress-strip {
+    display: flex;
+    gap: 4px;
+    padding: 14px 20px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .progress-strip::-webkit-scrollbar { display: none; }
+
+  .progress-pill {
+    flex: 0 0 auto;
+    height: 4px;
+    width: 28px;
+    border-radius: 2px;
+    background: var(--accent);
+    opacity: 0.25;
+    transition: opacity 0.2s;
+  }
+  .progress-pill.done { opacity: 1; }
+
+  /* Stats row */
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    padding: 16px 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  .stat-num {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 5px;
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 20px 10px;
+  }
+
+  /* WBA Cards */
+  .cards {
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .card:active { transform: scale(0.98); }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .badge {
+    flex: 0 0 auto;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+
+  .badge-blue  { background: rgba(37,99,168,0.10); color: var(--accent); }
+  .badge-gold  { background: rgba(180,83,9,0.10); color: var(--gold); }
+  .badge-green { background: rgba(22,101,52,0.10); color: var(--green); }
+
+  .card-title-wrap { flex: 1; min-width: 0; }
+
+  .card-wba-id {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+    margin-top: 2px;
+  }
+
+  .card-meta {
+    display: flex;
+    gap: 6px;
+    margin-top: 5px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+  }
+
+  .tag-time  { background: rgba(37,99,168,0.09); color: var(--accent); }
+  .tag-count { background: rgba(180,83,9,0.09); color: var(--gold); }
+  .tag-obs   { background: rgba(22,101,52,0.09); color: var(--green); }
+  .tag-sup   { background: rgba(153,27,27,0.09); color: var(--red); }
+
+  .chevron {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 0.25s;
+    flex: 0 0 auto;
+  }
+
+  .card.open .chevron { transform: rotate(90deg); }
+
+  /* Expanded body */
+  .card-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .card.open .card-body { max-height: 600px; }
+
+  .card-inner {
+    padding: 0 16px 16px;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+
+  .detail-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .detail-icon {
+    width: 22px;
+    text-align: center;
+    font-size: 14px;
+    flex: 0 0 auto;
+    margin-top: 1px;
+  }
+
+  .detail-text {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.55;
+  }
+
+  .detail-text strong { color: var(--text); font-weight: 600; }
+
+  /* Key points list */
+  .key-points {
+    margin-top: 2px;
+    padding-left: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .key-points li {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    padding-left: 16px;
+    position: relative;
+  }
+
+  .key-points li::before {
+    content: '·';
+    position: absolute;
+    left: 4px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* Supervisor note */
+  .supervisor-card {
+    margin: 16px 16px 8px;
+    background: linear-gradient(135deg, rgba(180,83,9,0.07), rgba(180,83,9,0.03));
+    border: 1px solid rgba(180,83,9,0.18);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  .supervisor-icon { font-size: 22px; flex: 0 0 auto; }
+
+  .supervisor-text {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .supervisor-text strong { color: #b45309; font-weight: 600; display: block; margin-bottom: 2px; }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 24px 20px 8px;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-label">Clinical Year</div>
+  <h1>WBA Requirements</h1>
+  <div class="header-sub">Workplace-Based Assessments · Quick Reference</div>
+  <div class="progress-strip" id="progressStrip"></div>
+</div>
+
+<div class="stats">
+  <div class="stat-card">
+    <div class="stat-num">10</div>
+    <div class="stat-label">Total WBAs</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">12</div>
+    <div class="stat-label">Total Tasks</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num">4wk</div>
+    <div class="stat-label">Per Rotation</div>
+  </div>
+</div>
+
+<div class="supervisor-card">
+  <div class="supervisor-icon">⭐</div>
+  <div class="supervisor-text">
+    <strong>Supervisor Report</strong>
+    2 reports required per 4-week rotation, completed by your Block Supervisor.
+  </div>
+</div>
+
+<div class="section-label">All Assessments</div>
+
+<div class="cards" id="cardList"></div>
+
+<div class="footer">Tap any card to expand · All times are approximate</div>
+
+<script>
+const wbas = [
+  {
+    id: "WBA1",
+    title: "Admit a New Patient",
+    subtitle: "Long Case",
+    time: "30 min",
+    count: 1,
+    observed: false,
+    supervisorOnly: true,
+    badgeClass: "badge-gold",
+    assessor: "Supervisor / Delegate Consultant only",
+    taskDesc: "Present an unplanned admission (not from pre-admission clinic or elective surgery) from ward, ED, or theatres.",
+    points: [
+      "Relevant history & examination with succinct summary",
+      "Problem list and management plan including medication reconciliation",
+      "Justify initial investigations and management",
+      "Demonstrate appropriate clinical reasoning",
+    ],
+    rated: "Succinctness, clinical reasoning, communication, professionalism"
+  },
+  {
+    id: "WBA2",
+    title: "Patient Handover",
+    subtitle: "Directly Observed",
+    time: "15 min",
+    count: 1,
+    observed: true,
+    supervisorOnly: false,
+    badgeClass: "badge-blue",
+    assessor: "Clinical team member (PGY2 or above)",
+    taskDesc: "Present a patient to a registrar/consultant on ward round OR at an imaging/MDT meeting.",
+    points: [
+      "Directly observed presentation",
+      "Use capability checklist to choose appropriate case",
+      "Not all components may be applicable",
+    ],
+    rated: "Clinical reasoning, communication, professionalism"
+  },
+  {
+    id: "WBA3",
+    title: "Patient Discharge Documentation",
+    subtitle: "Discharge Summary Review",
+    time: "15 min",
+    count: 1,
+    observed: false,
+    supervisorOnly: false,
+    badgeClass: "badge-blue",
+    assessor: "Clinical team member (PGY2+); discharge summary also reviewed by supervisor",
+    taskDesc: "Assessor reviews your draft discharge summary after completion.",
+    points: [
+      "Draft the discharge summary before assessment",
+      "Use capability checklist to guide appropriate case selection",
+      "Written and verbal feedback provided",
+    ],
+    rated: "Documentation quality, communication, professionalism"
+  },
+  {
+    id: "WBA4",
+    title: "Patient Discharge Presentation",
+    subtitle: "Long Case",
+    time: "30 min",
+    count: 1,
+    observed: false,
+    supervisorOnly: true,
+    badgeClass: "badge-gold",
+    assessor: "Supervisor / Delegate Consultant only",
+    taskDesc: "Present a long case of a patient being prepared for discharge.",
+    points: [
+      "Succinct summary of presentation, investigations, issues and management",
+      "Justify why the patient is suitable for discharge",
+      "Outline a safe discharge plan",
+    ],
+    rated: "Case summary, clinical reasoning, communication, professionalism"
+  },
+  {
+    id: "WBA5 & 6",
+    title: "Manage Fluids",
+    subtitle: "×2 Required",
+    time: "15 min",
+    count: 2,
+    observed: false,
+    supervisorOnly: false,
+    badgeClass: "badge-green",
+    assessor: "Clinical team member (PGY2 or above)",
+    taskDesc: "Assess a patient's fluid status and manage appropriately, including drafting an IV fluid order.",
+    points: [
+      "Must complete TWO of this WBA",
+      "Assess fluid status accurately",
+      "Draft appropriate IV fluid order",
+    ],
+    rated: "Clinical reasoning, communication, professionalism"
+  },
+  {
+    id: "WBA7",
+    title: "Arrange Investigations",
+    subtitle: "Blood Test Justification",
+    time: "15 min",
+    count: 1,
+    observed: false,
+    supervisorOnly: false,
+    badgeClass: "badge-blue",
+    assessor: "Clinical team member (PGY2 or above)",
+    taskDesc: "Select and justify ordering of blood tests, considering clinical urgency, resources, and impact on decisions.",
+    points: [
+      "Justify choice of investigations",
+      "Consider clinical urgency and available resources",
+      "Assess likely impact on decision-making",
+    ],
+    rated: "Clinical reasoning, communication, professionalism"
+  },
+  {
+    id: "WBA8",
+    title: "Manage Investigations",
+    subtitle: "Imaging Interpretation",
+    time: "15 min",
+    count: 1,
+    observed: false,
+    supervisorOnly: false,
+    badgeClass: "badge-blue",
+    assessor: "Clinical team member (PGY2 or above)",
+    taskDesc: "Interpret imaging results (plain X-rays and CT) and hand over to another team member.",
+    points: [
+      "Recognise abnormalities expected of a PGY1",
+      "Explain significance and management implications",
+      "Review plain X-rays and CT scans",
+    ],
+    rated: "Clinical reasoning, communication, professionalism"
+  },
+  {
+    id: "WBA9",
+    title: "Perform Basic Procedures",
+    subtitle: "Directly Observed",
+    time: "15 min",
+    count: 1,
+    observed: true,
+    supervisorOnly: false,
+    badgeClass: "badge-blue",
+    assessor: "Clinical team member (PGY2 or above)",
+    taskDesc: "Obtain informed consent and perform either venepuncture or intravenous cannulation.",
+    points: [
+      "Directly observed procedure",
+      "Apply principles of informed consent",
+      "Demonstrate procedural skill for venepuncture or IV cannulation",
+    ],
+    rated: "Informed consent, procedural skill, communication, professionalism"
+  },
+  {
+    id: "WBA10",
+    title: "Request a Consult",
+    subtitle: "Directly Observed",
+    time: "15 min",
+    count: 1,
+    observed: true,
+    supervisorOnly: false,
+    badgeClass: "badge-blue",
+    assessor: "Clinical team member (PGY2 or above)",
+    taskDesc: "Request a consult from another team while directly observed.",
+    points: [
+      "Directly observed consult request",
+      "Use capability checklist to choose appropriate case",
+      "Not all checklist components may be applicable",
+    ],
+    rated: "Clinical reasoning, communication, professionalism"
+  },
+];
+
+const list = document.getElementById('cardList');
+const strip = document.getElementById('progressStrip');
+
+// Build progress pills
+wbas.forEach((_, i) => {
+  const pill = document.createElement('div');
+  pill.className = 'progress-pill';
+  pill.id = `pill-${i}`;
+  strip.appendChild(pill);
+});
+
+wbas.forEach((w, i) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const tags = [
+    `<span class="tag tag-time">⏱ ${w.time}</span>`,
+    w.count === 2 ? `<span class="tag tag-count">×2 required</span>` : '',
+    w.observed ? `<span class="tag tag-obs">Observed</span>` : '',
+    w.supervisorOnly ? `<span class="tag tag-sup">Consultant only</span>` : '',
+  ].filter(Boolean).join('');
+
+  const pointsHtml = w.points.map(p => `<li>${p}</li>`).join('');
+
+  card.innerHTML = `
+    <div class="card-header" onclick="toggleCard(this)">
+      <div class="badge ${w.badgeClass}">${w.id.replace('WBA','')}</div>
+      <div class="card-title-wrap">
+        <div class="card-wba-id">${w.id}</div>
+        <div class="card-title">${w.title}</div>
+        <div class="card-meta">${tags}</div>
+      </div>
+      <div class="chevron">▶</div>
+    </div>
+    <div class="card-body">
+      <div class="card-inner">
+        <div class="detail-row">
+          <div class="detail-icon">👤</div>
+          <div class="detail-text"><strong>Assessor:</strong> ${w.assessor}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-icon">📋</div>
+          <div class="detail-text">${w.taskDesc}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-icon">✅</div>
+          <div class="detail-text">
+            <strong>Key requirements:</strong>
+            <ul class="key-points">${pointsHtml}</ul>
+          </div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-icon">📊</div>
+          <div class="detail-text"><strong>Rated on:</strong> ${w.rated}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  list.appendChild(card);
+});
+
+function toggleCard(header) {
+  const card = header.parentElement;
+  const isOpen = card.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.card.open').forEach(c => c.classList.remove('open'));
+  // Reset pills
+  document.querySelectorAll('.progress-pill').forEach(p => p.classList.remove('done'));
+  if (!isOpen) {
+    card.classList.add('open');
+    const idx = Array.from(document.querySelectorAll('.card')).indexOf(card);
+    for (let j = 0; j <= idx; j++) {
+      document.getElementById(`pill-${j}`).classList.add('done');
+    }
+  }
+}
+</script>
+</body>
+</html>

@@ -43,6 +43,99 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 
 /* ── Grid ── */
 .grid { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Resources panel ── */
+.resources-panel {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.resources-label {
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--text-3);
+  padding: 14px 20px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.resources-label::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: .6;
+}
+.resource-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0;
+}
+.resource-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  text-decoration: none;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transition: background 150ms;
+  position: relative;
+}
+.resource-card:last-child { border-right: none; }
+/* Remove bottom border on last row (works for 1 or 2 items) */
+.resource-card:nth-last-child(-n+2):nth-child(2n+1),
+.resource-card:nth-last-child(-n+2):nth-child(2n+1) ~ .resource-card { border-bottom: none; }
+.resource-card:only-child { border-bottom: none; border-right: none; }
+.resource-card:hover { background: var(--accent-light); }
+.resource-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: var(--accent-light);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+.resource-info { flex: 1; min-width: 0; }
+.resource-name {
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.resource-desc {
+  font-size: .7rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.resource-arrow {
+  font-size: .75rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+  transition: transform 150ms, color 150ms;
+}
+.resource-card:hover .resource-arrow { transform: translateX(3px); color: var(--accent); }
+
+/* ── Quiz week cards ── */
 .week-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
 .week-label { font-family: var(--font-mono); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 14px 20px 10px; border-bottom: 1px solid var(--border); background: var(--bg); }
 .topic-list { padding: 8px 0; }
@@ -97,6 +190,11 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   .topic-row { flex-direction: column; gap: 8px; }
   .topic-name { min-width: unset; padding-top: 0; }
   .quiz-pill { max-width: 100%; }
+  .resource-cards { grid-template-columns: 1fr; }
+  .resource-card { border-right: none; }
+  .resource-card:nth-last-child(-n+2):nth-child(2n+1),
+  .resource-card:nth-last-child(-n+2):nth-child(2n+1) ~ .resource-card { border-bottom: 1px solid var(--border); }
+  .resource-card:last-child { border-bottom: none; }
 }
 </style>
 </head>
@@ -124,7 +222,30 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 </header>
 
 <main class="grid" id="grid">
-  <!-- Skeleton while loading -->
+  <!-- Resources panel — always shown, no auth needed for structure -->
+  <div class="resources-panel">
+    <div class="resources-label">Resources</div>
+    <div class="resource-cards" id="resourceCards">
+      <a class="resource-card" href="/wba" target="_blank">
+        <div class="resource-icon">📋</div>
+        <div class="resource-info">
+          <div class="resource-name">WBA Requirements</div>
+          <div class="resource-desc">Workplace-based assessments</div>
+        </div>
+        <div class="resource-arrow">→</div>
+      </a>
+      <a class="resource-card" href="/surgery" target="_blank">
+        <div class="resource-icon">🔪</div>
+        <div class="resource-info">
+          <div class="resource-name">Surgery Handbook</div>
+          <div class="resource-desc">Year 4 MD · 2026</div>
+        </div>
+        <div class="resource-arrow">→</div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Skeleton while loading quiz list -->
   <div class="skel-card" id="skeleton">
     <div class="skel skel-bar" style="width:40px;margin-bottom:16px;"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -196,14 +317,14 @@ async function loadQuizzes(uid) {
     });
 
     if (!Object.keys(groups).length) {
-      document.getElementById('grid').innerHTML = '<p class="empty">No quizzes yet.</p>';
+      document.getElementById('skeleton').outerHTML = '<p class="empty">No quizzes yet.</p>';
       return;
     }
 
     renderGrid(groups);
     await loadAllProgress(uid, snap.docs.map(d => ({ id: d.id, questionCount: d.data().questionCount || 0 })));
   } catch(e) {
-    document.getElementById('grid').innerHTML = `<p class="empty">Error loading quizzes: ${e.message}</p>`;
+    document.getElementById('skeleton').outerHTML = `<p class="empty">Error loading quizzes: ${e.message}</p>`;
   }
 }
 
@@ -214,7 +335,11 @@ function weekSortKey(w) {
 
 function renderGrid(groups) {
   const sortedWeeks = Object.keys(groups).sort((a, b) => weekSortKey(a) - weekSortKey(b));
-  let html = '';
+  // Remove skeleton
+  const skel = document.getElementById('skeleton');
+  if (skel) skel.remove();
+
+  const grid = document.getElementById('grid');
 
   sortedWeeks.forEach(week => {
     let rows = '';
@@ -244,13 +369,12 @@ function renderGrid(groups) {
         <div class="pill-group">${pills}</div>
       </div>`;
     });
-    html += `<div class="week-card">
-      <div class="week-label">${escHtml(week)}</div>
-      <div class="topic-list">${rows}</div>
-    </div>`;
-  });
 
-  document.getElementById('grid').innerHTML = html;
+    const card = document.createElement('div');
+    card.className = 'week-card';
+    card.innerHTML = `<div class="week-label">${escHtml(week)}</div><div class="topic-list">${rows}</div>`;
+    grid.appendChild(card);
+  });
 }
 
 // ── Progress bars ─────────────────────────────────────────────────────────────
