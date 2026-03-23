@@ -28,9 +28,10 @@ service cloud.firestore {
     }
 
     // Progress, flags, notes — each user can only access their own data
+    // Admins can read and write all sessions (needed for quiz ID migration)
     match /quizSessions/{uid}/{document=**} {
       allow read, write: if (request.auth != null && request.auth.uid == uid)
-                   || isAdmin();
+                         || isAdmin();
     }
   }
 }
