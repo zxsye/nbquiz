@@ -93,10 +93,11 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 }
 .resource-card:last-child { border-right: none; }
 /* Remove bottom border on last row (works for 1 or 2 items) */
-.resource-card:nth-last-child(-n+2):nth-child(2n+1),
-.resource-card:nth-last-child(-n+2):nth-child(2n+1) ~ .resource-card { border-bottom: none; }
-.resource-card:only-child { border-bottom: none; border-right: none; }
-.resource-card:hover { background: var(--accent-light); }
+.resource-card:last-child { border-bottom: none; border-right: none; }
+.resource-card:nth-last-child(2):nth-child(2n+1),
+.resource-card:nth-last-child(2):nth-child(2n+1) ~ .resource-card,
+.resource-card:nth-last-child(3):nth-child(3n+1),
+.resource-card:nth-last-child(3):nth-child(3n+1) ~ .resource-card { border-bottom: none; }.resource-card:hover { background: var(--accent-light); }
 .resource-icon {
   flex-shrink: 0;
   width: 38px;
@@ -251,7 +252,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
         <div class="resource-arrow">→</div>
       </a>
       <a class="resource-card" href="/surgery_master_reference" target="_blank">
-        <div class="resource-icon">📅</div>
+        <div class="resource-icon">📌</div>
         <div class="resource-info">
           <div class="resource-name">Master List</div>
           <div class="resource-desc">Everything Schedule</div>
