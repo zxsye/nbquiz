@@ -915,7 +915,6 @@ function jumpTo(idx) {
 function restartQuiz() {
   current = 0; score = 0; answered = false; selected = null;
   results = new Array(QUESTIONS.length).fill(null);
-  flagged = new Array(QUESTIONS.length).fill(false);
   document.getElementById('resultsScreen').classList.remove('visible');
   document.getElementById('reviewSection').classList.add('hidden');
   document.getElementById('quizCard').classList.remove('hidden');
