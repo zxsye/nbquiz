@@ -328,8 +328,7 @@ kbd.pressed {
       <div class="note-side-header">📝 Notes</div>
       <button class="note-toggle" id="noteToggleBtn" onclick="toggleNote()">📝 Add note</button>
       <div class="note-body" id="noteBody">
-        <textarea class="note-textarea" id="noteTextarea" placeholder="Type your notes for this question…" oninput="onNoteInput()"></textarea>
-        <div class="note-save-status" id="noteSaveStatus"></div>
+        <textarea class="note-textarea" id="noteTextarea" placeholder="Type your notes for this question…" oninput="onNoteInput()" onkeydown="if(event.key==='Escape'){event.preventDefault();this.blur();document.getElementById('noteBody').classList.remove('open');}"></textarea>        <div class="note-save-status" id="noteSaveStatus"></div>
       </div>
     </div>
     <div class="card-footer">
