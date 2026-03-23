@@ -1000,14 +1000,21 @@ async function moveQuiz(oldQuizId, newWeek, newTopic, newName) {
   // ── 4. Migrate user progress + notes ───────────────────────────────────────
   // Enumerate every user in quizSessions, then check each one individually.
   // No collection-group index required.
+  // NOTE: requires updated firestore.rules with isAdmin() read on quizSessions.
   let usersSnap;
   try {
     usersSnap = await db.collection('quizSessions').get();
   } catch(e) {
-    // If admin rules aren't deployed yet, skip migration silently
-    console.warn('Could not enumerate quizSessions (rules not updated?):', e.message);
-    return 0;
+    // This almost always means the updated firestore.rules hasn't been deployed yet.
+    // Throw so the caller surfaces a clear error rather than silently losing progress.
+    throw new Error(
+      `Could not read quizSessions — have you deployed the updated firestore.rules?\n` +
+      `Run: firebase deploy --only firestore:rules\n` +
+      `Detail: ${e.message}`
+    );
   }
+
+  if (usersSnap.empty) return 0; // no users at all yet
 
   let migratedCount = 0;
 
@@ -1017,15 +1024,13 @@ async function moveQuiz(oldQuizId, newWeek, newTopic, newName) {
     const oldProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(oldQuizId);
     const oldNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(oldQuizId);
 
-    let progressSnap = null, notesSnap = null;
-    try {
-      [progressSnap, notesSnap] = await Promise.all([oldProgressRef.get(), oldNotesRef.get()]);
-    } catch(e) {
-      console.warn(`Skipping user ${uid} — could not read session data:`, e.message);
-      continue;
-    }
+    // Any error reading a specific user's data is surfaced, not swallowed
+    const [progressSnap, notesSnap] = await Promise.all([
+      oldProgressRef.get(),
+      oldNotesRef.get(),
+    ]);
 
-    if (!progressSnap.exists && !notesSnap.exists) continue; // this user hasn't touched this quiz
+    if (!progressSnap.exists && !notesSnap.exists) continue; // user hasn't touched this quiz
 
     const newProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(newQuizId);
     const newNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(newQuizId);
@@ -1041,8 +1046,10 @@ async function moveQuiz(oldQuizId, newWeek, newTopic, newName) {
     }
     await userBatch.commit();
     migratedCount++;
+    console.log(`Migrated progress for user ${uid}: ${oldQuizId} → ${newQuizId}`);
   }
 
+  console.log(`Migration complete: ${migratedCount} user(s) updated.`);
   return migratedCount;
 }
 
