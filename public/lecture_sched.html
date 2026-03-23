@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Year 4 Surgery · Lecture Schedule</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a24;
+    --surface2: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.07);
+    --text: #e8e6e1;
+    --muted: #6b7280;
+    --muted2: #4b5563;
+    --neuro: #7c3aed;
+    --neuro-glow: rgba(124,58,237,0.3);
+    --ophtho: #0891b2;
+    --ophtho-glow: rgba(8,145,178,0.3);
+    --colorectal: #b45309;
+    --colorectal-glow: rgba(180,83,9,0.3);
+    --green: #34d399;
+    --amber: #f59e0b;
+    --purple: #a78bfa;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, #1a1a24 0%, #141420 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 32px 0;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .header-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--purple);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .header-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: #f5f3ff;
+    line-height: 1.1;
+  }
+
+  .header-sub {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 5px;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .stat-box {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    text-align: center;
+    min-width: 80px;
+  }
+
+  .stat-val {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--purple);
+    line-height: 1;
+  }
+
+  .stat-lbl {
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 3px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* ── WEEK TABS ── */
+  .week-tabs {
+    display: flex;
+    gap: 3px;
+    margin-top: 20px;
+    padding-bottom: 0;
+  }
+
+  .week-tab {
+    flex: 1;
+    padding: 10px 4px;
+    border-radius: 8px 8px 0 0;
+    border: none;
+    background: rgba(255,255,255,0.04);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    border-bottom: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .week-tab:hover { background: rgba(255,255,255,0.07); }
+
+  .week-tab.active {
+    border-color: var(--border);
+    border-bottom-color: var(--bg);
+    position: relative;
+    z-index: 2;
+  }
+
+  .tab-wk { font-size: 11px; font-weight: 700; color: #9ca3af; }
+  .tab-min { font-size: 9px; color: var(--muted); letter-spacing: 0.04em; }
+  .week-tab.active .tab-wk { color: #fff; }
+
+  .week-tab-revision {
+    flex: 1;
+    padding: 10px 4px;
+    border-radius: 8px 8px 0 0;
+    border: 1px dashed rgba(255,255,255,0.1);
+    border-bottom: none;
+    background: rgba(255,255,255,0.01);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    padding: 24px 32px;
+  }
+
+  /* ── WEEK PANEL ── */
+  .week-panel { display: none; }
+  .week-panel.active { display: block; }
+
+  .rotation-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .rotation-badge {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #fff;
+  }
+
+  .rotation-tag {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .week-total {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .week-total-label { font-size: 11px; color: var(--muted); }
+  .week-total-val { font-size: 18px; font-weight: 800; }
+
+  /* ── TIME BAR ── */
+  .time-bar-wrap { margin-bottom: 20px; }
+
+  .time-bar-track {
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .time-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .time-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+
+  .time-bar-labels span { font-size: 10px; color: var(--muted); }
+
+  /* ── INFO GRID ── */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 640px) {
+    .info-grid { grid-template-columns: 1fr; }
+    .header-top { flex-direction: column; }
+  }
+
+  .info-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+
+  .info-card-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .info-card p {
+    font-size: 12px;
+    color: #9ca3af;
+    line-height: 1.75;
+  }
+
+  .info-card-divider {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .handbook-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .handbook-val { font-size: 11px; color: var(--purple); }
+
+  /* ── OUTCOMES ── */
+  .outcomes-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+  }
+
+  .outcomes-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--green);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .outcomes-list {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .outcome-pill {
+    font-size: 11.5px;
+    color: #d1fae5;
+    background: rgba(52,211,153,0.08);
+    border: 1px solid rgba(52,211,153,0.15);
+    border-radius: 6px;
+    padding: 6px 12px;
+    line-height: 1.5;
+    flex: 1 1 200px;
+  }
+
+  .outcome-arrow { color: var(--green); margin-right: 6px; }
+
+  /* ── LECTURES SECTION LABEL ── */
+  .lectures-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  /* ── LECTURE ROW ── */
+  .lectures-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .lecture-row {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 14px 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left-width: 3px;
+  }
+
+  .lecture-row:hover { background: rgba(255,255,255,0.05); }
+  .lecture-row.expanded { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+
+  .lecture-row-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .lecture-num {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    flex-shrink: 0;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .lecture-title {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 700;
+    color: #f5f3ff;
+    min-width: 140px;
+  }
+
+  .tag-pill {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+
+  .lecture-duration {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .duration-val {
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1;
+    text-align: right;
+  }
+
+  .duration-unit { font-size: 10px; font-weight: 500; color: var(--muted); }
+
+  .expand-arrow {
+    font-size: 10px;
+    color: var(--muted2);
+    transition: color 0.2s;
+    width: 16px;
+    text-align: center;
+  }
+
+  .lecture-row.expanded .expand-arrow { color: var(--purple); }
+
+  .lecture-mini-bar {
+    margin-top: 10px;
+    height: 3px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .lecture-mini-fill {
+    height: 100%;
+    border-radius: 2px;
+    opacity: 0.6;
+  }
+
+  .lecture-why {
+    display: none;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    font-size: 12.5px;
+    color: #9ca3af;
+    line-height: 1.75;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .lecture-row.expanded .lecture-why { display: flex; }
+  .why-icon { color: var(--amber); flex-shrink: 0; margin-top: 1px; }
+
+  /* ── NAV ── */
+  .week-nav {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .nav-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .nav-btn:disabled {
+    background: rgba(255,255,255,0.02);
+    color: var(--muted2);
+    cursor: default;
+  }
+
+  .nav-btn.next { color: #fff; }
+  .nav-center { font-size: 12px; color: var(--muted); }
+
+  /* ── OVERVIEW ── */
+  .overview {
+    margin: 0 32px 32px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+
+  .overview-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .overview-rows { display: flex; flex-direction: column; gap: 5px; }
+
+  .overview-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 8px 10px;
+    border-radius: 7px;
+    transition: background 0.15s;
+  }
+
+  .overview-row:hover { background: rgba(255,255,255,0.04); }
+  .overview-row.active { background: rgba(255,255,255,0.05); }
+
+  .ov-week-badge {
+    width: 38px; height: 20px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+
+  .ov-titles {
+    flex: 1;
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+
+  .ov-title { font-size: 11px; color: var(--muted); transition: color 0.15s; }
+  .overview-row.active .ov-title { color: var(--text); }
+  .ov-mins { font-size: 11px; font-weight: 700; flex-shrink: 0; }
+
+  .ov-revision {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 10px; border-radius: 7px;
+    border: 1px dashed rgba(255,255,255,0.07);
+    margin-top: 2px;
+  }
+
+  .ov-revision-badge {
+    width: 38px; height: 20px; border-radius: 4px;
+    background: rgba(255,255,255,0.04);
+    border: 1px dashed rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: var(--muted2);
+  }
+
+  .ov-revision-text { font-size: 11px; color: var(--muted2); font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div class="header-label">Year 4 Surgery · Block Schedule</div>
+      <h1 class="header-title">Lecture Viewing Schedule</h1>
+      <p class="header-sub">26 lectures · 7 study weeks · Week 8 = revision</p>
+    </div>
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-val">6.1h</div>
+        <div class="stat-lbl">Total Hours</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">26</div>
+        <div class="stat-lbl">Lectures</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">52 min</div>
+        <div class="stat-lbl">Avg / Week</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">±10 min</div>
+        <div class="stat-lbl">Week Variance</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="week-tabs" id="weekTabs">
+    <!-- injected by JS -->
+  </div>
+</div>
+
+<div class="main" id="mainContent">
+  <!-- injected by JS -->
+</div>
+
+<div class="overview">
+  <div class="overview-label">Full Schedule Overview — click any row to jump to that week</div>
+  <div class="overview-rows" id="overviewRows"></div>
+</div>
+
+<script>
+const WEEKS = [
+  {
+    week: 1,
+    rotation: "Neurosurgery",
+    rotColor: "#7c3aed",
+    tag: "ROTATION WK 1 OF 4",
+    principle: "Surgical emergencies · Raised ICP · Trauma assessment (ATLS) · Theatre etiquette & safety",
+    handbook: "Trauma & Neurosurgery (Handbook Week 7)",
+    rationale: "Front-load all neurosurgery content during your first rotation. Brain Tumour lays the pathological foundation, Trauma Management builds the systematic clinical framework, and Compartment Syndrome is a natural downstream complication of trauma — escalating in complexity.",
+    outcomes: [
+      "Identify and manage acute neurosurgical emergencies",
+      "Systematic trauma assessment using ATLS framework",
+      "Recognise acute compartment syndrome and indications for fasciotomy"
+    ],
+    lectures: [
+      { title: "Brain Tumour", mins: 14, tag: "CORE", why: "Foundational neuro pathology — builds conceptual map of intracranial disease before trauma." },
+      { title: "Trauma Management", mins: 22, tag: "CORE", why: "ATLS framework; systematic approach to polytrauma; highest yield for neurosurgery emergencies." },
+      { title: "Compartment Syndrome", mins: 11, tag: "RELATED", why: "Acute complication of trauma — flows directly from trauma management principles." },
+    ],
+    totalMins: 47,
+  },
+  {
+    week: 2,
+    rotation: "Ophthalmology",
+    rotColor: "#0891b2",
+    tag: "ROTATION WK 2 OF 4",
+    principle: "Preoperative assessment & investigations · Vascular disease recognition · Basic surgical techniques",
+    handbook: "Vascular & Cardiothoracic (Handbook Week 1)",
+    rationale: "No ophthalmology-specific lectures exist in your library. Use this week for the vascular cluster — a clean, foundational topic group with no overlap with your rotation. Skin Lesion Excision is a universal surgical skill that rounds off the week neatly.",
+    outcomes: [
+      "Preoperative risk assessment and investigation ordering",
+      "Differentiate acute vs chronic limb ischaemia",
+      "Understand venous disease spectrum and management",
+      "Recognise benign vs malignant skin lesions"
+    ],
+    lectures: [
+      { title: "AAA Surgery", mins: 15, tag: "HANDBOOK WK 1", why: "Major vascular anchor — introduces arterial anatomy, surgical urgency and preop principles." },
+      { title: "Peripheral Artery Disease", mins: 16, tag: "HANDBOOK WK 1", why: "Chronic arterial disease — contrasts nicely with the acute AAA model." },
+      { title: "Venous Disease", mins: 13, tag: "HANDBOOK WK 1", why: "Completes the vascular triad (arterial / venous / lymphatic)." },
+      { title: "Skin Lesion Excision", mins: 10, tag: "SECONDARY", why: "Basic excision technique — a universal surgical skill applicable across all rotations." },
+    ],
+    totalMins: 53,
+  },
+  {
+    week: 3,
+    rotation: "Neurosurgery",
+    rotColor: "#7c3aed",
+    tag: "ROTATION WK 3 OF 4",
+    principle: "Fracture interpretation on X-ray · IV fluids in surgical patients · Wound healing · Periop complications",
+    handbook: "Orthopaedics & Burns — Part 1 (Handbook Week 2)",
+    rationale: "All neuro-specific content was covered in Week 1. Use these neurosurgery weeks for orthopaedics — a logical trauma/MSK bridge. This week focuses on fractures and joints (easier concepts), building from classification → specific fractures → replacement surgery.",
+    outcomes: [
+      "Describe a fracture on X-ray including anatomy, morphology and complications",
+      "Understand principles of arthroplasty and joint replacement indications",
+      "Recognise and manage complications of orthopaedic trauma"
+    ],
+    lectures: [
+      { title: "Common Fractures", mins: 13, tag: "FOUNDATION", why: "Taxonomy first — broad classification framework before diving into specific fractures." },
+      { title: "Proximal Humerus Fracture", mins: 10, tag: "SPECIFIC", why: "Upper limb specific fracture — applies the classification framework." },
+      { title: "Hip Replacement", mins: 8, tag: "ARTHROPLASTY", why: "Lower limb arthroplasty — introduces joint replacement as a concept." },
+      { title: "Knee Replacement", mins: 11, tag: "ARTHROPLASTY", why: "Continues arthroplasty theme — compare and contrast hip vs knee approaches." },
+      { title: "Shoulder Osteoarthritis", mins: 12, tag: "BRIDGE", why: "Degenerative shoulder disease — sets up Week 4's shoulder instability content perfectly." },
+    ],
+    totalMins: 54,
+  },
+  {
+    week: 4,
+    rotation: "Neurosurgery",
+    rotColor: "#7c3aed",
+    tag: "ROTATION WK 4 OF 4",
+    principle: "Complex shoulder pathology · Wound closure techniques · Skin cancer management · Plastics & reconstruction",
+    handbook: "Orthopaedics & Burns — Part 2 (Handbook Week 2 continued)",
+    rationale: "Builds directly on Week 3. Shoulder Instability and Rotator Cuff complete the shoulder complex (started with OA), then pivots to plastics & skin — a coherent transition from structural shoulder surgery to surface surgery and oncological skin disease.",
+    outcomes: [
+      "Differentiate shoulder instability, rotator cuff tears and OA as distinct clinical entities",
+      "Understand principles of wound closure, flaps and skin grafting",
+      "Stage and manage melanoma — benign vs malignant skin lesion decision-making"
+    ],
+    lectures: [
+      { title: "Shoulder Instability", mins: 15, tag: "CONTINUATION", why: "Directly continues shoulder OA from Week 3 — different pathology, same anatomy." },
+      { title: "Rotator Cuff Tears", mins: 18, tag: "CONTINUATION", why: "Escalates shoulder complexity — the most nuanced shoulder condition in the series." },
+      { title: "Melanoma", mins: 16, tag: "PLASTICS", why: "Skin malignancy — bridges ortho/plastics transition; important for viva." },
+      { title: "Skin Grafting", mins: 8, tag: "PLASTICS", why: "Reconstruction techniques — logical endpoint of the plastics/burns block." },
+    ],
+    totalMins: 57,
+  },
+  {
+    week: 5,
+    rotation: "Colorectal Surgery",
+    rotColor: "#b45309",
+    tag: "ROTATION WK 5 OF 4",
+    principle: "Acute abdomen assessment · Colorectal disease management · Pre-op prep: fasting, VTE prophylaxis, consent",
+    handbook: "Lower GI Surgery (Handbook Week 3)",
+    rationale: "First week of colorectal — lead with the core Lower GI content from Handbook Week 3. Ordered from acute/diagnostic (RIF Pain = acute abdomen framework) escalating to mechanical obstruction, then inflammatory disease, then GI haemorrhage.",
+    outcomes: [
+      "Systematic assessment and investigation of acute abdominal pain",
+      "Differentiate and manage bowel obstruction (SBO vs LBO)",
+      "Recognise and manage diverticular disease complications",
+      "Approach to per-rectal bleeding and lower GI haemorrhage"
+    ],
+    lectures: [
+      { title: "RIF Pain", mins: 12, tag: "CORE", why: "Diagnostic framework for acute abdomen — start with the clinical reasoning approach." },
+      { title: "Bowel Obstruction", mins: 14, tag: "CORE", why: "Mechanical cause of acute abdomen — builds on RIF pain differential." },
+      { title: "Diverticular Disease", mins: 14, tag: "CORE", why: "Inflammatory/structural colonic disease — contrast with mechanical obstruction." },
+      { title: "Lower GI Bleeding", mins: 13, tag: "CORE", why: "Integrates all lower GI knowledge — different presentation, overlapping causes." },
+    ],
+    totalMins: 52,
+  },
+  {
+    week: 6,
+    rotation: "Colorectal Surgery",
+    rotColor: "#b45309",
+    tag: "ROTATION WK 6 OF 4",
+    principle: "Periop medication management · Upper GI and biliary disease · Voiding issues post-surgery · Transplant immunology",
+    handbook: "Upper GI & Urology/Transplant (Handbook Weeks 4–5)",
+    rationale: "Core colorectal content now complete — sweep remaining specialties. Biliary Obstruction segues naturally from the GI theme of Week 5. Transplantation introduces immunological complexity, and Prostate Cancer covers high-prevalence urological disease.",
+    outcomes: [
+      "Approach to obstructive jaundice — investigations, coagulopathy, surgical timing",
+      "Understand transplant immunosuppression, rejection and complications",
+      "Manage prostate cancer diagnosis and treatment pathways"
+    ],
+    lectures: [
+      { title: "Biliary Obstruction", mins: 14, tag: "UPPER GI", why: "Natural segue from Lower GI — moves anatomically up the GI tract to hepatobiliary." },
+      { title: "Transplantation", mins: 14, tag: "UROLOGY", why: "Organ donation, rejection, immunosuppression — conceptually rich mid-rotation topic." },
+      { title: "Prostate Cancer", mins: 20, tag: "UROLOGY", why: "Most common male urological malignancy — high viva probability." },
+    ],
+    totalMins: 48,
+  },
+  {
+    week: 7,
+    rotation: "Colorectal Surgery",
+    rotColor: "#b45309",
+    tag: "ROTATION WK 7 OF 4",
+    principle: "Perioperative pain management · Endocrine surgery risks · Breast surgery oncology · Periop nutrition & multidisciplinary care",
+    handbook: "Breast/ENT/Head & Neck + Perioperative (Handbook Week 6)",
+    rationale: "Final lecture week before revision. Breast Surgery and Thyroid Surgery cover the breast/endocrine block from Handbook Week 6. Chronic Post-op Pain closes the week — it integrates perioperative principles across all specialties and is a perfect pre-revision anchor.",
+    outcomes: [
+      "Understand breast cancer surgical management and multidisciplinary team",
+      "Identify complications of thyroid surgery — recurrent laryngeal nerve, hypocalcaemia",
+      "Manage chronic post-operative pain and persistent surgical pain syndrome"
+    ],
+    lectures: [
+      { title: "Breast Surgery", mins: 21, tag: "BREAST/H&N", why: "Oncological breast surgery — high clinical prevalence and important multidisciplinary management." },
+      { title: "Thyroid Surgery", mins: 14, tag: "BREAST/H&N", why: "Endocrine surgery — specific complications make it high-yield for viva." },
+      { title: "Chronic Post-op Pain", mins: 19, tag: "PERIOP", why: "Integrative periop concept — perfect pre-revision lecture spanning all surgical specialties." },
+    ],
+    totalMins: 54,
+  },
+];
+
+const TAG_STYLES = {
+  "CORE":          { bg:"#fef2f2", text:"#991b1b", border:"#fecaca" },
+  "RELATED":       { bg:"#f5f3ff", text:"#5b21b6", border:"#ddd6fe" },
+  "HANDBOOK WK 1": { bg:"#f0fdf4", text:"#166534", border:"#bbf7d0" },
+  "SECONDARY":     { bg:"#1f2937", text:"#9ca3af", border:"#374151" },
+  "FOUNDATION":    { bg:"#fff7ed", text:"#9a3412", border:"#fed7aa" },
+  "SPECIFIC":      { bg:"#fefce8", text:"#854d0e", border:"#fde68a" },
+  "ARTHROPLASTY":  { bg:"#f0f9ff", text:"#0c4a6e", border:"#bae6fd" },
+  "BRIDGE":        { bg:"#fdf4ff", text:"#701a75", border:"#f0abfc" },
+  "CONTINUATION":  { bg:"#f5f3ff", text:"#4c1d95", border:"#ddd6fe" },
+  "PLASTICS":      { bg:"#fef9c3", text:"#713f12", border:"#fde047" },
+  "UPPER GI":      { bg:"#f0fdf4", text:"#14532d", border:"#86efac" },
+  "UROLOGY":       { bg:"#eff6ff", text:"#1e3a8a", border:"#bfdbfe" },
+  "BREAST/H&N":    { bg:"#fff0f6", text:"#831843", border:"#fbcfe8" },
+  "PERIOP":        { bg:"#1f2937", text:"#d1d5db", border:"#374151" },
+};
+
+let activeWeek = 1;
+
+function tagPill(label) {
+  const s = TAG_STYLES[label] || { bg:"#1f2937", text:"#9ca3af", border:"#374151" };
+  return `<span class="tag-pill" style="background:${s.bg};color:${s.text};border:1px solid ${s.border}">${label}</span>`;
+}
+
+function buildTabs() {
+  const container = document.getElementById('weekTabs');
+  let html = '';
+  WEEKS.forEach(w => {
+    const isActive = w.week === activeWeek;
+    const activeStyle = isActive
+      ? `background:${w.rotColor};box-shadow:0 0 14px ${w.rotColor}55;`
+      : '';
+    html += `<button class="week-tab ${isActive ? 'active' : ''}" 
+               style="${activeStyle}" 
+               onclick="switchWeek(${w.week})">
+               <span class="tab-wk">WK${w.week}</span>
+               <span class="tab-min">${w.totalMins}m</span>
+             </button>`;
+  });
+  html += `<div class="week-tab-revision">
+             <span class="tab-wk" style="color:#4b5563">WK8</span>
+             <span class="tab-min" style="color:#374151">REVISION</span>
+           </div>`;
+  container.innerHTML = html;
+}
+
+function buildPanels() {
+  const container = document.getElementById('mainContent');
+  let html = '';
+  WEEKS.forEach(w => {
+    const barPct = Math.min((w.totalMins / 72) * 100, 100);
+    let lecturesHtml = '';
+    w.lectures.forEach((lec, idx) => {
+      const barW = Math.min((lec.mins / 25) * 100, 100);
+      lecturesHtml += `
+        <div class="lecture-row" id="lec-${w.week}-${idx}" 
+             style="border-left-color:${w.rotColor}"
+             onclick="toggleLecture(${w.week}, ${idx})">
+          <div class="lecture-row-top">
+            <div class="lecture-num">${idx + 1}</div>
+            <div class="lecture-title">${lec.title}</div>
+            ${tagPill(lec.tag)}
+            <div class="lecture-duration">
+              <div class="duration-val" style="color:${w.rotColor}">${lec.mins}<span class="duration-unit"> min</span></div>
+              <div class="expand-arrow" id="arr-${w.week}-${idx}">▼</div>
+            </div>
+          </div>
+          <div class="lecture-mini-bar">
+            <div class="lecture-mini-fill" style="width:${barW}%;background:${w.rotColor}"></div>
+          </div>
+          <div class="lecture-why" id="why-${w.week}-${idx}">
+            <span class="why-icon">💡</span>
+            <span>${lec.why}</span>
+          </div>
+        </div>`;
+    });
+
+    let outcomesHtml = w.outcomes.map(o =>
+      `<div class="outcome-pill"><span class="outcome-arrow">→</span>${o}</div>`
+    ).join('');
+
+    html += `
+      <div class="week-panel ${w.week === activeWeek ? 'active' : ''}" id="panel-${w.week}">
+        <div class="rotation-bar">
+          <div class="rotation-badge" style="background:${w.rotColor}">${w.rotation}</div>
+          <span class="rotation-tag">${w.tag}</span>
+          <div class="week-total">
+            <span class="week-total-label">Week total:</span>
+            <span class="week-total-val" style="color:${w.rotColor}">${w.totalMins} min</span>
+          </div>
+        </div>
+
+        <div class="time-bar-wrap">
+          <div class="time-bar-track">
+            <div class="time-bar-fill" style="width:${barPct}%;background:linear-gradient(90deg,${w.rotColor},${w.rotColor}aa)"></div>
+          </div>
+          <div class="time-bar-labels"><span>0 min</span><span>72 min max</span></div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-card-label" style="color:${w.rotColor}">Overarching Principles</div>
+            <p>${w.principle}</p>
+            <div class="info-card-divider">
+              <div class="handbook-label">Handbook Alignment</div>
+              <div class="handbook-val">${w.handbook}</div>
+            </div>
+          </div>
+          <div class="info-card">
+            <div class="info-card-label" style="color:#f59e0b">Scheduling Rationale</div>
+            <p>${w.rationale}</p>
+          </div>
+        </div>
+
+        <div class="outcomes-card">
+          <div class="outcomes-label">Learning Outcomes (Handbook)</div>
+          <div class="outcomes-list">${outcomesHtml}</div>
+        </div>
+
+        <div class="lectures-label">Lectures in viewing order</div>
+        <div class="lectures-list">${lecturesHtml}</div>
+
+        <div class="week-nav">
+          <button class="nav-btn prev" onclick="switchWeek(${w.week - 1})" ${w.week === 1 ? 'disabled' : ''}>← Previous Week</button>
+          <span class="nav-center">Week ${w.week} of 7 lecture weeks</span>
+          <button class="nav-btn next" onclick="switchWeek(${w.week + 1})" 
+                  ${w.week === 7 ? 'disabled' : ''}
+                  style="${w.week !== 7 ? `background:${w.rotColor};box-shadow:0 2px 12px ${w.rotColor}55;border-color:${w.rotColor}` : ''}">
+            Next Week →
+          </button>
+        </div>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function buildOverview() {
+  const container = document.getElementById('overviewRows');
+  let html = '';
+  WEEKS.forEach(w => {
+    const titles = w.lectures.map((lec, i) =>
+      `<span class="ov-title">${lec.title}${i < w.lectures.length - 1 ? ' ·' : ''}</span>`
+    ).join('');
+    html += `
+      <div class="overview-row ${w.week === activeWeek ? 'active' : ''}" 
+           id="ov-${w.week}" onclick="switchWeek(${w.week})">
+        <div class="ov-week-badge" style="background:${w.rotColor}">WK${w.week}</div>
+        <div class="ov-titles">${titles}</div>
+        <span class="ov-mins" style="color:${w.rotColor}">${w.totalMins} min</span>
+      </div>`;
+  });
+  html += `
+    <div class="ov-revision">
+      <div class="ov-revision-badge">WK8</div>
+      <span class="ov-revision-text">Revision week — all specialties</span>
+    </div>`;
+  container.innerHTML = html;
+}
+
+function switchWeek(n) {
+  if (n < 1 || n > 7) return;
+  activeWeek = n;
+  // panels
+  document.querySelectorAll('.week-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(`panel-${n}`).classList.add('active');
+  // tabs
+  buildTabs();
+  // overview
+  document.querySelectorAll('.overview-row').forEach(r => r.classList.remove('active'));
+  const ovRow = document.getElementById(`ov-${n}`);
+  if (ovRow) ovRow.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function toggleLecture(week, idx) {
+  const row = document.getElementById(`lec-${week}-${idx}`);
+  const why = document.getElementById(`why-${week}-${idx}`);
+  const arr = document.getElementById(`arr-${week}-${idx}`);
+  const isExp = row.classList.contains('expanded');
+  row.classList.toggle('expanded', !isExp);
+  arr.textContent = isExp ? '▼' : '▲';
+}
+
+// Init
+buildTabs();
+buildPanels();
+buildOverview();
+</script>
+</body>
+</html>
