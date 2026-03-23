@@ -94,10 +94,6 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .resource-card:last-child { border-right: none; }
 /* Remove bottom border on last row (works for 1 or 2 items) */
 .resource-card:last-child { border-bottom: none; border-right: none; }
-.resource-card:nth-last-child(2):nth-child(2n+1),
-.resource-card:nth-last-child(2):nth-child(2n+1) ~ .resource-card,
-.resource-card:nth-last-child(3):nth-child(3n+1),
-.resource-card:nth-last-child(3):nth-child(3n+1) ~ .resource-card { border-bottom: none; }
 .resource-card:hover { background: var(--accent-light); }
 .resource-icon {
   flex-shrink: 0;
