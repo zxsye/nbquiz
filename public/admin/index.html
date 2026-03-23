@@ -134,6 +134,13 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .edit-icon-btn { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 3px 7px; cursor: pointer; font-size: .72rem; color: var(--text-3); transition: all var(--transition); display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); }
 .edit-icon-btn:hover { background: var(--surface); border-color: var(--border); color: var(--accent); }
 
+/* ── Migrate log entries ── */
+.mlog-entry { font-family: var(--font-mono); font-size: .78rem; padding: 9px 13px; border-radius: 8px; line-height: 1.5; word-break: break-all; }
+.mlog-entry.info  { background: var(--accent-light); color: var(--accent); }
+.mlog-entry.ok    { background: var(--correct-bg); color: var(--correct); border: 1px solid var(--correct-ring); }
+.mlog-entry.warn  { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-ring); }
+.mlog-entry.error { background: var(--wrong-bg); color: var(--wrong); border: 1px solid var(--wrong-ring); }
+
 /* ── Modals ── */
 .modal-bg      { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
 .modal-bg.open { display: flex; }
@@ -183,8 +190,9 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 
   <div class="admin-body">
     <div class="tabs">
-      <button class="tab active" id="tabBtnUpload" onclick="switchTab('upload')">⬆ Upload</button>
-      <button class="tab"        id="tabBtnManage" onclick="switchTab('manage')">🗂 Manage</button>
+      <button class="tab active" id="tabBtnUpload"  onclick="switchTab('upload')">⬆ Upload</button>
+      <button class="tab"        id="tabBtnManage"  onclick="switchTab('manage')">🗂 Manage</button>
+      <button class="tab"        id="tabBtnMigrate" onclick="switchTab('migrate')">🔄 Migrate</button>
     </div>
 
     <!-- Upload panel -->
@@ -261,6 +269,30 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
       </div>
       <div class="status" id="manageStatus"></div>
       <div id="quizList"><div class="empty">Loading…</div></div>
+    </div>
+
+    <!-- Migrate panel -->
+    <div class="tab-panel" id="panelMigrate">
+      <div class="section-title">Migrate user progress</div>
+      <div class="section-sub">When a quiz is renamed, user progress stays under the old ID. Paste the old and new Firestore document IDs below to move all users' progress and notes across. The quiz questions must already be in the new location.</div>
+
+      <div class="form-group">
+        <label class="form-label">Old Quiz ID</label>
+        <input class="txt" id="migrateOldId" placeholder="e.g. W7__Neuro__v2" spellcheck="false" autocomplete="off" style="width:100%">
+        <div style="font-size:.72rem;color:var(--text-3);font-family:var(--font-mono);margin-top:5px;">Copy exactly from Firebase console: quizSessions › [uid] › quizzes › <strong>this part</strong></div>
+      </div>
+
+      <div style="text-align:center;font-size:1.2rem;color:var(--text-3);margin:-4px 0 10px;">↓</div>
+
+      <div class="form-group">
+        <label class="form-label">New Quiz ID</label>
+        <input class="txt" id="migrateNewId" placeholder="e.g. W7__Neuro__Version 2" spellcheck="false" autocomplete="off" style="width:100%">
+        <div style="font-size:.72rem;color:var(--text-3);font-family:var(--font-mono);margin-top:5px;">The document ID as it now exists in the quizzes collection.</div>
+      </div>
+
+      <button class="btn btn-primary" id="migrateRunBtn" onclick="runMigration()" style="margin-top:4px;">Scan &amp; Migrate →</button>
+
+      <div id="migrateLog" style="margin-top:20px;display:flex;flex-direction:column;gap:6px;"></div>
     </div>
   </div>
   <div class="credit">made by Zi Lin</div>
@@ -997,69 +1029,171 @@ async function moveQuiz(oldQuizId, newWeek, newTopic, newName) {
   quizBatch.delete(oldMetaRef);
   await quizBatch.commit();
 
-  // ── 4. Migrate user progress + notes ───────────────────────────────────────
-  // Enumerate every user in quizSessions, then check each one individually.
-  // No collection-group index required.
-  // NOTE: requires updated firestore.rules with isAdmin() read on quizSessions.
-  let usersSnap;
+  // ── 4. Migrate user progress + notes via collection group query ───────────
+  return await migrateUserData(oldQuizId, newQuizId);
+}
+
+// ── Shared user-data migration (used by moveQuiz and the Migrate tab) ─────────
+// Uses collectionGroup('quizzes') to find all user progress docs for oldId
+// without needing to enumerate quizSessions top-level docs (which are virtual).
+// Requires firestore.rules: match /{path=**}/quizzes/{d} { allow read,write: if isAdmin(); }
+async function migrateUserData(oldId, newId, logFn) {
+  const log = logFn || ((type, msg) => console.log(`[${type}] ${msg}`));
+
+  // Find every quizzes/{oldId} doc across all users
+  let progressSnap;
   try {
-    usersSnap = await db.collection('quizSessions').get();
+    progressSnap = await db.collectionGroup('quizzes').get();
   } catch(e) {
-    // This almost always means the updated firestore.rules hasn't been deployed yet.
-    // Throw so the caller surfaces a clear error rather than silently losing progress.
     throw new Error(
-      `Could not read quizSessions — have you deployed the updated firestore.rules?\n` +
-      `Run: firebase deploy --only firestore:rules\n` +
-      `Detail: ${e.message}`
+      `Collection group query failed. Deploy the updated firestore.rules first.\n` +
+      `Run: firebase deploy --only firestore:rules\nDetail: ${e.message}`
     );
   }
 
-  if (usersSnap.empty) return 0; // no users at all yet
+  // Filter to only docs at quizSessions/{uid}/quizzes/{oldId}
+  const progressDocs = progressSnap.docs.filter(d =>
+    d.id === oldId && d.ref.path.startsWith('quizSessions/')
+  );
+
+  if (progressDocs.length === 0) return 0;
 
   let migratedCount = 0;
 
-  for (const userDoc of usersSnap.docs) {
-    const uid = userDoc.id;
+  for (const progressDoc of progressDocs) {
+    const uid = progressDoc.ref.parent.parent.id;
+    const oldProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(oldId);
+    const newProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(newId);
+    const oldNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(oldId);
+    const newNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(newId);
 
-    const oldProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(oldQuizId);
-    const oldNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(oldQuizId);
+    let notesSnap = null;
+    try { notesSnap = await oldNotesRef.get(); } catch(e) { /* notes optional */ }
 
-    // Any error reading a specific user's data is surfaced, not swallowed
-    const [progressSnap, notesSnap] = await Promise.all([
-      oldProgressRef.get(),
-      oldNotesRef.get(),
-    ]);
-
-    if (!progressSnap.exists && !notesSnap.exists) continue; // user hasn't touched this quiz
-
-    const newProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(newQuizId);
-    const newNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(newQuizId);
-
-    const userBatch = db.batch();
-    if (progressSnap.exists) {
-      userBatch.set(newProgressRef, progressSnap.data());
-      userBatch.delete(oldProgressRef);
+    const batch = db.batch();
+    batch.set(newProgressRef, progressDoc.data());
+    batch.delete(oldProgressRef);
+    if (notesSnap?.exists) {
+      batch.set(newNotesRef, notesSnap.data());
+      batch.delete(oldNotesRef);
     }
-    if (notesSnap.exists) {
-      userBatch.set(newNotesRef, notesSnap.data());
-      userBatch.delete(oldNotesRef);
-    }
-    await userBatch.commit();
+    await batch.commit();
     migratedCount++;
-    console.log(`Migrated progress for user ${uid}: ${oldQuizId} → ${newQuizId}`);
+    console.log(`Migrated user ${uid}: ${oldId} → ${newId}`);
   }
 
-  console.log(`Migration complete: ${migratedCount} user(s) updated.`);
   return migratedCount;
+}
+
+// ── Migrate tab: run ───────────────────────────────────────────────────────────
+async function runMigration() {
+  const oldId = document.getElementById('migrateOldId').value.trim();
+  const newId = document.getElementById('migrateNewId').value.trim();
+  const logEl = document.getElementById('migrateLog');
+  logEl.innerHTML = '';
+
+  function mlog(type, msg) {
+    const el = document.createElement('div');
+    el.className = `mlog-entry ${type}`;
+    el.textContent = msg;
+    logEl.appendChild(el);
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  if (!oldId) { mlog('error', 'Old Quiz ID is required.'); return; }
+  if (!newId)  { mlog('error', 'New Quiz ID is required.'); return; }
+  if (oldId === newId) { mlog('error', 'IDs are identical — nothing to do.'); return; }
+
+  const btn = document.getElementById('migrateRunBtn');
+  btn.disabled = true;
+  btn.textContent = 'Running…';
+
+  mlog('info', `Old ID: "${oldId}"`);
+  mlog('info', `New ID: "${newId}"`);
+  mlog('info', 'Querying collection group for matching progress docs…');
+
+  try {
+    let progressSnap;
+    try {
+      progressSnap = await db.collectionGroup('quizzes').get();
+    } catch(e) {
+      mlog('error', `Collection group query failed: ${e.message}`);
+      mlog('error', 'Deploy the updated firestore.rules: firebase deploy --only firestore:rules');
+      btn.disabled = false; btn.textContent = 'Scan & Migrate →';
+      return;
+    }
+
+    const progressDocs = progressSnap.docs.filter(d =>
+      d.id === oldId && d.ref.path.startsWith('quizSessions/')
+    );
+
+    mlog('info', `Found ${progressDocs.length} user(s) with progress for "${oldId}".`);
+
+    if (progressDocs.length === 0) {
+      mlog('warn', `No progress docs found — check the ID is exact and case-sensitive.`);
+      btn.disabled = false; btn.textContent = 'Scan & Migrate →';
+      return;
+    }
+
+    let migrated = 0, errors = 0;
+
+    for (const progressDoc of progressDocs) {
+      const uid = progressDoc.ref.parent.parent.id;
+      const shortUid = uid.slice(0, 8) + '…';
+      const oldProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(oldId);
+      const newProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(newId);
+      const oldNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(oldId);
+      const newNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(newId);
+
+      let notesSnap = null;
+      try { notesSnap = await oldNotesRef.get(); } catch(e) {}
+
+      try {
+        const batch = db.batch();
+        batch.set(newProgressRef, progressDoc.data());
+        batch.delete(oldProgressRef);
+        if (notesSnap?.exists) {
+          batch.set(newNotesRef, notesSnap.data());
+          batch.delete(oldNotesRef);
+          mlog('info', `  uid ${shortUid} — migrating progress + notes`);
+        } else {
+          mlog('info', `  uid ${shortUid} — migrating progress only`);
+        }
+        await batch.commit();
+        mlog('ok', `  uid ${shortUid} — ✓ done`);
+        migrated++;
+      } catch(e) {
+        mlog('error', `  uid ${shortUid} — write failed: ${e.message}`);
+        errors++;
+      }
+    }
+
+    if (errors === 0) {
+      mlog('ok', `✅ Complete — ${migrated} user(s) migrated successfully.`);
+    } else {
+      mlog('warn', `Finished with ${errors} error(s). ${migrated} succeeded, ${errors} failed.`);
+    }
+
+  } catch(e) {
+    mlog('error', `Unexpected error: ${e.message}`);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Scan & Migrate →';
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function switchTab(tab) {
-  ['upload','manage'].forEach(t => {
+  ['upload','manage','migrate'].forEach(t => {
     document.getElementById(`tabBtn${cap(t)}`).classList.toggle('active', t === tab);
     document.getElementById(`panel${cap(t)}`).classList.toggle('active',  t === tab);
   });
   if (tab === 'manage') loadManage();
+  if (tab === 'migrate') {
+    document.getElementById('migrateLog').innerHTML = '';
+    document.getElementById('migrateOldId').value = '';
+    document.getElementById('migrateNewId').value = '';
+  }
 }
 
 // ── Status helpers ────────────────────────────────────────────────────────────
