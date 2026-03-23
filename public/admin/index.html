@@ -25,6 +25,9 @@
   --wrong:        #991b1b;
   --wrong-bg:     #fee2e2;
   --wrong-ring:   #f87171;
+  --warn:         #92400e;
+  --warn-bg:      #fef3c7;
+  --warn-ring:    #fbbf24;
   --radius:       10px;
   --radius-lg:    16px;
   --shadow:       0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.06);
@@ -56,9 +59,13 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
 .btn-ghost  { background: transparent; color: var(--text-2); border-color: var(--border); }
 .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn-ghost:disabled { opacity: .4; cursor: not-allowed; }
 .btn-danger { background: var(--wrong-bg); color: var(--wrong); border-color: var(--wrong-ring); }
 .btn-danger:hover { background: #fecaca; }
+.btn-warn   { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-ring); }
+.btn-warn:hover { background: #fde68a; }
 .btn-sm { padding: 5px 14px; font-size: .78rem; }
+.btn-xs { padding: 3px 10px; font-size: .72rem; }
 
 /* ── Admin layout ── */
 .admin-layout  { flex-direction: column; min-height: 100vh; }
@@ -69,7 +76,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .admin-badge   { font-family: var(--font-mono); font-size: .62rem; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 2px 8px; }
 .header-right  { display: flex; align-items: center; gap: 12px; }
 .user-email    { font-size: .75rem; color: var(--text-3); font-family: var(--font-mono); }
-.admin-body    { flex: 1; padding: 32px; max-width: 820px; margin: 0 auto; width: 100%; }
+.admin-body    { flex: 1; padding: 32px; max-width: 860px; margin: 0 auto; width: 100%; }
 .credit        { font-size: .7rem; color: var(--text-3); font-family: var(--font-mono); text-align: center; padding: 16px; }
 
 /* ── Tabs ── */
@@ -108,24 +115,36 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .status.ok  { background: var(--correct-bg); color: var(--correct); border: 1px solid var(--correct-ring); }
 .status.err { background: var(--wrong-bg);   color: var(--wrong);   border: 1px solid var(--wrong-ring); }
 .status.inf { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent); }
+.status.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-ring); }
 
 /* ── Quiz list ── */
 .week-block  { margin-bottom: 20px; }
-.week-head   { font-family: var(--font-mono); font-size: .68rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 10px 16px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; }
+.week-head   { font-family: var(--font-mono); font-size: .68rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 8px 14px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; display: flex; align-items: center; justify-content: space-between; }
+.week-head-label { flex: 1; }
 .topic-block { border: 1.5px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
-.topic-head  { font-size: .72rem; font-weight: 600; color: var(--text-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .05em; padding: 7px 16px 5px; background: var(--surface-2); border-top: 1px solid var(--border); }
-.quiz-row      { display: flex; align-items: center; padding: 12px 16px; background: var(--surface); border-top: 1px solid var(--border); gap: 12px; }
-.quiz-row-name { font-size: .9rem; font-weight: 500; color: var(--text); font-family: var(--font-mono); flex: 1; }
+.topic-head  { font-size: .72rem; font-weight: 600; color: var(--text-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .05em; padding: 6px 14px 4px; background: var(--surface-2); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.topic-head-label { flex: 1; }
+.quiz-row      { display: flex; align-items: center; padding: 11px 14px; background: var(--surface); border-top: 1px solid var(--border); gap: 10px; }
+.quiz-row-name { font-size: .88rem; font-weight: 500; color: var(--text); font-family: var(--font-mono); flex: 1; }
 .quiz-row-meta { font-size: .7rem; color: var(--text-3); margin-top: 2px; }
+.quiz-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .empty { text-align: center; padding: 48px; color: var(--text-3); font-size: .9rem; }
 
-/* ── Modal ── */
+/* ── Edit-inline icon button ── */
+.edit-icon-btn { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 3px 7px; cursor: pointer; font-size: .72rem; color: var(--text-3); transition: all var(--transition); display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); }
+.edit-icon-btn:hover { background: var(--surface); border-color: var(--border); color: var(--accent); }
+
+/* ── Modals ── */
 .modal-bg      { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
 .modal-bg.open { display: flex; }
-.modal         { background: var(--surface); border-radius: var(--radius-lg); padding: 32px; max-width: 380px; width: 100%; box-shadow: 0 16px 48px rgba(0,0,0,.18); }
+.modal         { background: var(--surface); border-radius: var(--radius-lg); padding: 32px; max-width: 400px; width: 100%; box-shadow: 0 16px 48px rgba(0,0,0,.18); }
+.modal-wide    { max-width: 480px; }
 .modal-title   { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; margin-bottom: 10px; }
-.modal-body    { font-size: .86rem; color: var(--text-2); margin-bottom: 24px; line-height: 1.6; }
+.modal-body    { font-size: .86rem; color: var(--text-2); margin-bottom: 20px; line-height: 1.6; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.modal-form-group { margin-bottom: 14px; }
+.modal-form-group .form-label { margin-bottom: 5px; }
+.modal-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 </style>
 </head>
 <body>
@@ -171,7 +190,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
     <!-- Upload panel -->
     <div class="tab-panel active" id="panelUpload">
       <div class="section-title">Upload a quiz</div>
-      <div class="section-sub">Drop a NotebookLM shim .html or pre-extracted .json — questions are extracted in the browser and saved instantly to Firestore.</div>
+      <div class="section-sub">Drop a NotebookLM shim .html or any .json format — questions are extracted in the browser and saved instantly to Firestore. Week, topic, and name can include spaces.</div>
 
       <div class="form-group">
         <label class="form-label">Week</label>
@@ -182,7 +201,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
           <button class="btn btn-ghost btn-sm" onclick="toggleNew('week')">+ New</button>
         </div>
         <div class="new-wrap" id="newWeekWrap">
-          <input class="new-txt" id="newWeekTxt" placeholder="e.g. W8" oninput="onNewInput('week')">
+          <input class="new-txt" id="newWeekTxt" placeholder="e.g. W8 or Week 8" oninput="onNewInput('week')">
           <button class="btn btn-ghost btn-sm" onclick="cancelNew('week')">✕</button>
         </div>
       </div>
@@ -196,7 +215,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
           <button class="btn btn-ghost btn-sm" onclick="toggleNew('topic')">+ New</button>
         </div>
         <div class="new-wrap" id="newTopicWrap">
-          <input class="new-txt" id="newTopicTxt" placeholder="e.g. Trauma" oninput="onNewInput('topic')">
+          <input class="new-txt" id="newTopicTxt" placeholder="e.g. Pre-op Assessment" oninput="onNewInput('topic')">
           <button class="btn btn-ghost btn-sm" onclick="cancelNew('topic')">✕</button>
         </div>
       </div>
@@ -210,7 +229,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
           <button class="btn btn-ghost btn-sm" onclick="toggleNew('name')">+ New</button>
         </div>
         <div class="new-wrap" id="newNameWrap">
-          <input class="new-txt" id="newNameTxt" placeholder="e.g. SAH" oninput="onNewInput('name')">
+          <input class="new-txt" id="newNameTxt" placeholder="e.g. Part A" oninput="onNewInput('name')">
           <button class="btn btn-ghost btn-sm" onclick="cancelNew('name')">✕</button>
         </div>
       </div>
@@ -222,7 +241,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
           ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event)">
           <div class="dz-icon"  id="dzIcon">📄</div>
           <div class="dz-label" id="dzLabel">Click to browse or drag &amp; drop</div>
-          <div class="dz-sub"   id="dzSub">Accepts .html (shim) or .json</div>
+          <div class="dz-sub"   id="dzSub">Accepts .html (shim) or .json (any NB format)</div>
           <input type="file" id="fileInput" accept=".html,.htm,.json" onchange="onFilePick(event)">
         </div>
       </div>
@@ -236,7 +255,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
         <div>
           <div class="section-title">Manage quizzes</div>
-          <div class="section-sub">All quizzes stored in Firestore</div>
+          <div class="section-sub" style="margin-bottom:0">All quizzes stored in Firestore. Rename weeks, topics, or individual quizzes inline.</div>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="loadManage()">↺ Refresh</button>
       </div>
@@ -259,6 +278,66 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   </div>
 </div>
 
+<!-- ── Rename week / topic modal ── -->
+<div class="modal-bg" id="renameBg">
+  <div class="modal">
+    <div class="modal-title" id="renameTitle">Rename</div>
+    <div class="modal-body" id="renameBody">Enter a new name for this item. All associated quizzes will be updated.</div>
+    <div class="modal-form-group" style="margin-bottom:20px">
+      <label class="form-label" id="renameFldLabel">New name</label>
+      <input class="txt" id="renameTxt" style="width:100%" placeholder="New name">
+    </div>
+    <div class="status" id="renameStatus" style="margin-top:0;margin-bottom:12px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeRenameModal()">Cancel</button>
+      <button class="btn btn-primary" id="renameOK" onclick="executeRename()">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit / reassign quiz modal ── -->
+<div class="modal-bg" id="editBg">
+  <div class="modal modal-wide">
+    <div class="modal-title">Edit Quiz</div>
+    <div class="modal-body" style="margin-bottom:16px">Change the week, topic, or name. The quiz will be moved to the new location in Firestore.</div>
+
+    <div class="modal-form-group">
+      <label class="form-label">Week</label>
+      <div class="input-row">
+        <select class="sel" id="editSelWeek" onchange="onEditWeekChange()"></select>
+        <button class="btn btn-ghost btn-sm" onclick="toggleEditNew('week')">+ New</button>
+      </div>
+      <div class="new-wrap" id="editNewWeekWrap">
+        <input class="new-txt" id="editNewWeekTxt" placeholder="e.g. W8 or Week 8" oninput="onEditNewInput('week')">
+        <button class="btn btn-ghost btn-sm" onclick="cancelEditNew('week')">✕</button>
+      </div>
+    </div>
+
+    <div class="modal-form-group">
+      <label class="form-label">Topic</label>
+      <div class="input-row">
+        <select class="sel" id="editSelTopic"></select>
+        <button class="btn btn-ghost btn-sm" onclick="toggleEditNew('topic')">+ New</button>
+      </div>
+      <div class="new-wrap" id="editNewTopicWrap">
+        <input class="new-txt" id="editNewTopicTxt" placeholder="e.g. Pre-op Assessment" oninput="onEditNewInput('topic')">
+        <button class="btn btn-ghost btn-sm" onclick="cancelEditNew('topic')">✕</button>
+      </div>
+    </div>
+
+    <div class="modal-form-group" style="margin-bottom:20px">
+      <label class="form-label">Quiz Name</label>
+      <input class="txt" id="editNameTxt" placeholder="e.g. Part A" style="width:100%">
+    </div>
+
+    <div class="status" id="editStatus" style="margin-top:0;margin-bottom:12px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-primary" id="editSaveBtn" onclick="saveEditQuiz()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -277,10 +356,17 @@ const db       = firebase.firestore();
 const provider = new firebase.auth.GoogleAuthProvider();
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let extractedQuestions = null;   // parsed questions from dropped file
+let extractedQuestions = null;
 let newVals   = { week: '', topic: '', name: '' };
-let allMeta   = [];              // [{id, week, topic, name}] — loaded on enter
+let allMeta   = [];
 let pendingDel = null;
+
+// Rename modal state
+let renameTarget = null; // { type: 'week'|'topic', week, topic? }
+
+// Edit modal state
+let pendingEdit  = null; // { quizId, oldWeek, oldTopic, oldName }
+let editNewVals  = { week: '', topic: '' };
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function show(id) {
@@ -295,7 +381,6 @@ function signInGoogle() {
 }
 function doSignOut() { auth.signOut(); }
 
-// On auth change: check Firestore admins collection
 auth.onAuthStateChanged(async user => {
   if (!user) { show('sLogin'); return; }
   let isAdmin = false;
@@ -326,17 +411,22 @@ async function loadAllMeta() {
   allMeta = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-// ── Dropdowns ─────────────────────────────────────────────────────────────────
+// ── Dropdowns (Upload tab) ────────────────────────────────────────────────────
 function getWeek()  { return newVals.week  || document.getElementById('selWeek').value; }
 function getTopic() { return newVals.topic || document.getElementById('selTopic').value; }
 function getName()  { return newVals.name  || document.getElementById('selName').value; }
 
 function populateWeekDropdown() {
   const weeks = [...new Set(allMeta.map(q => q.week))]
-    .sort((a,b) => (parseInt(a.replace(/\D/g,''))||0) - (parseInt(b.replace(/\D/g,''))||0));
+    .sort((a,b) => weekSortKey(a) - weekSortKey(b));
   const sel = document.getElementById('selWeek');
   sel.innerHTML = '<option value="">— select —</option>';
   weeks.forEach(w => sel.innerHTML += `<option value="${w}">${w}</option>`);
+}
+
+function weekSortKey(w) {
+  const m = w.match(/(\d+)/);
+  return m ? parseInt(m[1]) : 9999;
 }
 
 function onWeekChange() {
@@ -345,7 +435,6 @@ function onWeekChange() {
   const nSel = document.getElementById('selName');
   tSel.disabled = true; nSel.disabled = true;
   nSel.innerHTML = '<option value="">— select topic first —</option>';
-
   if (!week) {
     tSel.innerHTML = '<option value="">— select week first —</option>';
     checkReady(); return;
@@ -384,13 +473,15 @@ function cancelNew(field) {
   checkReady();
 }
 function onNewInput(field) {
-  newVals[field] = document.getElementById(`new${cap(field)}Txt`).value.trim().replace(/[^a-zA-Z0-9_\-]/g, '');
+  // Allow spaces and all printable characters — just trim leading/trailing whitespace for storage
+  newVals[field] = document.getElementById(`new${cap(field)}Txt`).value;
   checkReady();
 }
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
 function checkReady() {
-  document.getElementById('uploadBtn').disabled = !(getWeek() && getTopic() && getName() && extractedQuestions);
+  const w = getWeek().trim(), t = getTopic().trim(), n = getName().trim();
+  document.getElementById('uploadBtn').disabled = !(w && t && n && extractedQuestions);
 }
 
 // ── Dropzone ──────────────────────────────────────────────────────────────────
@@ -424,7 +515,7 @@ async function processFile(file) {
   checkReady();
 }
 
-// ── JS Quiz extraction (port of extract_notebooklm_quiz_json.sh) ──────────────
+// ── Extraction functions ──────────────────────────────────────────────────────
 function cleanMath(text) {
   if (!text) return '';
   return text
@@ -438,11 +529,11 @@ function cleanMath(text) {
     .replace(/\\u0027/g, "'");
 }
 
+/** Format 1 — NotebookLM shim .html (data-app-data attribute) */
 function extractFromShim(htmlText) {
   const marker = 'data-app-data="';
   const idx    = htmlText.indexOf(marker);
   if (idx === -1) throw new Error('No data-app-data attribute found. Make sure this is a NotebookLM shim.html file.');
-
   const rawStart = idx + marker.length;
   let pos = rawStart;
   while (pos < htmlText.length) {
@@ -450,19 +541,15 @@ function extractFromShim(htmlText) {
     if (htmlText[pos] === '"') break;
     pos++;
   }
-
   const rawAttr = htmlText.slice(rawStart, pos);
   const decoded = rawAttr
     .replace(/&quot;/g, '"').replace(/&amp;/g, '&')
     .replace(/&lt;/g,   '<').replace(/&gt;/g,  '>');
-
   let data;
   try { data = JSON.parse(decoded); }
   catch(e) { throw new Error('Failed to parse JSON from shim.html: ' + e.message); }
-
   const quizArr = data.quiz || [];
   if (!quizArr.length) throw new Error('No questions found in shim.html. The quiz may not have loaded yet when you saved the page.');
-
   return quizArr.map(q => {
     const options = {}, rationales = {};
     let correct = null;
@@ -476,14 +563,10 @@ function extractFromShim(htmlText) {
   });
 }
 
-function extractFromNBJSON(jsonText) {
-  let data;
-  try { data = JSON.parse(jsonText); }
-  catch(e) { throw new Error('Invalid JSON: ' + e.message); }
-
+/** Format 2 — NotebookLM exported JSON { interactive_quiz: [...] } */
+function extractFromNBJSON(data) {
   const quizArr = data.interactive_quiz || [];
   if (!quizArr.length) throw new Error('No questions found in interactive_quiz array.');
-
   return quizArr.map(q => {
     const options = {}, rationales = {};
     (q.options || []).forEach(opt => {
@@ -495,68 +578,106 @@ function extractFromNBJSON(jsonText) {
   });
 }
 
+/** Format 3 — Flat array [ { question, answerOptions, hint }, ... ] */
+function extractFromFlatArray(arr) {
+  if (!arr.length) throw new Error('Array is empty — no questions found.');
+  return arr.map((q, i) => {
+    if (!q.question && !q.stem) throw new Error(`Question at index ${i} has no "question" or "stem" field.`);
+    const options = {}, rationales = {};
+    let correct = null;
+    const ansArr = q.answerOptions || q.options || [];
+    ansArr.forEach((opt, j) => {
+      const letter = opt.letter || String.fromCharCode(65 + j);
+      options[letter] = cleanMath(opt.text || '');
+      if (opt.rationale) rationales[letter] = cleanMath(opt.rationale);
+      if (opt.isCorrect || opt.correct) correct = letter;
+    });
+    return {
+      stem:       cleanMath(q.question || q.stem || ''),
+      options,
+      correct,
+      rationales,
+      hint:       cleanMath(q.hint || ''),
+      part:       q.part || 1,
+    };
+  });
+}
+
 async function extractFile(file) {
   const text = await file.text();
   const name = file.name.toLowerCase();
-  if (name.endsWith('.json'))                        return extractFromNBJSON(text);
+
   if (name.endsWith('.html') || name.endsWith('.htm')) return extractFromShim(text);
+
+  if (name.endsWith('.json')) {
+    let data;
+    try { data = JSON.parse(text); }
+    catch(e) { throw new Error('Invalid JSON: ' + e.message); }
+
+    // Flat array format
+    if (Array.isArray(data)) return extractFromFlatArray(data);
+    // NB interactive_quiz format
+    if (data.interactive_quiz) return extractFromNBJSON(data);
+    // Single question object wrapped in object — unlikely but handle gracefully
+    throw new Error('Unrecognised JSON format. Expected a flat array [...] or an object with "interactive_quiz" key.');
+  }
+
   throw new Error('Unsupported file type. Please upload .html (shim) or .json.');
 }
 
 // ── Upload to Firestore ───────────────────────────────────────────────────────
 async function doUpload() {
-  const week = getWeek(), topic = getTopic(), name = getName();
+  const week  = getWeek().trim();
+  const topic = getTopic().trim();
+  const name  = getName().trim();
   if (!week || !topic || !name || !extractedQuestions) return;
 
-  // QuizId: W7__Neuro__SAH (double underscore, safe Firestore doc ID)
-  const quizId = `${week}__${topic}__${name}`;
-  const title  = `${week.toUpperCase()} · ${topic} · ${name}`;
+  const quizId = buildQuizId(week, topic, name);
+  const title  = `${week} · ${topic} · ${name}`;
 
   document.getElementById('uploadBtn').disabled = true;
-  setStatus('uploadStatus', 'inf', `Saving ${quizId} to Firestore…`);
+  setStatus('uploadStatus', 'inf', `Saving "${title}" to Firestore…`);
 
   try {
     const batch = db.batch();
-
-    // Metadata document
     const metaRef = db.collection('quizzes').doc(quizId);
     batch.set(metaRef, {
-      week:          week.toUpperCase(),
+      week:          week,
       topic,
       name,
       title,
       questionCount: extractedQuestions.length,
       updatedAt:     firebase.firestore.FieldValue.serverTimestamp(),
     });
-
-    // Questions subcollection document
     const qRef = metaRef.collection('data').doc('questions');
     batch.set(qRef, { questions: extractedQuestions });
-
     await batch.commit();
 
     setStatus('uploadStatus', 'ok',
       `✅ Saved "${title}" (${extractedQuestions.length} questions). It's live immediately.`);
 
-    // Update local meta cache and refresh dropdowns
     allMeta = allMeta.filter(m => m.id !== quizId);
-    allMeta.push({ id: quizId, week: week.toUpperCase(), topic, name });
+    allMeta.push({ id: quizId, week, topic, name });
     populateWeekDropdown();
 
-    // Reset file
     extractedQuestions = null;
     document.getElementById('dropzone').classList.remove('has-file', 'has-error');
     document.getElementById('dzIcon').textContent  = '📄';
     document.getElementById('dzLabel').textContent = 'Click to browse or drag & drop';
-    document.getElementById('dzSub').textContent   = 'Accepts .html (shim) or .json';
+    document.getElementById('dzSub').textContent   = 'Accepts .html (shim) or .json (any NB format)';
     document.getElementById('fileInput').value     = '';
-
   } catch(err) {
     setStatus('uploadStatus', 'err', `❌ Save failed: ${err.message}`);
   }
 
   document.getElementById('uploadBtn').disabled = false;
   checkReady();
+}
+
+// ── Firestore document ID helper ──────────────────────────────────────────────
+// Uses double-underscore separator; spaces are allowed in Firestore doc IDs
+function buildQuizId(week, topic, name) {
+  return `${week}__${topic}__${name}`;
 }
 
 // ── Manage / list quizzes ─────────────────────────────────────────────────────
@@ -569,38 +690,51 @@ async function loadManage() {
     const snap = await db.collection('quizzes').get();
     if (snap.empty) { container.innerHTML = '<div class="empty">No quizzes yet.</div>'; return; }
 
-    // Group: week → topic → [{id, name, questionCount}]
     const groups = {};
     snap.forEach(doc => {
       const d = doc.data();
-      const w = (d.week || 'Unknown').toUpperCase();
+      const w = d.week  || 'Unknown';
       const t = d.topic || 'General';
       if (!groups[w])    groups[w]    = {};
       if (!groups[w][t]) groups[w][t] = [];
-      groups[w][t].push({ id: doc.id, name: d.name || doc.id, questionCount: d.questionCount || 0, title: d.title || doc.id });
+      groups[w][t].push({ id: doc.id, name: d.name || doc.id, questionCount: d.questionCount || 0 });
     });
 
     let html = '';
     Object.keys(groups)
-      .sort((a,b) => (parseInt(a.replace(/\D/g,''))||0) - (parseInt(b.replace(/\D/g,''))||0))
+      .sort((a,b) => weekSortKey(a) - weekSortKey(b))
       .forEach(week => {
-        html += `<div class="week-block"><div class="week-head">${week}</div><div class="topic-block">`;
+        html += `<div class="week-block">
+          <div class="week-head">
+            <span class="week-head-label">${escHtml(week)}</span>
+            <button class="edit-icon-btn" onclick="openRenameModal('week','${escAttr(week)}','')">✏ Rename week</button>
+          </div>
+          <div class="topic-block">`;
+
         Object.keys(groups[week]).sort().forEach(topic => {
-          html += `<div class="topic-head">${topic}</div>`;
+          html += `<div class="topic-head">
+            <span class="topic-head-label">${escHtml(topic)}</span>
+            <button class="edit-icon-btn" onclick="openRenameModal('topic','${escAttr(week)}','${escAttr(topic)}')">✏ Rename topic</button>
+          </div>`;
+
           groups[week][topic].sort((a,b) => a.name.localeCompare(b.name)).forEach(({ id, name, questionCount }) => {
             html += `<div class="quiz-row">
               <div style="flex:1">
                 <div class="quiz-row-name">${escHtml(name)}</div>
-                <div class="quiz-row-meta">${questionCount} questions · <a href="/quiz?id=${id}" target="_blank" style="color:var(--accent);">preview ↗</a></div>
+                <div class="quiz-row-meta">${questionCount} questions · <a href="/quiz?id=${encodeURIComponent(id)}" target="_blank" style="color:var(--accent);">preview ↗</a></div>
               </div>
-              <button class="btn btn-danger btn-sm" onclick="confirmDel('${id}','${escHtml(name)}')">Delete</button>
+              <div class="quiz-row-actions">
+                <button class="btn btn-warn btn-sm" onclick="openEditModal('${escAttr(id)}','${escAttr(week)}','${escAttr(topic)}','${escAttr(name)}')">✏ Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="confirmDel('${escAttr(id)}','${escAttr(name)}')">Delete</button>
+              </div>
             </div>`;
           });
         });
+
         html += `</div></div>`;
       });
-    container.innerHTML = html;
 
+    container.innerHTML = html;
   } catch(err) {
     container.innerHTML = `<div class="empty">Error: ${err.message}</div>`;
   }
@@ -624,15 +758,276 @@ async function executeDel() {
   closeModal();
   setStatus('manageStatus', 'inf', `Deleting ${quizId}…`);
   try {
-    // Delete questions subcollection doc first, then the parent
     await db.collection('quizzes').doc(quizId).collection('data').doc('questions').delete();
     await db.collection('quizzes').doc(quizId).delete();
     allMeta = allMeta.filter(m => m.id !== quizId);
-    setStatus('manageStatus', 'ok', `✅ Deleted ${quizId}.`);
+    setStatus('manageStatus', 'ok', `✅ Deleted.`);
     await loadManage();
   } catch(err) {
     setStatus('manageStatus', 'err', `❌ Delete failed: ${err.message}`);
   }
+}
+
+// ── Rename week / topic modal ─────────────────────────────────────────────────
+function openRenameModal(type, week, topic) {
+  renameTarget = { type, week, topic };
+  const isTopic = type === 'topic';
+  document.getElementById('renameTitle').textContent = isTopic ? `Rename topic` : `Rename week`;
+  document.getElementById('renameBody').textContent  = isTopic
+    ? `Renaming "${topic}" will update all quizzes in this topic group.`
+    : `Renaming "${week}" will update all quizzes in this week.`;
+  document.getElementById('renameFldLabel').textContent = isTopic ? 'New topic name' : 'New week name';
+  document.getElementById('renameTxt').value = isTopic ? topic : week;
+  hideStatus('renameStatus');
+  document.getElementById('renameOK').disabled = false;
+  document.getElementById('renameBg').classList.add('open');
+  setTimeout(() => document.getElementById('renameTxt').select(), 50);
+}
+
+function closeRenameModal() {
+  document.getElementById('renameBg').classList.remove('open');
+  renameTarget = null;
+}
+
+async function executeRename() {
+  const newVal = document.getElementById('renameTxt').value.trim();
+  if (!newVal) { setStatus('renameStatus', 'err', 'Name cannot be empty.'); return; }
+
+  const { type, week, topic } = renameTarget;
+  const isTopic = type === 'topic';
+
+  const affected = isTopic
+    ? allMeta.filter(m => m.week === week && m.topic === topic)
+    : allMeta.filter(m => m.week === week);
+
+  if (!affected.length) { closeRenameModal(); return; }
+
+  // Check no-op
+  if ((isTopic && newVal === topic) || (!isTopic && newVal === week)) {
+    closeRenameModal(); return;
+  }
+
+  document.getElementById('renameOK').disabled = true;
+  setStatus('renameStatus', 'inf', `Updating ${affected.length} quiz${affected.length > 1 ? 'zes' : ''}…`);
+
+  try {
+    for (const m of affected) {
+      const newWeek  = isTopic ? m.week  : newVal;
+      const newTopic = isTopic ? newVal  : m.topic;
+      await moveQuiz(m.id, newWeek, newTopic, m.name);
+    }
+    await loadAllMeta();
+    populateWeekDropdown();
+    setStatus('renameStatus', 'ok', `✅ Renamed successfully.`);
+    setTimeout(() => { closeRenameModal(); loadManage(); }, 900);
+  } catch(err) {
+    setStatus('renameStatus', 'err', `❌ Failed: ${err.message}`);
+    document.getElementById('renameOK').disabled = false;
+  }
+}
+
+// ── Edit / reassign quiz modal ────────────────────────────────────────────────
+function openEditModal(quizId, week, topic, name) {
+  pendingEdit = { quizId, oldWeek: week, oldTopic: topic, oldName: name };
+  editNewVals = { week: '', topic: '' };
+
+  // Populate week dropdown
+  const weeks = [...new Set(allMeta.map(q => q.week))].sort((a,b) => weekSortKey(a) - weekSortKey(b));
+  const weekSel = document.getElementById('editSelWeek');
+  weekSel.innerHTML = '';
+  weeks.forEach(w => {
+    weekSel.innerHTML += `<option value="${escHtml(w)}" ${w === week ? 'selected' : ''}>${escHtml(w)}</option>`;
+  });
+
+  // Reset new-entry wraps
+  cancelEditNew('week');
+  cancelEditNew('topic');
+
+  // Populate topic dropdown for the current week
+  populateEditTopicDropdown(week, topic);
+
+  document.getElementById('editNameTxt').value = name;
+  hideStatus('editStatus');
+  document.getElementById('editSaveBtn').disabled = false;
+  document.getElementById('editBg').classList.add('open');
+}
+
+function populateEditTopicDropdown(week, selectedTopic) {
+  const tSel   = document.getElementById('editSelTopic');
+  const topics = [...new Set(allMeta.filter(q => q.week === week).map(q => q.topic))].sort();
+  if (!topics.length) {
+    tSel.innerHTML = '<option value="">— add a new topic below —</option>';
+    tSel.disabled  = true;
+  } else {
+    tSel.disabled  = false;
+    tSel.innerHTML = '';
+    topics.forEach(t => {
+      tSel.innerHTML += `<option value="${escHtml(t)}" ${t === selectedTopic ? 'selected' : ''}>${escHtml(t)}</option>`;
+    });
+  }
+}
+
+function onEditWeekChange() {
+  const week = editNewVals.week || document.getElementById('editSelWeek').value;
+  cancelEditNew('topic');
+  // If changing week, show topics for the new week without pre-selection
+  const selectedTopic = week === pendingEdit?.oldWeek ? pendingEdit.oldTopic : '';
+  populateEditTopicDropdown(week, selectedTopic);
+}
+
+function toggleEditNew(field) {
+  const wrap = document.getElementById(`editNew${cap(field)}Wrap`);
+  wrap.classList.toggle('open');
+  if (!wrap.classList.contains('open')) cancelEditNew(field);
+  // Disable the dropdown when new entry is open
+  if (field === 'week') {
+    document.getElementById('editSelWeek').disabled = wrap.classList.contains('open');
+  } else {
+    document.getElementById('editSelTopic').disabled = wrap.classList.contains('open');
+  }
+}
+
+function cancelEditNew(field) {
+  editNewVals[field] = '';
+  const wrap = document.getElementById(`editNew${cap(field)}Wrap`);
+  wrap.classList.remove('open');
+  document.getElementById(`editNew${cap(field)}Txt`).value = '';
+  if (field === 'week')  document.getElementById('editSelWeek').disabled  = false;
+  if (field === 'topic') document.getElementById('editSelTopic').disabled = false;
+}
+
+function onEditNewInput(field) {
+  editNewVals[field] = document.getElementById(`editNew${cap(field)}Txt`).value;
+  if (field === 'week') onEditWeekChange();
+}
+
+function closeEditModal() {
+  document.getElementById('editBg').classList.remove('open');
+  pendingEdit = null;
+}
+
+async function saveEditQuiz() {
+  const newWeek  = (editNewVals.week  || document.getElementById('editSelWeek').value).trim();
+  const newTopic = (editNewVals.topic || document.getElementById('editSelTopic').value).trim();
+  const newName  = document.getElementById('editNameTxt').value.trim();
+
+  if (!newWeek)  { setStatus('editStatus', 'err', 'Week is required.'); return; }
+  if (!newTopic) { setStatus('editStatus', 'err', 'Topic is required.'); return; }
+  if (!newName)  { setStatus('editStatus', 'err', 'Quiz name is required.'); return; }
+
+  const { quizId } = pendingEdit;
+  const newQuizId  = buildQuizId(newWeek, newTopic, newName);
+
+  if (newQuizId === quizId) { closeEditModal(); return; }
+
+  document.getElementById('editSaveBtn').disabled = true;
+  setStatus('editStatus', 'inf', 'Moving quiz…');
+
+  try {
+    await moveQuiz(quizId, newWeek, newTopic, newName);
+    await loadAllMeta();
+    populateWeekDropdown();
+    setStatus('editStatus', 'ok', '✅ Quiz updated successfully.');
+    setTimeout(() => { closeEditModal(); loadManage(); }, 900);
+  } catch(err) {
+    setStatus('editStatus', 'err', `❌ Failed: ${err.message}`);
+    document.getElementById('editSaveBtn').disabled = false;
+  }
+}
+
+// ── Core move/rename helper (copy + delete, including all user progress) ──────
+async function moveQuiz(oldQuizId, newWeek, newTopic, newName) {
+  const newQuizId = buildQuizId(newWeek, newTopic, newName);
+  if (newQuizId === oldQuizId) return; // nothing to do
+
+  // ── 1. Copy quiz metadata + questions ──────────────────────────────────────
+  const oldMetaRef = db.collection('quizzes').doc(oldQuizId);
+  const oldQRef    = oldMetaRef.collection('data').doc('questions');
+
+  const [oldMetaSnap, oldQSnap] = await Promise.all([oldMetaRef.get(), oldQRef.get()]);
+  if (!oldMetaSnap.exists) throw new Error(`Quiz "${oldQuizId}" not found in Firestore.`);
+
+  const newTitle   = `${newWeek} · ${newTopic} · ${newName}`;
+  const newMetaRef = db.collection('quizzes').doc(newQuizId);
+  const newQRef    = newMetaRef.collection('data').doc('questions');
+
+  const quizBatch = db.batch();
+  quizBatch.set(newMetaRef, {
+    ...oldMetaSnap.data(),
+    week:      newWeek,
+    topic:     newTopic,
+    name:      newName,
+    title:     newTitle,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+  if (oldQSnap.exists) quizBatch.set(newQRef, oldQSnap.data());
+  if (oldQSnap.exists) quizBatch.delete(oldQRef);
+  quizBatch.delete(oldMetaRef);
+  await quizBatch.commit();
+
+  // ── 2. Migrate all user progress ───────────────────────────────────────────
+  // Uses collection group queries to find every user's progress/notes docs
+  // for this quiz without needing to enumerate UIDs.
+  // Requires the admin rule: allow read, write: if isAdmin() on quizSessions.
+
+  // Progress docs: quizSessions/{uid}/quizzes/{oldQuizId}
+  const progressSnap = await db.collectionGroup('quizzes')
+    .where(firebase.firestore.FieldPath.documentId(), '>=', oldQuizId)
+    .where(firebase.firestore.FieldPath.documentId(), '<=', oldQuizId)
+    .get().catch(() => null);
+
+  // Notes docs: quizSessions/{uid}/notes/{oldQuizId}
+  const notesSnap = await db.collectionGroup('notes')
+    .where(firebase.firestore.FieldPath.documentId(), '>=', oldQuizId)
+    .where(firebase.firestore.FieldPath.documentId(), '<=', oldQuizId)
+    .get().catch(() => null);
+
+  // Firestore collection group queries don't support filtering by exact doc ID
+  // via documentId() alone without a collection group index — so we filter
+  // client-side to be safe.
+  const progressDocs = (progressSnap?.docs || []).filter(d => d.id === oldQuizId);
+  const notesDocs    = (notesSnap?.docs    || []).filter(d => d.id === oldQuizId);
+
+  const totalUsers   = progressDocs.length;
+  const totalNotes   = notesDocs.length;
+
+  if (totalUsers + totalNotes === 0) return; // no user data to migrate
+
+  // Firestore batches are capped at 500 ops; each user needs 2 writes + 2 deletes
+  // (progress copy + delete, notes copy + delete) = 4 ops. Safe for up to ~125
+  // users per batch; split if needed.
+  const OPS_PER_USER = 4;
+  const BATCH_LIMIT  = 400; // stay well under 500
+
+  const allOps = [];
+  for (const doc of progressDocs) {
+    // doc.ref.path = quizSessions/{uid}/quizzes/{oldQuizId}
+    // newRef.path  = quizSessions/{uid}/quizzes/{newQuizId}
+    const uid    = doc.ref.parent.parent.id;
+    const newRef = db.collection('quizSessions').doc(uid)
+                     .collection('quizzes').doc(newQuizId);
+    allOps.push({ copy: { from: doc, to: newRef }, del: doc.ref });
+  }
+  for (const doc of notesDocs) {
+    const uid    = doc.ref.parent.parent.id;
+    const newRef = db.collection('quizSessions').doc(uid)
+                     .collection('notes').doc(newQuizId);
+    allOps.push({ copy: { from: doc, to: newRef }, del: doc.ref });
+  }
+
+  // Execute in chunks of BATCH_LIMIT / 2 (each op = 1 set + 1 delete)
+  const chunkSize = Math.floor(BATCH_LIMIT / 2);
+  for (let i = 0; i < allOps.length; i += chunkSize) {
+    const chunk  = allOps.slice(i, i + chunkSize);
+    const batch  = db.batch();
+    for (const op of chunk) {
+      batch.set(op.copy.to, op.copy.from.data());
+      batch.delete(op.del);
+    }
+    await batch.commit();
+  }
+
+  console.log(`Migrated progress for ${totalUsers} user(s) and notes for ${totalNotes} user(s).`);
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -651,8 +1046,13 @@ function setStatus(id, type, msg) {
   el.textContent = msg;
 }
 function hideStatus(id) { document.getElementById(id).className = 'status'; }
+
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// For HTML attribute values that will be inside single-quoted onclick handlers
+function escAttr(s) {
+  return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
 }
 </script>
 </body>
