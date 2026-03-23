@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Surgery Master Reference — Week-by-Week</title>
+<style>
+:root{--bg:#f5f4f0;--card:#fff;--ink:#1c1a17;--ink2:#3d3a35;--muted:#6b6862;--border:rgba(28,26,23,0.1);--red:#b03020;--gold:#9a7030;--teal:#1a7060;--purple:#5a4ab0;--green:#1a6040}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;font-size:14px}
+.page{max-width:960px;margin:0 auto;padding:40px 24px}
+h1{font-size:28px;font-weight:700;margin-bottom:6px;color:var(--ink)}
+.subtitle{font-size:13px;color:var(--muted);margin-bottom:36px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+
+/* WEEK BLOCK */
+.week{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:28px;overflow:hidden}
+.week-header{padding:18px 22px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border)}
+.wk-badge{font-size:11px;font-weight:700;color:#fff;padding:4px 10px;border-radius:5px;white-space:nowrap;flex-shrink:0}
+.week-header h2{font-size:17px;font-weight:700;flex:1}
+.week-header .rotation-tag{font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:3px 8px;white-space:nowrap}
+.week-mins{font-size:12px;font-weight:700;color:var(--muted)}
+.week-body{padding:0}
+
+/* SECTION */
+.sec{border-bottom:1px solid var(--border);padding:16px 22px}
+.sec:last-child{border-bottom:none}
+.sec-title{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px}
+.sec-title.lec{color:var(--red)}
+.sec-title.princ{color:var(--gold)}
+.sec-title.tut{color:var(--teal)}
+.sec-title.spec{color:var(--purple)}
+.sec-title.wards{color:var(--green)}
+.sec-title.podcast{color:#c05010}
+.sec-title.effort{color:#305090}
+
+/* LECTURE LIST */
+.lec-list{list-style:none}
+.lec-item{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-bottom:1px solid rgba(28,26,23,.04)}
+.lec-item:last-child{border-bottom:none}
+.lec-num{font-size:10px;color:var(--muted);font-family:monospace;width:18px;flex-shrink:0}
+.lec-title{font-size:13px;font-weight:600;color:var(--ink);flex:1}
+.lec-tag{font-size:9px;font-weight:700;letter-spacing:.08em;padding:1px 6px;border-radius:3px;background:#f5f0e8;color:#7a5820;border:1px solid #e8d8b0}
+.lec-mins{font-size:11px;color:var(--muted);white-space:nowrap}
+
+/* TOPIC COLUMNS */
+.topic-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:600px){.topic-cols{grid-template-columns:1fr}}
+.topic-group{}
+.topic-group-title{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.topic-group-title.acute{color:#b05000}
+.topic-ul{list-style:none}
+.topic-ul li{font-size:12.5px;color:var(--ink2);padding:3px 0 3px 14px;position:relative;line-height:1.45;border-bottom:1px solid rgba(28,26,23,.03)}
+.topic-ul li:last-child{border-bottom:none}
+.topic-ul li::before{content:'·';position:absolute;left:3px;color:var(--red);font-size:16px;line-height:1.1}
+.topic-ul li.ac::before{color:#b06000}
+
+/* WARDS */
+.ward-list{list-style:none}
+.ward-item{padding:5px 0 5px 14px;position:relative;font-size:12.5px;color:var(--ink2);border-bottom:1px solid rgba(28,26,23,.04)}
+.ward-item:last-child{border-bottom:none}
+.ward-item::before{content:'→';position:absolute;left:0;color:var(--green)}
+
+/* PILLS */
+.pill-row{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-size:11.5px;padding:4px 10px;border-radius:5px;border:1px solid var(--border)}
+.pill.tut{background:#f0f8f4;color:#0f5040;border-color:rgba(26,112,96,.2)}
+.pill.pod{background:#fff5ee;color:#a04010;border-color:rgba(192,80,16,.2)}
+
+/* OVERARCHING PRINCIPLES BOX */
+.princ-box{background:#fffdf5;border-left:3px solid var(--gold);padding:10px 14px;border-radius:0 6px 6px 0}
+.princ-ul{list-style:none}
+.princ-ul li{font-size:12.5px;color:var(--ink2);padding:3px 0 3px 14px;position:relative;line-height:1.45}
+.princ-ul li::before{content:'—';position:absolute;left:0;color:#c0a040;font-size:10px;top:5px}
+
+/* EFFORT BAR */
+.effort-box{background:#f0f4ff;border-left:3px solid #305090;padding:10px 14px;border-radius:0 6px 6px 0}
+.effort-bar{height:8px;background:#e0e4f0;border-radius:4px;overflow:hidden;margin:8px 0 4px}
+.effort-fill{height:100%;border-radius:4px}
+.effort-label{font-size:12px;font-weight:600;color:#305090}
+.effort-note{font-size:11.5px;color:#4050a0;line-height:1.55}
+
+/* TOC */
+.toc{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px 24px;margin-bottom:28px}
+.toc h3{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px}
+.toc a{font-size:12.5px;color:var(--ink2);text-decoration:none;padding:3px 0;display:block}
+.toc a:hover{color:var(--red)}
+
+/* OVERARCHING PRINCIPLES MASTER */
+.op-section{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:28px;overflow:hidden}
+.op-header{padding:18px 22px;background:#fffcf0;border-bottom:1px solid var(--border)}
+.op-header h2{font-size:17px;font-weight:700;color:#7a5010}
+.op-header p{font-size:12px;color:var(--muted);margin-top:3px}
+.op-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+@media(max-width:600px){.op-grid{grid-template-columns:1fr}}
+.op-card{padding:16px 22px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.op-card:nth-child(even){border-right:none}
+.op-card:nth-last-child(-n+2){border-bottom:none}
+.op-card h4{font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px}
+
+/* EFFORT SUMMARY */
+.effort-summary{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:28px;overflow:hidden}
+.effort-summary-header{padding:18px 22px;background:#f0f4ff;border-bottom:1px solid var(--border)}
+.effort-summary-header h2{font-size:17px;font-weight:700;color:#203070}
+.effort-grid{padding:18px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:600px){.effort-grid{grid-template-columns:1fr}}
+.effort-card{padding:14px;background:#f8f9ff;border:1px solid #dde2f5;border-radius:8px}
+.effort-card h4{font-size:12px;font-weight:700;color:#203070;margin-bottom:4px}
+.effort-card .pct{font-size:22px;font-weight:800;color:#3050c0;line-height:1}
+.effort-card .why{font-size:11.5px;color:#405080;margin-top:5px;line-height:1.5}
+.effort-card .bar2{height:6px;background:#dde2f5;border-radius:3px;margin:8px 0}
+.effort-card .fill2{height:100%;border-radius:3px;background:#3050c0}
+
+/* FULL WIDTH COLS */
+.full{grid-column:1/-1}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Surgery Master Reference</h1>
+<p class="subtitle">Year 4 MD · University of Sydney 2026 · Comprehensive week-by-week integration of lecture schedule + handbook content + effort allocation</p>
+
+<div class="toc">
+  <h3>Contents</h3>
+  <div class="toc-grid">
+    <a href="#wk1">Study Week 1 — Neuro rotation / Trauma &amp; Neuro content</a>
+    <a href="#wk2">Study Week 2 — Ophthalmology rotation / Vascular content</a>
+    <a href="#wk3">Study Week 3 — Neuro rotation / Orthopaedics Pt.1</a>
+    <a href="#wk4">Study Week 4 — Neuro rotation / Orthopaedics Pt.2 + Plastics</a>
+    <a href="#wk5">Study Week 5 — Colorectal rotation / Lower GI content</a>
+    <a href="#wk6">Study Week 6 — Colorectal rotation / Upper GI + Urology</a>
+    <a href="#wk7">Study Week 7 — Colorectal rotation / Breast + ENT + H&amp;N</a>
+    <a href="#overarching">Overarching Principles — Full reference (25% of exam)</a>
+    <a href="#effort">Effort Allocation Summary</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ WEEK 1 ═══════════════════════════════ -->
+<div class="week" id="wk1">
+  <div class="week-header" style="background:#faf5ff">
+    <div class="wk-badge" style="background:#5a3ab0">WK1</div>
+    <h2>Trauma &amp; Neurosurgery</h2>
+    <span class="rotation-tag">Neurosurgery rotation · Handbook Week 7</span>
+    <span class="week-mins">47 min lectures</span>
+  </div>
+  <div class="week-body">
+
+    <div class="sec">
+      <div class="sec-title lec">Lectures (watch in order)</div>
+      <ul class="lec-list">
+        <li class="lec-item"><span class="lec-num">1</span><span class="lec-title">Brain Tumour</span><span class="lec-tag">CORE</span><span class="lec-mins">14 min</span></li>
+        <li class="lec-item"><span class="lec-num">2</span><span class="lec-title">Trauma Management</span><span class="lec-tag">CORE</span><span class="lec-mins">22 min</span></li>
+        <li class="lec-item"><span class="lec-num">3</span><span class="lec-title">Compartment Syndrome</span><span class="lec-tag">RELATED</span><span class="lec-mins">11 min</span></li>
+      </ul>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title princ">Overarching Principles Focus This Week</div>
+      <div class="princ-box">
+        <ul class="princ-ul">
+          <li>Surgical emergencies — recognition and immediate management</li>
+          <li>Theatre etiquette and safety (surgical safety checklist, communication in theatre)</li>
+          <li>Rehabilitation, mobility and function after surgery (including surgical geriatrics)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title tut">Tutorial &amp; Podcasts This Week</div>
+      <div class="pill-row">
+        <span class="pill tut">Tutorial: Surgical Emergencies (Wk 7)</span>
+        <span class="pill pod">🎙 Podcast: Neurosurgery emergencies</span>
+        <span class="pill pod">🎙 Podcast: Decreased LOC</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title spec">Handbook Curriculum — Trauma &amp; Neurosurgery (all topics)</div>
+      <div class="topic-cols">
+        <div class="topic-group">
+          <div class="topic-group-title acute">⚡ Acute Surgical Conditions</div>
+          <ul class="topic-ul">
+            <li class="ac">Subarachnoid haemorrhage</li>
+            <li class="ac">Subdural / extradural / intradural haemorrhage</li>
+            <li class="ac">Raised intracranial pressure</li>
+            <li class="ac">Traumatic brain injury</li>
+            <li class="ac">Burns (also in Ortho/Plastics)</li>
+            <li class="ac">Soft tissue lacerations and tendon injuries</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Neurosurgery</div>
+          <ul class="topic-ul">
+            <li>Cerebral aneurysms</li>
+            <li>Brain tumours — primary: glioma, meningioma, glioblastoma multiforme (GBM)</li>
+            <li>Brain tumours — secondary metastases</li>
+          </ul>
+        </div>
+        <div class="topic-group">
+          <div class="topic-group-title">Spine Surgery</div>
+          <ul class="topic-ul">
+            <li>Surgery for chronic back pain (red flags; alternative treatment options; pain management)</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Trauma Surgery</div>
+          <ul class="topic-ul">
+            <li>Trauma-related pneumohaemothorax <em>(see also Cardiothoracic)</em></li>
+            <li>Traumatic brain injury and cerebral bleeding <em>(see also Neurosurgery)</em></li>
+            <li>Solid organ laceration and intra-abdominal bleeding</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title wards">On the Wards — Clinical Competencies</div>
+      <ul class="ward-list">
+        <li class="ward-item">Assessment of a trauma patient: primary, secondary and tertiary surveys; c-spine precautions; GCS assessment</li>
+        <li class="ward-item">Patient presenting with post-operative decreased level of consciousness: differentiate neurosurgical causes (bleeding, raised ICP) vs stroke vs delirium</li>
+        <li class="ward-item">Interpret a CT Brain: identify bleeding and solid masses; differentiate subdural, extradural and intracranial bleeding</li>
+        <li class="ward-item">Identify when spinal surgery is indicated for lower back pain: red flags; discuss alternative treatment options and pain management</li>
+      </ul>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title effort">Effort Note</div>
+      <div class="effort-box">
+        <div class="effort-label">Exam weight: 5% (Neuro/Ophthalmology)</div>
+        <div class="effort-bar"><div class="effort-fill" style="width:5%;background:#5a3ab0"></div></div>
+        <p class="effort-note">Brain Tumour is the only lecture — but the handbook expects knowledge of SAH, subdural/extradural haemorrhage, raised ICP, and CT brain interpretation which are not directly covered by lectures. Supplement Trauma Management lecture (22 min) with handbook acute surgical content — this material also overlaps into the 20% Acute Surgical category. Compartment Syndrome is examinable under both Neuro/Trauma and Orthopaedics.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ WEEK 2 ═══════════════════════════════ -->
+<div class="week" id="wk2">
+  <div class="week-header" style="background:#f0f8ff">
+    <div class="wk-badge" style="background:#1a5080">WK2</div>
+    <h2>Vascular &amp; Cardiothoracic Surgery</h2>
+    <span class="rotation-tag">Ophthalmology rotation · Handbook Week 1</span>
+    <span class="week-mins">54 min lectures</span>
+  </div>
+  <div class="week-body">
+
+    <div class="sec">
+      <div class="sec-title lec">Lectures (watch in order)</div>
+      <ul class="lec-list">
+        <li class="lec-item"><span class="lec-num">1</span><span class="lec-title">Abdominal Aortic Aneurysm (AAA) Surgery</span><span class="lec-tag">HANDBOOK WK1</span><span class="lec-mins">15 min</span></li>
+        <li class="lec-item"><span class="lec-num">2</span><span class="lec-title">Peripheral Artery Disease (PAD)</span><span class="lec-tag">HANDBOOK WK1</span><span class="lec-mins">16 min</span></li>
+        <li class="lec-item"><span class="lec-num">3</span><span class="lec-title">Venous Disease</span><span class="lec-tag">HANDBOOK WK1</span><span class="lec-mins">13 min</span></li>
+        <li class="lec-item"><span class="lec-num">4</span><span class="lec-title">Skin Lesion Excision</span><span class="lec-tag">SECONDARY</span><span class="lec-mins">10 min</span></li>
+      </ul>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title princ">Overarching Principles Focus This Week</div>
+      <div class="princ-box">
+        <ul class="princ-ul">
+          <li>Preoperative assessment and investigations (this is Handbook Week 1 focus)</li>
+          <li>Identification of the high-risk surgical patient; ASA classification</li>
+          <li>Approaches to pre-operative investigations</li>
+          <li>Diabetes management in the perioperative setting</li>
+          <li>Antithrombotic management perioperatively</li>
+          <li>Management of patients with chronic pain pre-operatively (including opioids)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title tut">Tutorial &amp; Podcasts This Week</div>
+      <div class="pill-row">
+        <span class="pill tut">Tutorial: Preoperative Assessment (Wk 1)</span>
+        <span class="pill pod">🎙 Podcast: Acute Limb Ischaemia</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title spec">Handbook Curriculum — Vascular &amp; Cardiothoracic (all topics)</div>
+      <div class="topic-cols">
+        <div class="topic-group">
+          <div class="topic-group-title acute">⚡ Acute Surgical Conditions</div>
+          <ul class="topic-ul">
+            <li class="ac">Ruptured AAA</li>
+            <li class="ac">Acute Aortic Syndromes (dissection, penetrating ulcer)</li>
+            <li class="ac">Acute Limb Ischaemia</li>
+            <li class="ac">Deep venous thrombosis (DVT)</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Vascular Diseases</div>
+          <ul class="topic-ul">
+            <li>Peripheral artery disease — atherosclerosis-related PAD including intermittent claudication and chronic limb-threatening ischaemia</li>
+            <li>Aortic aneurysm (AAA)</li>
+            <li>Diabetes-related foot disease (ulcers, sepsis, osteomyelitis)</li>
+            <li>Venous disease — superficial venous disease, varicose veins, venous ulcers, deep venous disease</li>
+            <li>Carotid stenosis</li>
+          </ul>
+        </div>
+        <div class="topic-group">
+          <div class="topic-group-title">Cardiothoracic Surgery</div>
+          <ul class="topic-ul">
+            <li>Surgical approaches to ischaemic heart disease (CABG)</li>
+            <li>Valvular surgery</li>
+            <li>Pneumothorax</li>
+            <li>Lung cancer</li>
+            <li>Lung abscess / empyema</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Note: Skin Lesion Excision lecture</div>
+          <ul class="topic-ul">
+            <li>Benign vs malignant skin lesion recognition</li>
+            <li>Surgical approaches to skin lesion excision and safe margins</li>
+            <li>Appropriate wound management</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title wards">On the Wards — Clinical Competencies</div>
+      <ul class="ward-list">
+        <li class="ward-item">Patients presenting with leg pain: differentiate acute vs chronic arterial ischaemia, venous insufficiency, neurological and musculoskeletal causes</li>
+        <li class="ward-item">Lower limb swelling: recognise venous insufficiency, venous thrombosis and metabolic causes of peripheral oedema</li>
+        <li class="ward-item">Lower limb / foot ulceration: identify arterial, venous and neuroischaemic ulcers (diabetes); recognise infection (cellulitis, osteomyelitis); wound care; when surgery is indicated</li>
+        <li class="ward-item">Aortic aneurysm or dissection: acute symptomatic and asymptomatic presentations; screening and investigation; thresholds for treatment; perioperative management</li>
+        <li class="ward-item">Ischaemic heart disease — coronary surgery: patients in whom CABG is considered; potential graft conduits; pre-surgical workup and investigations</li>
+      </ul>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title effort">Effort Note</div>
+      <div class="effort-box">
+        <div class="effort-label">Exam weight: 10% (Vascular &amp; Cardiothoracic)</div>
+        <div class="effort-bar"><div class="effort-fill" style="width:10%;background:#1a5080"></div></div>
+        <p class="effort-note">Lectures cover AAA, PAD and Venous Disease well. Cardiothoracic (CABG, valvular surgery, pneumothorax, lung cancer) is <strong>entirely lecture-absent</strong> — must cover via handbook and prior year resources. Acute Limb Ischaemia is covered by podcast only. Skin Lesion Excision (10 min lecture) maps to both this week and the Ortho/Plastics block (it also appears in the Ortho handbook under "Benign vs malignant skin lesions"). Do not skip it.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ WEEK 3 ═══════════════════════════════ -->
+<div class="week" id="wk3">
+  <div class="week-header" style="background:#f5f2ff">
+    <div class="wk-badge" style="background:#5a3ab0">WK3</div>
+    <h2>Orthopaedics — Fractures &amp; Arthroplasty</h2>
+    <span class="rotation-tag">Neurosurgery rotation · Handbook Week 2, Part 1</span>
+    <span class="week-mins">54 min lectures</span>
+  </div>
+  <div class="week-body">
+
+    <div class="sec">
+      <div class="sec-title lec">Lectures (watch in order)</div>
+      <ul class="lec-list">
+        <li class="lec-item"><span class="lec-num">1</span><span class="lec-title">Common Fractures</span><span class="lec-tag">FOUNDATION</span><span class="lec-mins">13 min</span></li>
+        <li class="lec-item"><span class="lec-num">2</span><span class="lec-title">Proximal Humerus Fracture</span><span class="lec-tag">SPECIFIC</span><span class="lec-mins">10 min</span></li>
+        <li class="lec-item"><span class="lec-num">3</span><span class="lec-title">Hip Replacement</span><span class="lec-tag">ARTHROPLASTY</span><span class="lec-mins">8 min</span></li>
+        <li class="lec-item"><span class="lec-num">4</span><span class="lec-title">Knee Replacement (TKR)</span><span class="lec-tag">ARTHROPLASTY</span><span class="lec-mins">11 min</span></li>
+        <li class="lec-item"><span class="lec-num">5</span><span class="lec-title">Shoulder Osteoarthritis</span><span class="lec-tag">BRIDGE</span><span class="lec-mins">12 min</span></li>
+      </ul>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title princ">Overarching Principles Focus This Week</div>
+      <div class="princ-box">
+        <ul class="princ-ul">
+          <li>IV fluids in surgical patients (resuscitation, replacement, maintenance)</li>
+          <li>Interpretation of fracture x-rays (anatomy, morphology, complications)</li>
+          <li>Wound healing principles</li>
+          <li>Local anaesthetic doses and administration</li>
+          <li>Surgical approaches and techniques for wound closure</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title tut">Tutorial &amp; Podcasts This Week</div>
+      <div class="pill-row">
+        <span class="pill tut">Tutorial: IV Fluids in Surgical Patients (Wk 2)</span>
+        <span class="pill pod">🎙 Podcast: IV Fluids</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title spec">Handbook Curriculum — Orthopaedics, Hand, Plastics &amp; Burns (Part 1)</div>
+      <div class="topic-cols">
+        <div class="topic-group">
+          <div class="topic-group-title acute">⚡ Acute Surgical Conditions</div>
+          <ul class="topic-ul">
+            <li class="ac">Neck of femur (NOF) fracture</li>
+            <li class="ac">Acute extremity fracture</li>
+            <li class="ac">Acute lacerations and tendon injuries</li>
+            <li class="ac">Wound closure</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Orthopaedic Conditions</div>
+          <ul class="topic-ul">
+            <li>Surgical management of osteoarthritis — hip and knee</li>
+            <li>Common shoulder conditions (including dislocation)</li>
+            <li>Bone and joint infections — septic joint, osteomyelitis</li>
+            <li>Complications of fractures: non-union, nerve injuries, bleeding, compartment syndrome, contractures</li>
+          </ul>
+        </div>
+        <div class="topic-group">
+          <div class="topic-group-title">Hand Surgery</div>
+          <ul class="topic-ul">
+            <li>Carpal tunnel syndrome</li>
+            <li>Hand injuries — lacerations, tendon disruption</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">On the Wards (Ortho focus)</div>
+          <ul class="topic-ul">
+            <li>Interpreting an x-ray to describe a fracture or dislocation (anatomy, complications, morphology)</li>
+            <li>Recognise and manage complications of orthopaedic trauma (compartment syndrome, nerve/vessel injury, open fracture, haemarthrosis, osteomyelitis)</li>
+            <li>Examine a hand, hip, knee, shoulder (anatomy and functional deficits)</li>
+            <li>Recovery after joint replacement (VTE prevention, mobilisation, orthogeriatrics)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title effort">Effort Note</div>
+      <div class="effort-box">
+        <div class="effort-label">Exam weight: 5% (Orthopaedics &amp; Trauma)</div>
+        <div class="effort-bar"><div class="effort-fill" style="width:5%;background:#5a3ab0"></div></div>
+        <p class="effort-note">Lectures are dense and thorough for arthroplasty and common fractures. However, the handbook also expects knowledge of NOF fractures, septic joints, osteomyelitis, and carpal tunnel — none of which have dedicated lectures. Keep lecture review efficient (these 5 lectures = 54 min but only 5% exam weight). NOF fracture is flagged as acute and is high-yield clinically — read the handbook section. Hand Surgery has no lecture coverage at all.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ WEEK 4 ═══════════════════════════════ -->
+<div class="week" id="wk4">
+  <div class="week-header" style="background:#f5f2ff">
+    <div class="wk-badge" style="background:#5a3ab0">WK4</div>
+    <h2>Orthopaedics Pt.2 — Shoulder Complex &amp; Plastics/Burns</h2>
+    <span class="rotation-tag">Neurosurgery rotation · Handbook Week 2, Part 2</span>
+    <span class="week-mins">57 min lectures</span>
+  </div>
+  <div class="week-body">
+
+    <div class="sec">
+      <div class="sec-title lec">Lectures (watch in order)</div>
+      <ul class="lec-list">
+        <li class="lec-item"><span class="lec-num">1</span><span class="lec-title">Shoulder Instability</span><span class="lec-tag">CONTINUATION</span><span class="lec-mins">15 min</span></li>
+        <li class="lec-item"><span class="lec-num">2</span><span class="lec-title">Rotator Cuff Tears</span><span class="lec-tag">CONTINUATION</span><span class="lec-mins">18 min</span></li>
+        <li class="lec-item"><span class="lec-num">3</span><span class="lec-title">Melanoma</span><span class="lec-tag">PLASTICS</span><span class="lec-mins">16 min</span></li>
+        <li class="lec-item"><span class="lec-num">4</span><span class="lec-title">Skin Grafting and Closure</span><span class="lec-tag">PLASTICS</span><span class="lec-mins">8 min</span></li>
+      </ul>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title princ">Overarching Principles Focus This Week</div>
+      <div class="princ-box">
+        <ul class="princ-ul">
+          <li>Continued: Wound healing, wound closure techniques, and complications of healing</li>
+          <li>Local anaesthetic doses and administration (reinforce)</li>
+          <li>Surgical approaches and techniques — flaps, grafts, reconstruction</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title tut">Tutorial This Week</div>
+      <div class="pill-row">
+        <span class="pill tut">Tutorial: IV Fluids in Surgical Patients (Wk 2, continued)</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title spec">Handbook Curriculum — Plastics &amp; Burns (all topics)</div>
+      <div class="topic-cols">
+        <div class="topic-group">
+          <div class="topic-group-title">Plastics &amp; Burns</div>
+          <ul class="topic-ul">
+            <li>Common reconstructive surgical techniques (flaps, grafts)</li>
+            <li>Wound healing</li>
+            <li>Skin cancers — SCC, BCC, Melanoma</li>
+            <li>Benign subcutaneous lumps — lipoma, sebaceous cysts, ganglion</li>
+            <li>Subcutaneous abscesses</li>
+            <li>Soft tissue tumours including sarcomas</li>
+            <li>Acute and longer-term management of burns</li>
+            <li>Wound closure and complications of healing</li>
+          </ul>
+        </div>
+        <div class="topic-group">
+          <div class="topic-group-title">On the Wards — Plastics/Burns</div>
+          <ul class="topic-ul">
+            <li>Benign vs malignant skin lesions: recognise melanoma; surgical approaches to skin lesion excision and safe margins; wound management</li>
+            <li>Methods of skin grafting: split skin, full-thickness, flaps, and synthetic grafts</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Note: Gaps from lectures</div>
+          <ul class="topic-ul">
+            <li>SCC and BCC have no dedicated lecture — cover via handbook</li>
+            <li>Burns management (acute + long-term) has no dedicated lecture — cover via handbook</li>
+            <li>Benign lumps (lipoma, sebaceous cyst, ganglion, abscess) have no lecture — cover via handbook</li>
+            <li>Soft tissue tumours / sarcomas — no lecture, handbook-only</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title effort">Effort Note</div>
+      <div class="effort-box">
+        <div class="effort-label">Exam weight: 5% (Plastics, Burns &amp; Hand)</div>
+        <div class="effort-bar"><div class="effort-fill" style="width:5%;background:#a06010"></div></div>
+        <p class="effort-note">Melanoma and Skin Grafting lectures are solid. However, SCC/BCC, burns management, and benign lumps/abscesses are common clinical presentations with no lecture coverage. The Shoulder trilogy (Wks 3–4: Shoulder OA + Instability + Rotator Cuff = 45 min of lectures) is only 5% exam weight total — do not over-invest in revision. Know the key differentiating features and move on.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ WEEK 5 ═══════════════════════════════ -->
+<div class="week" id="wk5">
+  <div class="week-header" style="background:#f5fff8">
+    <div class="wk-badge" style="background:#1a6040">WK5</div>
+    <h2>Lower GI Surgery</h2>
+    <span class="rotation-tag">Colorectal rotation · Handbook Week 3</span>
+    <span class="week-mins">53 min lectures</span>
+  </div>
+  <div class="week-body">
+
+    <div class="sec">
+      <div class="sec-title lec">Lectures (watch in order)</div>
+      <ul class="lec-list">
+        <li class="lec-item"><span class="lec-num">1</span><span class="lec-title">RIF Pain</span><span class="lec-tag">CORE</span><span class="lec-mins">12 min</span></li>
+        <li class="lec-item"><span class="lec-num">2</span><span class="lec-title">Bowel Obstruction</span><span class="lec-tag">CORE</span><span class="lec-mins">14 min</span></li>
+        <li class="lec-item"><span class="lec-num">3</span><span class="lec-title">Diverticular Disease</span><span class="lec-tag">CORE</span><span class="lec-mins">14 min</span></li>
+        <li class="lec-item"><span class="lec-num">4</span><span class="lec-title">Lower GI Bleeding</span><span class="lec-tag">CORE</span><span class="lec-mins">13 min</span></li>
+      </ul>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title princ">Overarching Principles Focus This Week</div>
+      <div class="princ-box">
+        <ul class="princ-ul">
+          <li>Preparing patients for surgery: perioperative fasting (ERAS protocols, Sip-til-send)</li>
+          <li>VTE prophylaxis</li>
+          <li>Surgical antimicrobial prophylaxis</li>
+          <li>Preparation for theatre: informed consent, emergency bookings</li>
+          <li>Fever and infections in post-surgical patients (also tutorial topic)</li>
+          <li>Aseptic techniques and sterility</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title tut">Tutorial This Week</div>
+      <div class="pill-row">
+        <span class="pill tut">Tutorial: Fever in the Postoperative Patient (Wk 3)</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title spec">Handbook Curriculum — Lower GI Surgery (all topics)</div>
+      <div class="topic-cols">
+        <div class="topic-group">
+          <div class="topic-group-title acute">⚡ Acute Surgical Conditions</div>
+          <ul class="topic-ul">
+            <li class="ac">Acute appendicitis</li>
+            <li class="ac">Bowel obstruction — small and large</li>
+            <li class="ac">Bowel ischaemia including mesenteric ischaemia</li>
+            <li class="ac">Sigmoid volvulus</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Colorectal Conditions</div>
+          <ul class="topic-ul">
+            <li>Colon and rectal cancer (and benign polyps)</li>
+            <li>Inflammatory bowel disease (IBD)</li>
+            <li>Diverticular disease and complications</li>
+            <li>Anorectal disease — fissures, abscesses, haemorrhoids</li>
+          </ul>
+        </div>
+        <div class="topic-group">
+          <div class="topic-group-title">On the Wards — Clinical Competencies</div>
+          <ul class="topic-ul">
+            <li>Assessment of acute abdominal pain: clinical history and examination; investigations; key differentiating symptoms/signs; indications for surgery</li>
+            <li>Patient with acute peritonitis: recognise clinical signs; differential diagnoses; acute management (pain relief); investigations; surgical interventions</li>
+            <li>Per rectal bleeding: causes of chronic and large-volume bleeding; acute management and investigations; red flags</li>
+            <li>Non-surgical management of bowel obstruction: fluid resuscitation/replacement and electrolyte management; quantifying losses; when to consider surgery</li>
+            <li>Surgical treatment of bowel cancer: different operations; screening and surveillance; ERAS pathways</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title effort">Effort Note</div>
+      <div class="effort-box">
+        <div class="effort-label">Exam weight: 15% (GI Surgery — shared with Upper GI)</div>
+        <div class="effort-bar"><div class="effort-fill" style="width:15%;background:#1a6040"></div></div>
+        <p class="effort-note">Lower GI lectures (RIF Pain, Bowel Obstruction, Diverticular Disease, Lower GI Bleeding) cover this specialty reasonably well. Critical gaps: Acute appendicitis has no dedicated lecture (covered implicitly in RIF Pain), bowel ischaemia/mesenteric ischaemia has no lecture, IBD has no lecture, anorectal disease has no lecture. Colon cancer (screening, ERAS, operations) is covered only via "On the Wards" competencies. These are all must-read handbook topics. GI surgery is 15% of the exam combined — do not underinvest here.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ WEEK 6 ═══════════════════════════════ -->
+<div class="week" id="wk6">
+  <div class="week-header" style="background:#fffaf0">
+    <div class="wk-badge" style="background:#8a4010">WK6</div>
+    <h2>Upper GI Surgery + Urology &amp; Transplant</h2>
+    <span class="rotation-tag">Colorectal rotation · Handbook Weeks 4 &amp; 5</span>
+    <span class="week-mins">48 min lectures</span>
+  </div>
+  <div class="week-body">
+
+    <div class="sec">
+      <div class="sec-title lec">Lectures (watch in order)</div>
+      <ul class="lec-list">
+        <li class="lec-item"><span class="lec-num">1</span><span class="lec-title">Biliary Obstruction</span><span class="lec-tag">UPPER GI</span><span class="lec-mins">14 min</span></li>
+        <li class="lec-item"><span class="lec-num">2</span><span class="lec-title">Transplantation</span><span class="lec-tag">UROLOGY</span><span class="lec-mins">14 min</span></li>
+        <li class="lec-item"><span class="lec-num">3</span><span class="lec-title">Prostate Cancer</span><span class="lec-tag">UROLOGY</span><span class="lec-mins">20 min</span></li>
+      </ul>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title princ">Overarching Principles Focus This Week</div>
+      <div class="princ-box">
+        <ul class="princ-ul">
+          <li>Management of common perioperative complications: HAP, MI, delirium, urinary retention, ileus, DVT/PE, post-op bleeding/anaemia</li>
+          <li>Management of medications in the perioperative setting: antiglycaemics, anticoagulants, analgesics</li>
+          <li>Management of post-surgical voiding issues</li>
+          <li>Post-operative anaemia, bleeding and massive transfusions</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title tut">Tutorials &amp; Podcasts This Week</div>
+      <div class="pill-row">
+        <span class="pill tut">Tutorial: Bleeding and Breathing After Surgery (Wk 4)</span>
+        <span class="pill tut">Tutorial: Anti-thrombotic Medications in Surgery (Wk 5)</span>
+        <span class="pill pod">🎙 Podcast: Postoperative Bleeding</span>
+        <span class="pill pod">🎙 Podcast: Chest Pain</span>
+        <span class="pill pod">🎙 Podcast: Urinary Retention</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title spec">Handbook Curriculum — Upper GI Surgery (all topics)</div>
+      <div class="topic-cols">
+        <div class="topic-group">
+          <div class="topic-group-title acute">⚡ Acute Surgical Conditions</div>
+          <ul class="topic-ul">
+            <li class="ac">Acute pancreatitis</li>
+            <li class="ac">Acute cholecystitis / cholangitis</li>
+            <li class="ac">Peptic ulcer perforation and bleeding</li>
+            <li class="ac">Incarcerated / strangulated hernia</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Gastro-oesophageal Disease</div>
+          <ul class="topic-ul">
+            <li>Oesophageal stricture</li>
+            <li>Oesophageal and gastric cancer (including Barrett's oesophagitis)</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Disorders of the Pancreas</div>
+          <ul class="topic-ul">
+            <li>Pancreatic cancer</li>
+            <li>Chronic pancreatitis (including pseudocysts)</li>
+          </ul>
+        </div>
+        <div class="topic-group">
+          <div class="topic-group-title">Liver, Gallbladder &amp; Biliary Tree</div>
+          <ul class="topic-ul">
+            <li>Cholelithiasis and choledocholithiasis</li>
+            <li>Cholecystitis and Cholangitis</li>
+            <li>Cholangiocarcinoma</li>
+            <li>Benign and malignant liver tumours</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Hernias</div>
+          <ul class="topic-ul">
+            <li>Femoral hernia</li>
+            <li>Inguinal hernia — direct and indirect</li>
+            <li>Abdominal wall hernia</li>
+            <li>Hiatus hernias</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">On the Wards — Upper GI</div>
+          <ul class="topic-ul">
+            <li>Interpretation of abdominal / chest x-rays (perforated viscus, bowel obstruction)</li>
+            <li>Acute cholecystitis / cholangitis: antimicrobials; investigations; gall bladder surgery indications and timing</li>
+            <li>Obstructive jaundice: clinical history and examination; LFTs and coagulation/INR; imaging</li>
+            <li>Pancreatitis: risk factors; fluid resuscitation; acute pain management; staging/severity; long-term sequelae</li>
+            <li>Groin hernia: anatomical location; strangulation/incarceration complications; surgical options and timing</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title spec">Handbook Curriculum — Urology &amp; Transplant Surgery (all topics)</div>
+      <div class="topic-cols">
+        <div class="topic-group">
+          <div class="topic-group-title acute">⚡ Acute Surgical Conditions</div>
+          <ul class="topic-ul">
+            <li class="ac">Renal colic (urolithiasis)</li>
+            <li class="ac">Urinary obstruction and hydronephrosis</li>
+            <li class="ac">Testicular torsion</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Prostate, Testes &amp; Scrotum</div>
+          <ul class="topic-ul">
+            <li>Prostate cancer</li>
+            <li>Benign prostatic hypertrophy (BPH)</li>
+            <li>Hydrocele / epididymitis / varicocele</li>
+            <li>Testicular cancer</li>
+          </ul>
+        </div>
+        <div class="topic-group">
+          <div class="topic-group-title">Kidney, Bladder &amp; Voiding</div>
+          <ul class="topic-ul">
+            <li>Urinary incontinence and obstruction</li>
+            <li>Urethral stricture</li>
+            <li>Bladder cancer</li>
+            <li>Renal cancer</li>
+            <li>Renal calculi</li>
+            <li>Adrenal masses</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Transplant Surgery</div>
+          <ul class="topic-ul">
+            <li>Solid organ transplantation — kidney, liver, pancreas</li>
+            <li>Organ donation and matching (cadaveric vs living donors)</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">On the Wards — Urology</div>
+          <ul class="topic-ul">
+            <li>Renal colic: diagnosis; imaging; acute pain management; ureteric decompression (stenting/nephrostomy)</li>
+            <li>Urinary retention and catheters: bladder scans; catheterisation indications; complications (haematuria, clots, infection)</li>
+            <li>Prostate cancer: screening and surveillance; treatment complications (voiding, erectile dysfunction)</li>
+            <li>Voiding dysfunction: differentiate obstructive vs overactive incontinence</li>
+            <li>Transplant patient: risks of immunosuppression; organ donation pathways</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title effort">Effort Note</div>
+      <div class="effort-box">
+        <div class="effort-label">Exam weight: 10% Urology/Transplant + 15% GI Surgery (Upper GI component)</div>
+        <div class="effort-bar"><div class="effort-fill" style="width:25%;background:#8a4010"></div></div>
+        <p class="effort-note">This is the most lecture-sparse week for curriculum density. Biliary Obstruction is the only Upper GI lecture — pancreatitis, oesophageal/gastric cancer, peptic ulcer disease, hernias, and cholecystitis/cholangitis all require handbook self-study. Prostate Cancer and Transplantation are covered. For Urology: renal colic, urinary retention/obstruction, testicular torsion, BPH, bladder cancer, and renal cancer all lack lectures. Two tutorials this week (bleeding/breathing and antithrombotic medications) are high-yield Overarching Principles content — prioritise these.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ WEEK 7 ═══════════════════════════════ -->
+<div class="week" id="wk7">
+  <div class="week-header" style="background:#fff0f5">
+    <div class="wk-badge" style="background:#802050">WK7</div>
+    <h2>Breast Surgery · ENT · Head &amp; Neck · Post-op Pain</h2>
+    <span class="rotation-tag">Colorectal rotation · Handbook Week 6</span>
+    <span class="week-mins">54 min lectures</span>
+  </div>
+  <div class="week-body">
+
+    <div class="sec">
+      <div class="sec-title lec">Lectures (watch in order)</div>
+      <ul class="lec-list">
+        <li class="lec-item"><span class="lec-num">1</span><span class="lec-title">Breast Surgery</span><span class="lec-tag">BREAST/H&amp;N</span><span class="lec-mins">21 min</span></li>
+        <li class="lec-item"><span class="lec-num">2</span><span class="lec-title">Thyroid Surgery</span><span class="lec-tag">BREAST/H&amp;N</span><span class="lec-mins">14 min</span></li>
+        <li class="lec-item"><span class="lec-num">3</span><span class="lec-title">Chronic Post-operative Pain</span><span class="lec-tag">PERIOP</span><span class="lec-mins">19 min</span></li>
+      </ul>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title princ">Overarching Principles Focus This Week</div>
+      <div class="princ-box">
+        <ul class="princ-ul">
+          <li>Management of post-surgical pain — acute and chronic (Chronic Post-op Pain lecture maps here directly)</li>
+          <li>Management of postoperative pain: appropriate escalation of analgesics; modalities (oral, PCA, IV infusions, regional blocks); recognising common side-effects; safe prescribing practices</li>
+          <li>Role of other specialties / models of care: acute surgical teams, orthogeriatrics/surgical geriatrics, anaesthesia, acute and chronic pain teams, ICU, rehabilitation medicine, allied health</li>
+          <li>Perioperative nutrition: nutritional requirements; malnutrition risk; enteral vs parenteral feeding</li>
+          <li>Preparing a patient for discharge: rehabilitation; discharge medications and analgesia; wound care plans; surgical follow-up; GP liaison</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title tut">Tutorial &amp; Podcasts This Week</div>
+      <div class="pill-row">
+        <span class="pill tut">Tutorial: Perioperative Care — DM, Pain, Nutrition (Wk 6)</span>
+        <span class="pill pod">🎙 Podcast: Post-operative Pain</span>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title spec">Handbook Curriculum — Breast, ENT &amp; Head/Neck (all topics)</div>
+      <div class="topic-cols">
+        <div class="topic-group">
+          <div class="topic-group-title acute">⚡ Acute Surgical Conditions</div>
+          <ul class="topic-ul">
+            <li class="ac">Epistaxis</li>
+            <li class="ac">Airway obstruction</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Breast Surgery</div>
+          <ul class="topic-ul">
+            <li>Breast cancer</li>
+            <li>Benign breast disease — cysts, fibroadenoma</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Neck Surgery</div>
+          <ul class="topic-ul">
+            <li>Multinodular goitre</li>
+            <li>Thyroid cancer</li>
+            <li>Lymphadenopathy</li>
+            <li>Thyroglossal cysts</li>
+            <li>Branchial cysts</li>
+          </ul>
+        </div>
+        <div class="topic-group">
+          <div class="topic-group-title">ENT Surgery</div>
+          <ul class="topic-ul">
+            <li>Surgical management of otitis media</li>
+            <li>Surgical management of hearing loss (including cochlear implants)</li>
+            <li>Sinus surgery</li>
+            <li>Tonsillectomy / Adenoidectomy</li>
+            <li>Disorders of the larynx — epiglottitis, vocal cord dysfunction</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">On the Wards — Breast/ENT/H&amp;N</div>
+          <ul class="topic-ul">
+            <li>Potential airway obstruction: signs (stridor, drooling, angioedema, neck haematoma); approach to acute airway management</li>
+            <li>Patient presenting with a neck mass: clinical history and examination; differential diagnoses (benign and malignant)</li>
+            <li>Surgical treatment for breast cancer: triple-testing; patient-centred treatment; MDT involvement; resection and reconstructive options</li>
+          </ul>
+          <div class="topic-group-title" style="margin-top:10px">Note: Lecture gaps</div>
+          <ul class="topic-ul">
+            <li>ENT surgery topics (otitis media, hearing loss, sinus, tonsillectomy, larynx disorders) have no lecture coverage — handbook-only</li>
+            <li>Benign breast disease has no lecture — handbook-only</li>
+            <li>Epistaxis and airway obstruction (acute) — handbook-only</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-title effort">Effort Note</div>
+      <div class="effort-box">
+        <div class="effort-label">Exam weight: 5% (ENT/Head/Neck/Breast)</div>
+        <div class="effort-bar"><div class="effort-fill" style="width:5%;background:#802050"></div></div>
+        <p class="effort-note">Breast Surgery and Thyroid Surgery lectures are solid. ENT topics (otitis media, cochlear implants, sinus, tonsillectomy, larynx disorders) have absolutely no lecture coverage and are often low-yield for the clinical exam — but know the key acute presentations (airway obstruction, epistaxis). The Chronic Post-op Pain lecture (19 min) is the single most important Overarching Principles lecture you have — it integrates pain management across all specialties and is worth treating as a principles resource, not just a specialty one.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ OVERARCHING PRINCIPLES ═══════════════════════════════ -->
+<div class="op-section" id="overarching">
+  <div class="op-header">
+    <h2>Overarching Principles of Surgery — Full Reference</h2>
+    <p>25% of exam · Minimal dedicated lecture coverage · Must build via handbook self-study, tutorials, and podcasts</p>
+  </div>
+  <div class="op-grid">
+    <div class="op-card">
+      <h4>Pre-operative Assessment &amp; Risk</h4>
+      <ul class="topic-ul">
+        <li>Identification of the high-risk surgical patient</li>
+        <li>Classification of perioperative risk using ASA score (American Anaesthesiologist Score)</li>
+        <li>Approaches to pre-operative investigations</li>
+        <li>Diabetes management in the perioperative setting</li>
+        <li>Antithrombotic management in the perioperative setting</li>
+        <li>Management of patients with chronic pain pre-operatively (including patients prescribed opioids)</li>
+      </ul>
+    </div>
+    <div class="op-card">
+      <h4>Preparation for Surgery</h4>
+      <ul class="topic-ul">
+        <li>Perioperative fasting (including ERAS protocols and Sip-til-send)</li>
+        <li>Venous thromboembolism (VTE) prophylaxis</li>
+        <li>Surgical antimicrobial prophylaxis</li>
+        <li>Preparation for theatre: informed consent, emergency bookings</li>
+      </ul>
+    </div>
+    <div class="op-card">
+      <h4>Intraoperative Aspects</h4>
+      <ul class="topic-ul">
+        <li>Surgical safety checklist and communication in theatre</li>
+        <li>Aseptic techniques and sterility</li>
+        <li>Local anaesthetic doses and administration</li>
+        <li>Surgical approaches and techniques for wound closure</li>
+      </ul>
+    </div>
+    <div class="op-card">
+      <h4>Post-operative Management</h4>
+      <ul class="topic-ul">
+        <li>Pain management — acute and chronic</li>
+        <li>IV fluid management — resuscitation, replacement, maintenance</li>
+        <li>Common perioperative complications: HAP, MI, delirium, urinary retention, ileus, DVT/PE</li>
+        <li>Fever in post-operative patients</li>
+        <li>Post-operative anaemia, bleeding and massive transfusions</li>
+        <li>Perioperative nutrition</li>
+        <li>Rehabilitation, mobility and function after surgery</li>
+        <li>Role of other specialties/models of care: acute surgical teams, orthogeriatrics/surgical geriatrics, anaesthesia, acute and chronic pain teams, intensive care, rehabilitation medicine, allied health</li>
+      </ul>
+    </div>
+    <div class="op-card" style="grid-column:1/-1">
+      <h4>On the Wards — Perioperative Competencies (all 7)</h4>
+      <div class="topic-cols">
+        <ul class="topic-ul">
+          <li>Charting IV fluids for patients with surgical conditions</li>
+          <li>Management of postoperative pain: appropriate escalation of analgesics; modalities (oral, PCA, IV infusions, regional blocks); recognising common side-effects; safe prescribing practices</li>
+          <li>Patient with a postoperative fever: considering sources of infection; investigations; antimicrobial choices</li>
+          <li>Patient with postoperative anaemia: recognising active bleeding vs operative losses; when to initiate blood transfusion</li>
+        </ul>
+        <ul class="topic-ul">
+          <li>Assess a surgical wound: recognising impaired healing (infection, haematoma, tension/dehiscence, ischaemia); choose appropriate dressings</li>
+          <li>Handover of a patient before and after surgery: initiating appropriate prophylactic treatments; charting clinical history and medications; handover to anaesthetics/ICU/recovery/afterhours team</li>
+          <li>Preparing a patient for discharge: rehabilitation requirements; discharge medications and analgesia instructions; wound care plans; surgical follow-up; GP liaison</li>
+        </ul>
+      </div>
+    </div>
+    <div class="op-card" style="grid-column:1/-1">
+      <h4>Tutorial Series — 7 Weeks of Overarching Principles Tutorials</h4>
+      <div class="topic-cols">
+        <ul class="topic-ul">
+          <li>Week 1: Preoperative assessment</li>
+          <li>Week 2: IV fluids in surgical patients</li>
+          <li>Week 3: Fever in the postoperative patient</li>
+          <li>Week 4: Bleeding and breathing after surgery</li>
+        </ul>
+        <ul class="topic-ul">
+          <li>Week 5: Anticoagulants in surgery</li>
+          <li>Week 6: Perioperative care — DM, pain, nutrition</li>
+          <li>Week 7: Surgical emergencies</li>
+        </ul>
+      </div>
+    </div>
+    <div class="op-card" style="grid-column:1/-1">
+      <h4>Unscrubbed Podcasts (all 5)</h4>
+      <div class="topic-cols">
+        <ul class="topic-ul">
+          <li>🎙 Post-operative pain</li>
+          <li>🎙 Urinary retention</li>
+          <li>🎙 IV fluids</li>
+        </ul>
+        <ul class="topic-ul">
+          <li>🎙 Chest pain (postoperative context)</li>
+          <li>🎙 Postoperative bleeding</li>
+        </ul>
+      </div>
+    </div>
+    <div class="op-card" style="grid-column:1/-1">
+      <h4>Lectures Mapping to Overarching Principles</h4>
+      <ul class="topic-ul">
+        <li><strong>Introduction to Surgery</strong> — listed in the handbook under Overarching Principles lectures</li>
+        <li><strong>Chronic Pain After Surgery</strong> (19 min, Week 7) — the most important periop lecture; integrates pain management across all specialties</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ EFFORT SUMMARY ═══════════════════════════════ -->
+<div class="effort-summary" id="effort">
+  <div class="effort-summary-header">
+    <h2>Recommended Effort Allocation</h2>
+    <p style="font-size:12px;color:#4060a0;margin-top:3px">Based on exam blueprint weightings, lecture coverage gaps, and handbook breadth per category</p>
+  </div>
+  <div class="effort-grid">
+
+    <div class="effort-card">
+      <h4>Overarching Principles</h4>
+      <div class="pct">28–30%</div>
+      <div class="bar2"><div class="fill2" style="width:30%;background:#9a7030"></div></div>
+      <p class="why">25% exam weight + almost no dedicated lecture coverage = highest effort-per-mark return. The 7 tutorials are your primary resource. Must self-study: IV fluids, periop complications, pain management, VTE prophylaxis, consent, surgical safety. All 5 podcasts count here.</p>
+    </div>
+
+    <div class="effort-card">
+      <h4>Acute Surgical Conditions</h4>
+      <div class="pct">20–22%</div>
+      <div class="bar2"><div class="fill2" style="width:21%;background:#b03020"></div></div>
+      <p class="why">20% exam weight. Acute conditions are flagged ⚡ across every handbook specialty — this is the single most cross-cutting category. Lectures cover Trauma Management, RIF Pain, Bowel Obstruction, Compartment Syndrome. Handbook-only: acute appendicitis, acute cholecystitis/cholangitis, peptic ulcer perforation, mesenteric ischaemia, testicular torsion, renal colic, SAH, acute limb ischaemia, airway obstruction.</p>
+    </div>
+
+    <div class="effort-card">
+      <h4>GI Surgery (Lower + Upper)</h4>
+      <div class="pct">15–18%</div>
+      <div class="bar2"><div class="fill2" style="width:16%;background:#1a6040"></div></div>
+      <p class="why">15% exam weight. Lower GI has 4 lectures. Upper GI has only 1 lecture (Biliary Obstruction) for a very broad handbook section — pancreatitis, oesophago-gastric cancer, peptic ulcers, hernias, and liver/biliary disease are all handbook-only. Prioritise pancreatitis, cholecystitis, and hernias for self-study.</p>
+    </div>
+
+    <div class="effort-card">
+      <h4>Vascular &amp; Cardiothoracic</h4>
+      <div class="pct">10–12%</div>
+      <div class="bar2"><div class="fill2" style="width:11%;background:#1a5080"></div></div>
+      <p class="why">10% exam weight. AAA, PAD, Venous Disease all have lectures. Cardiothoracic (CABG, valvular, pneumothorax, lung cancer) and acute limb ischaemia have no lectures — purely handbook. Carotid stenosis and diabetes-related foot disease also lecture-absent.</p>
+    </div>
+
+    <div class="effort-card">
+      <h4>Urology &amp; Transplant</h4>
+      <div class="pct">10–12%</div>
+      <div class="bar2"><div class="fill2" style="width:11%;background:#305070"></div></div>
+      <p class="why">10% exam weight. Only Prostate Cancer (20 min) and Transplantation (14 min) have lectures. Renal colic, urinary obstruction/hydronephrosis, testicular torsion, BPH, bladder cancer, renal cancer — all handbook-only. Two podcasts (urinary retention) count here.</p>
+    </div>
+
+    <div class="effort-card">
+      <h4>Orthopaedics &amp; Trauma</h4>
+      <div class="pct">5–7%</div>
+      <div class="bar2"><div class="fill2" style="width:6%;background:#5a3ab0"></div></div>
+      <p class="why">5% exam weight, yet 24% of lecture time — these are already well-served by lectures. Triage revision: focus on NOF fracture (no lecture, high-yield acutely), compartment syndrome (exam-ready via lecture), bone/joint infections (no lecture). Deprioritise the shoulder trilogy during revision week.</p>
+    </div>
+
+    <div class="effort-card">
+      <h4>ENT, Head &amp; Neck, Breast</h4>
+      <div class="pct">5%</div>
+      <div class="bar2"><div class="fill2" style="width:5%;background:#802050"></div></div>
+      <p class="why">5% exam weight. Breast Surgery and Thyroid Surgery have lectures. ENT topics (otitis media, hearing loss, sinus, tonsils, larynx) are lecture-absent — skim the handbook for key points but don't over-invest. Know: airway obstruction management, neck mass differential, breast cancer triple-testing and MDT, thyroid surgery complications (RLN, hypocalcaemia).</p>
+    </div>
+
+    <div class="effort-card">
+      <h4>Plastics, Burns &amp; Hand</h4>
+      <div class="pct">5%</div>
+      <div class="bar2"><div class="fill2" style="width:5%;background:#a06010"></div></div>
+      <p class="why">5% exam weight. Melanoma and Skin Grafting have lectures. SCC/BCC, burns management, benign lumps, soft tissue tumours, and hand surgery are lecture-absent. Know the excision margins for melanoma, wound closure techniques, and burn assessment (TBSA, depth, fluid resuscitation rule). Skin Lesion Excision (Wk2, 10 min) is easily overlooked but directly examinable.</p>
+    </div>
+
+    <div class="effort-card">
+      <h4>Neuro &amp; Ophthalmology</h4>
+      <div class="pct">5%</div>
+      <div class="bar2"><div class="fill2" style="width:5%;background:#5a3ab0"></div></div>
+      <p class="why">5% exam weight. Brain Tumour lecture covers GBM/glioma/meningioma basics. However SAH, subdural haematoma, raised ICP, and CT brain interpretation are handbook-only and are very clinically important for the ward. Note: Ophthalmology has no content in this curriculum — it is named in the exam category but there are zero handbook topics or lectures for it.</p>
+    </div>
+
+  </div>
+</div>
+
+<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px 22px;font-size:12px;color:var(--muted);line-height:1.8">
+  <strong style="color:var(--ink)">How to use this document:</strong> Each study week lists every lecture in viewing order, the overarching principles topic to self-study alongside it, that week's tutorial, all relevant handbook curriculum topics, clinical competencies, and an effort note. The Overarching Principles section is a standalone reference for the highest-exam-weight category. Canvas remains the authoritative source for all resources.
+</div>
+
+</div>
+</body>
+</html>
