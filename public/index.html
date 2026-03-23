@@ -416,7 +416,7 @@ function renderResources(section) {
 
 function clearQuizCards() {
   // Remove all week-cards but leave the resources panel
-  document.querySelectorAll('#grid .week-card').forEach(el => el.remove());
+  document.querySelectorAll('#grid .week-card, #grid .empty').forEach(el => el.remove());
   // Re-add a skeleton
   const skel = document.createElement('div');
   skel.className = 'skel-card'; skel.id = 'skeleton';
