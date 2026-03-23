@@ -2,33 +2,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper: check if the signed-in user is an admin
     function isAdmin() {
       return request.auth != null &&
         exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
     }
 
-    // Any logged-in user can read (to check their own access)
-    // Only manageable via Firebase console
     match /admins/{email} {
       allow read:  if request.auth != null;
       allow write: if false;
     }
 
-    // Quiz metadata — any logged-in user can read; only admins can write
     match /quizzes/{quizId} {
       allow read:  if request.auth != null;
       allow write: if isAdmin();
 
-      // Questions subcollection — same rules
       match /data/{doc} {
         allow read:  if request.auth != null;
         allow write: if isAdmin();
       }
     }
 
-    // Progress, flags, notes — each user can only access their own data
-    // Admins can read and write all sessions (needed for quiz ID migration)
+    // Allow admins to LIST the quizSessions collection (needed to enumerate all UIDs)
+    match /quizSessions/{uid} {
+      allow read, write: if (request.auth != null && request.auth.uid == uid)
+                         || isAdmin();
+    }
+
+    // Allow users to read/write their own subcollection data; admins can read/write all
     match /quizSessions/{uid}/{document=**} {
       allow read, write: if (request.auth != null && request.auth.uid == uid)
                          || isAdmin();
