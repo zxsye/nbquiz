@@ -408,7 +408,8 @@ async function enterAdmin() {
 // ── Load all quiz metadata from Firestore ─────────────────────────────────────
 async function loadAllMeta() {
   const snap = await db.collection('quizzes').get();
-  allMeta = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  // id: d.id must come LAST — prevents a stored "id" field from shadowing the real Firestore doc ID
+  allMeta = snap.docs.map(d => ({ ...d.data(), id: d.id }));
 }
 
 // ── Dropdowns (Upload tab) ────────────────────────────────────────────────────
@@ -811,15 +812,18 @@ async function executeRename() {
   setStatus('renameStatus', 'inf', `Updating ${affected.length} quiz${affected.length > 1 ? 'zes' : ''}…`);
 
   try {
+    let totalMigrated = 0;
     for (const m of affected) {
-      const newWeek  = isTopic ? m.week  : newVal;
-      const newTopic = isTopic ? newVal  : m.topic;
-      await moveQuiz(m.id, newWeek, newTopic, m.name);
+      // Log so the admin can verify the exact IDs being processed
+      console.log(`Renaming: quizzes/${m.id} → ${buildQuizId(isTopic ? m.week : newVal, isTopic ? newVal : m.topic, m.name)}`);
+      const count = await moveQuiz(m.id, isTopic ? m.week : newVal, isTopic ? newVal : m.topic, m.name);
+      totalMigrated += (count || 0);
     }
     await loadAllMeta();
     populateWeekDropdown();
-    setStatus('renameStatus', 'ok', `✅ Renamed successfully.`);
-    setTimeout(() => { closeRenameModal(); loadManage(); }, 900);
+    const suffix = totalMigrated > 0 ? ` Progress migrated for ${totalMigrated} user(s).` : '';
+    setStatus('renameStatus', 'ok', `✅ Renamed successfully.${suffix}`);
+    setTimeout(() => { closeRenameModal(); loadManage(); }, 1200);
   } catch(err) {
     setStatus('renameStatus', 'err', `❌ Failed: ${err.message}`);
     document.getElementById('renameOK').disabled = false;
@@ -924,110 +928,122 @@ async function saveEditQuiz() {
   setStatus('editStatus', 'inf', 'Moving quiz…');
 
   try {
-    await moveQuiz(quizId, newWeek, newTopic, newName);
+    const migrated = await moveQuiz(quizId, newWeek, newTopic, newName);
     await loadAllMeta();
     populateWeekDropdown();
-    setStatus('editStatus', 'ok', '✅ Quiz updated successfully.');
-    setTimeout(() => { closeEditModal(); loadManage(); }, 900);
+    const msg = migrated > 0
+      ? `✅ Moved. Progress migrated for ${migrated} user(s).`
+      : '✅ Quiz moved. No user progress found to migrate.';
+    setStatus('editStatus', 'ok', msg);
+    setTimeout(() => { closeEditModal(); loadManage(); }, 1400);
   } catch(err) {
     setStatus('editStatus', 'err', `❌ Failed: ${err.message}`);
     document.getElementById('editSaveBtn').disabled = false;
   }
 }
 
-// ── Core move/rename helper (copy + delete, including all user progress) ──────
+// ── Core move/rename helper ───────────────────────────────────────────────────
+//
+// Strategy for user-data migration:
+//   Rather than collection-group queries (which need a Firestore composite
+//   index that may not exist), we enumerate every doc under quizSessions/,
+//   then check each user's quizzes/{oldId} and notes/{oldId} directly.
+//   This is O(users) reads but is index-free and reliable.
+//
 async function moveQuiz(oldQuizId, newWeek, newTopic, newName) {
   const newQuizId = buildQuizId(newWeek, newTopic, newName);
-  if (newQuizId === oldQuizId) return; // nothing to do
+  if (newQuizId === oldQuizId) return 0; // nothing to do
 
-  // ── 1. Copy quiz metadata + questions ──────────────────────────────────────
+  // ── 1. Read old quiz metadata ───────────────────────────────────────────────
   const oldMetaRef = db.collection('quizzes').doc(oldQuizId);
-  const oldQRef    = oldMetaRef.collection('data').doc('questions');
+  let oldMetaSnap;
+  try {
+    oldMetaSnap = await oldMetaRef.get();
+  } catch(e) {
+    throw new Error(`Could not read quiz "${oldQuizId}" — Firestore path: quizzes/${oldQuizId}. Detail: ${e.message}`);
+  }
+  if (!oldMetaSnap.exists) {
+    throw new Error(
+      `Quiz not found at Firestore path: quizzes/${oldQuizId}\n` +
+      `This usually means the stored week/topic/name fields don't match ` +
+      `the document ID. Check the browser console for the exact ID being used.`
+    );
+  }
 
-  const [oldMetaSnap, oldQSnap] = await Promise.all([oldMetaRef.get(), oldQRef.get()]);
-  if (!oldMetaSnap.exists) throw new Error(`Quiz "${oldQuizId}" not found in Firestore.`);
+  // ── 2. Read old questions ───────────────────────────────────────────────────
+  const oldQRef  = oldMetaRef.collection('data').doc('questions');
+  const oldQSnap = await oldQRef.get().catch(() => null);
 
+  // ── 3. Write new quiz metadata + questions, delete old ─────────────────────
   const newTitle   = `${newWeek} · ${newTopic} · ${newName}`;
   const newMetaRef = db.collection('quizzes').doc(newQuizId);
   const newQRef    = newMetaRef.collection('data').doc('questions');
 
   const quizBatch = db.batch();
+  // Strip any stored 'id' field to avoid confusion — the Firestore doc ID IS the ID
+  const { id: _ignored, ...cleanData } = oldMetaSnap.data();
   quizBatch.set(newMetaRef, {
-    ...oldMetaSnap.data(),
+    ...cleanData,
     week:      newWeek,
     topic:     newTopic,
     name:      newName,
     title:     newTitle,
     updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
   });
-  if (oldQSnap.exists) quizBatch.set(newQRef, oldQSnap.data());
-  if (oldQSnap.exists) quizBatch.delete(oldQRef);
+  if (oldQSnap?.exists) {
+    quizBatch.set(newQRef, oldQSnap.data());
+    quizBatch.delete(oldQRef);
+  }
   quizBatch.delete(oldMetaRef);
   await quizBatch.commit();
 
-  // ── 2. Migrate all user progress ───────────────────────────────────────────
-  // Uses collection group queries to find every user's progress/notes docs
-  // for this quiz without needing to enumerate UIDs.
-  // Requires the admin rule: allow read, write: if isAdmin() on quizSessions.
-
-  // Progress docs: quizSessions/{uid}/quizzes/{oldQuizId}
-  const progressSnap = await db.collectionGroup('quizzes')
-    .where(firebase.firestore.FieldPath.documentId(), '>=', oldQuizId)
-    .where(firebase.firestore.FieldPath.documentId(), '<=', oldQuizId)
-    .get().catch(() => null);
-
-  // Notes docs: quizSessions/{uid}/notes/{oldQuizId}
-  const notesSnap = await db.collectionGroup('notes')
-    .where(firebase.firestore.FieldPath.documentId(), '>=', oldQuizId)
-    .where(firebase.firestore.FieldPath.documentId(), '<=', oldQuizId)
-    .get().catch(() => null);
-
-  // Firestore collection group queries don't support filtering by exact doc ID
-  // via documentId() alone without a collection group index — so we filter
-  // client-side to be safe.
-  const progressDocs = (progressSnap?.docs || []).filter(d => d.id === oldQuizId);
-  const notesDocs    = (notesSnap?.docs    || []).filter(d => d.id === oldQuizId);
-
-  const totalUsers   = progressDocs.length;
-  const totalNotes   = notesDocs.length;
-
-  if (totalUsers + totalNotes === 0) return; // no user data to migrate
-
-  // Firestore batches are capped at 500 ops; each user needs 2 writes + 2 deletes
-  // (progress copy + delete, notes copy + delete) = 4 ops. Safe for up to ~125
-  // users per batch; split if needed.
-  const OPS_PER_USER = 4;
-  const BATCH_LIMIT  = 400; // stay well under 500
-
-  const allOps = [];
-  for (const doc of progressDocs) {
-    // doc.ref.path = quizSessions/{uid}/quizzes/{oldQuizId}
-    // newRef.path  = quizSessions/{uid}/quizzes/{newQuizId}
-    const uid    = doc.ref.parent.parent.id;
-    const newRef = db.collection('quizSessions').doc(uid)
-                     .collection('quizzes').doc(newQuizId);
-    allOps.push({ copy: { from: doc, to: newRef }, del: doc.ref });
-  }
-  for (const doc of notesDocs) {
-    const uid    = doc.ref.parent.parent.id;
-    const newRef = db.collection('quizSessions').doc(uid)
-                     .collection('notes').doc(newQuizId);
-    allOps.push({ copy: { from: doc, to: newRef }, del: doc.ref });
+  // ── 4. Migrate user progress + notes ───────────────────────────────────────
+  // Enumerate every user in quizSessions, then check each one individually.
+  // No collection-group index required.
+  let usersSnap;
+  try {
+    usersSnap = await db.collection('quizSessions').get();
+  } catch(e) {
+    // If admin rules aren't deployed yet, skip migration silently
+    console.warn('Could not enumerate quizSessions (rules not updated?):', e.message);
+    return 0;
   }
 
-  // Execute in chunks of BATCH_LIMIT / 2 (each op = 1 set + 1 delete)
-  const chunkSize = Math.floor(BATCH_LIMIT / 2);
-  for (let i = 0; i < allOps.length; i += chunkSize) {
-    const chunk  = allOps.slice(i, i + chunkSize);
-    const batch  = db.batch();
-    for (const op of chunk) {
-      batch.set(op.copy.to, op.copy.from.data());
-      batch.delete(op.del);
+  let migratedCount = 0;
+
+  for (const userDoc of usersSnap.docs) {
+    const uid = userDoc.id;
+
+    const oldProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(oldQuizId);
+    const oldNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(oldQuizId);
+
+    let progressSnap = null, notesSnap = null;
+    try {
+      [progressSnap, notesSnap] = await Promise.all([oldProgressRef.get(), oldNotesRef.get()]);
+    } catch(e) {
+      console.warn(`Skipping user ${uid} — could not read session data:`, e.message);
+      continue;
     }
-    await batch.commit();
+
+    if (!progressSnap.exists && !notesSnap.exists) continue; // this user hasn't touched this quiz
+
+    const newProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(newQuizId);
+    const newNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(newQuizId);
+
+    const userBatch = db.batch();
+    if (progressSnap.exists) {
+      userBatch.set(newProgressRef, progressSnap.data());
+      userBatch.delete(oldProgressRef);
+    }
+    if (notesSnap.exists) {
+      userBatch.set(newNotesRef, notesSnap.data());
+      userBatch.delete(oldNotesRef);
+    }
+    await userBatch.commit();
+    migratedCount++;
   }
 
-  console.log(`Migrated progress for ${totalUsers} user(s) and notes for ${totalNotes} user(s).`);
+  return migratedCount;
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
