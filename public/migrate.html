@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NB Quiz — Session Migrator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f5f0; --surface: #fff; --border: #e2ddd5;
+  --text: #1a1714; --text-2: #5a534a; --text-3: #9a8f83;
+  --accent: #2563a8; --accent-light: #dbeafe;
+  --ok: #166534; --ok-bg: #dcfce7; --ok-ring: #4ade80;
+  --err: #991b1b; --err-bg: #fee2e2; --err-ring: #f87171;
+  --warn: #92400e; --warn-bg: #fef3c7; --warn-ring: #fbbf24;
+  --radius: 10px; --font-sans: 'DM Sans', sans-serif; --font-mono: 'DM Mono', monospace;
+}
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 48px 20px; }
+.card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; padding: 36px; width: 100%; max-width: 560px; box-shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.06); }
+h1 { font-family: var(--font-sans); font-size: 1.25rem; font-weight: 600; margin-bottom: 4px; }
+.sub { font-size: .82rem; color: var(--text-2); margin-bottom: 28px; line-height: 1.5; }
+label { display: block; font-size: .7rem; font-weight: 600; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .07em; color: var(--text-2); margin-bottom: 6px; }
+input { width: 100%; padding: 10px 14px; font-family: var(--font-mono); font-size: .88rem; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--text); outline: none; transition: border-color .15s; margin-bottom: 16px; }
+input:focus { border-color: var(--accent); background: var(--accent-light); }
+.arrow { text-align: center; color: var(--text-3); font-size: 1.4rem; margin: -6px 0 10px; }
+button { width: 100%; padding: 12px; font-family: var(--font-sans); font-size: .9rem; font-weight: 600; border: none; border-radius: 99px; cursor: pointer; transition: all .15s; margin-top: 8px; }
+.btn-run { background: var(--accent); color: #fff; }
+.btn-run:hover { background: #1d4f8a; }
+.btn-run:disabled { opacity: .4; cursor: not-allowed; }
+.log { margin-top: 24px; display: flex; flex-direction: column; gap: 6px; }
+.entry { font-family: var(--font-mono); font-size: .78rem; padding: 9px 13px; border-radius: 8px; line-height: 1.5; }
+.entry.info  { background: var(--accent-light); color: var(--accent); }
+.entry.ok    { background: var(--ok-bg);   color: var(--ok);   border: 1px solid var(--ok-ring); }
+.entry.warn  { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-ring); }
+.entry.error { background: var(--err-bg);  color: var(--err);  border: 1px solid var(--err-ring); }
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+.hint { font-size: .75rem; color: var(--text-3); font-family: var(--font-mono); margin-top: -10px; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🔄 Session Migrator</h1>
+  <p class="sub">Scans every user in <code>quizSessions</code> and moves their progress + notes from the old quiz ID to the new one. The quiz question data must already be moved first via the admin portal.</p>
+  <div class="divider"></div>
+
+  <label>Old Quiz ID</label>
+  <input id="oldId" type="text" placeholder="e.g. W7__Neuro__v2" spellcheck="false">
+  <p class="hint">Exact Firestore document ID — copy from the breadcrumb in the Firebase console.</p>
+
+  <div class="arrow">↓</div>
+
+  <label>New Quiz ID</label>
+  <input id="newId" type="text" placeholder="e.g. W7__Neuro__Version 2" spellcheck="false">
+  <p class="hint">The new document ID as it appears in the quizzes collection after moving.</p>
+
+  <button class="btn-run" id="runBtn" onclick="run()">Scan &amp; Migrate</button>
+
+  <div class="log" id="log"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:            'AIzaSyCNnvrEli5lzU3sUFvttTsQPIYQXYK1_WE',
+  authDomain:        'nbquiz-6faf9.firebaseapp.com',
+  projectId:         'nbquiz-6faf9',
+  storageBucket:     'nbquiz-6faf9.firebasestorage.app',
+  messagingSenderId: '913114740758',
+  appId:             '1:913114740758:web:a856bb9c8eedf3cd629d37',
+});
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// ── Auto sign-in check ────────────────────────────────────────────────────────
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    log('warn', 'Not signed in — redirecting to login…');
+    setTimeout(() => { window.location.href = '/'; }, 1500);
+  } else {
+    log('info', `Signed in as ${user.email}`);
+  }
+});
+
+// ── Log helper ────────────────────────────────────────────────────────────────
+function log(type, msg) {
+  const el = document.createElement('div');
+  el.className = `entry ${type}`;
+  el.textContent = msg;
+  document.getElementById('log').appendChild(el);
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function clearLog() { document.getElementById('log').innerHTML = ''; }
+
+// ── Main migration ────────────────────────────────────────────────────────────
+async function run() {
+  const oldId = document.getElementById('oldId').value.trim();
+  const newId = document.getElementById('newId').value.trim();
+
+  clearLog();
+
+  if (!oldId) { log('error', 'Old Quiz ID is required.'); return; }
+  if (!newId)  { log('error', 'New Quiz ID is required.'); return; }
+  if (oldId === newId) { log('error', 'Old and new IDs are the same — nothing to do.'); return; }
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Running…';
+
+  log('info', `Old ID: ${oldId}`);
+  log('info', `New ID: ${newId}`);
+  log('info', 'Fetching all users from quizSessions…');
+
+  try {
+    // ── 1. List all users ─────────────────────────────────────────────────────
+    let usersSnap;
+    try {
+      usersSnap = await db.collection('quizSessions').get();
+    } catch(e) {
+      log('error', `Cannot read quizSessions: ${e.message}`);
+      log('error', 'Make sure the updated firestore.rules is deployed: firebase deploy --only firestore:rules');
+      btn.disabled = false; btn.textContent = 'Scan & Migrate';
+      return;
+    }
+
+    if (usersSnap.empty) {
+      log('warn', 'No users found in quizSessions.');
+      btn.disabled = false; btn.textContent = 'Scan & Migrate';
+      return;
+    }
+
+    log('info', `Found ${usersSnap.size} user(s). Scanning each one…`);
+
+    let found = 0, migrated = 0, errors = 0;
+
+    // ── 2. Check each user ────────────────────────────────────────────────────
+    for (const userDoc of usersSnap.docs) {
+      const uid = userDoc.id;
+
+      const oldProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(oldId);
+      const oldNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(oldId);
+
+      let progressSnap, notesSnap;
+      try {
+        [progressSnap, notesSnap] = await Promise.all([
+          oldProgressRef.get(),
+          oldNotesRef.get(),
+        ]);
+      } catch(e) {
+        log('error', `  uid ${uid.slice(0,8)}… — read failed: ${e.message}`);
+        errors++;
+        continue;
+      }
+
+      const hasProgress = progressSnap.exists;
+      const hasNotes    = notesSnap.exists;
+
+      if (!hasProgress && !hasNotes) {
+        // User hasn't touched this quiz — skip silently
+        continue;
+      }
+
+      found++;
+      log('info', `  uid ${uid.slice(0,8)}… — found ${[hasProgress && 'progress', hasNotes && 'notes'].filter(Boolean).join(' + ')}`);
+
+      // ── 3. Copy to new ID, delete old ─────────────────────────────────────
+      const newProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(newId);
+      const newNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(newId);
+
+      try {
+        const batch = db.batch();
+        if (hasProgress) {
+          batch.set(newProgressRef, progressSnap.data());
+          batch.delete(oldProgressRef);
+        }
+        if (hasNotes) {
+          batch.set(newNotesRef, notesSnap.data());
+          batch.delete(oldNotesRef);
+        }
+        await batch.commit();
+        log('ok', `  uid ${uid.slice(0,8)}… — ✓ migrated`);
+        migrated++;
+      } catch(e) {
+        log('error', `  uid ${uid.slice(0,8)}… — write failed: ${e.message}`);
+        errors++;
+      }
+    }
+
+    // ── 4. Summary ────────────────────────────────────────────────────────────
+    if (found === 0) {
+      log('warn', `No users had data for "${oldId}" — nothing was changed.`);
+      log('warn', 'Double-check the old ID matches exactly what\'s in Firestore (case-sensitive).');
+    } else if (errors === 0) {
+      log('ok', `✅ Done — migrated ${migrated} of ${found} user(s) successfully.`);
+    } else {
+      log('warn', `Finished with ${errors} error(s). ${migrated} user(s) migrated, ${errors} skipped.`);
+    }
+
+  } catch(e) {
+    log('error', `Unexpected error: ${e.message}`);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Scan & Migrate';
+}
+</script>
+</body>
+</html>
