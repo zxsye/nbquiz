@@ -1030,45 +1030,54 @@ async function moveQuiz(oldQuizId, newWeek, newTopic, newName) {
   await quizBatch.commit();
 
   // ── 4. Migrate user progress + notes via collection group query ───────────
-  return await migrateUserData(oldQuizId, newQuizId);
+  const { migrated: _m, errors: _e } = await migrateUserData(oldQuizId, newQuizId);
+  return _m;
 }
 
 // ── Shared user-data migration (used by moveQuiz and the Migrate tab) ─────────
 // Uses collectionGroup('quizzes') to find all user progress docs for oldId
 // without needing to enumerate quizSessions top-level docs (which are virtual).
 // Requires firestore.rules: match /{path=**}/quizzes/{d} { allow read,write: if isAdmin(); }
+// Returns { migrated, errors, found }. Throws only if the collection group query itself fails.
+// Per-user batch failures are caught individually so one bad write never blocks the rest —
+// this mirrors the exact error-handling logic in migrate.html.
 async function migrateUserData(oldId, newId, logFn) {
   const log = logFn || ((type, msg) => console.log(`[${type}] ${msg}`));
 
-  // Find every quizzes/{oldId} doc across all users
+  // ── 1. Find all progress docs across all users via collection group ──────
   let progressSnap;
   try {
     progressSnap = await db.collectionGroup('quizzes').get();
   } catch(e) {
     throw new Error(
-      `Collection group query failed. Deploy the updated firestore.rules first.\n` +
-      `Run: firebase deploy --only firestore:rules\nDetail: ${e.message}`
+      `Collection group query failed. Deploy the updated firestore.rules first. ` +
+      `Run: firebase deploy --only firestore:rules — Detail: ${e.message}`
     );
   }
 
-  // Filter to only docs at quizSessions/{uid}/quizzes/{oldId}
+  // Filter to only docs at path quizSessions/{uid}/quizzes/{oldId}
   const progressDocs = progressSnap.docs.filter(d =>
     d.id === oldId && d.ref.path.startsWith('quizSessions/')
   );
 
-  if (progressDocs.length === 0) return 0;
+  log('info', `Found ${progressDocs.length} progress doc(s) matching "${oldId}".`);
 
-  let migratedCount = 0;
+  if (progressDocs.length === 0) return { migrated: 0, errors: 0, found: 0 };
+
+  // ── 2. For each user, migrate progress + notes ───────────────────────────
+  let migrated = 0, errors = 0;
 
   for (const progressDoc of progressDocs) {
-    const uid = progressDoc.ref.parent.parent.id;
-    const shortUid = uid.slice(0, 8) + '…';
+    const uid      = progressDoc.ref.parent.parent.id;
+    const shortUid = uid.slice(0, 8) + '\u2026';
+    log('info', `Processing uid ${shortUid}`);
+
     const oldProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(oldId);
     const newProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(newId);
     const oldNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(oldId);
     const newNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(newId);
 
-    // Also check if this user has notes for the old quiz
+    // Check notes — warn if read fails but continue
     let notesSnap = null;
     try {
       notesSnap = await oldNotesRef.get();
@@ -1076,21 +1085,27 @@ async function migrateUserData(oldId, newId, logFn) {
       log('warn', `  uid ${shortUid} — could not read notes (skipping notes): ${e.message}`);
     }
 
-    const batch = db.batch();
-    batch.set(newProgressRef, progressDoc.data());
-    batch.delete(oldProgressRef);
-    if (notesSnap?.exists) {
-      batch.set(newNotesRef, notesSnap.data());
-      batch.delete(oldNotesRef);
-      log('info', `  uid ${shortUid} — migrating progress + notes`);
-    } else {
-      log('info', `  uid ${shortUid} — migrating progress only`);
+    try {
+      const batch = db.batch();
+      batch.set(newProgressRef, progressDoc.data());
+      batch.delete(oldProgressRef);
+      if (notesSnap && notesSnap.exists) {
+        batch.set(newNotesRef, notesSnap.data());
+        batch.delete(oldNotesRef);
+        log('info', `  uid ${shortUid} — migrating progress + notes`);
+      } else {
+        log('info', `  uid ${shortUid} — migrating progress only`);
+      }
+      await batch.commit();
+      log('ok', `  uid ${shortUid} — done`);
+      migrated++;
+    } catch(e) {
+      log('error', `  uid ${shortUid} — write failed: ${e.message}`);
+      errors++;
     }
-    await batch.commit();
-    migratedCount++;
   }
 
-  return migratedCount;
+  return { migrated, errors, found: progressDocs.length };
 }
 
 // ── Migrate tab: run ───────────────────────────────────────────────────────────
@@ -1121,80 +1136,18 @@ async function runMigration() {
   mlog('info', 'Querying collection group "quizzes" for matching progress docs…');
 
   try {
-    // ── Step 1: collection group query ────────────────────────────────────────
-    let progressSnap;
-    try {
-      progressSnap = await db.collectionGroup('quizzes').get();
-    } catch(e) {
-      mlog('error', `Collection group query failed: ${e.message}`);
-      mlog('error', 'Deploy the updated firestore.rules then try again:');
-      mlog('error', 'firebase deploy --only firestore:rules');
-      btn.disabled = false; btn.textContent = 'Scan & Migrate →';
-      return;
-    }
+    // Delegate entirely to migrateUserData, passing mlog so all per-user
+    // progress, warnings, and errors appear in the UI log panel.
+    const { migrated, errors, found } = await migrateUserData(oldId, newId, mlog);
 
-    // Filter to only docs at path quizSessions/{uid}/quizzes/{oldId}
-    const progressDocs = progressSnap.docs.filter(d =>
-      d.id === oldId && d.ref.path.startsWith('quizSessions/')
-    );
-
-    mlog('info', `Found ${progressDocs.length} progress doc(s) matching "${oldId}".`);
-
-    if (progressDocs.length === 0) {
+    if (found === 0) {
       mlog('warn', `No progress docs found for "${oldId}".`);
       mlog('warn', 'Check the ID is exactly right — it is case-sensitive.');
       btn.disabled = false; btn.textContent = 'Scan & Migrate →';
       return;
     }
 
-    // ── Step 2: migrate each user via migrateUserData ─────────────────────────
-    let migrated = 0, errors = 0;
-
-    for (const progressDoc of progressDocs) {
-      const uid = progressDoc.ref.parent.parent.id;
-      const shortUid = uid.slice(0, 8) + '…';
-
-      mlog('info', `Processing uid ${shortUid}`);
-
-      const oldProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(oldId);
-      const newProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(newId);
-      const oldNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(oldId);
-      const newNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(newId);
-
-      // Check notes, logging a warning if the read fails
-      let notesSnap = null;
-      try {
-        notesSnap = await oldNotesRef.get();
-      } catch(e) {
-        mlog('warn', `  uid ${shortUid} — could not read notes (skipping notes): ${e.message}`);
-      }
-
-      try {
-        const batch = db.batch();
-
-        // Move progress
-        batch.set(newProgressRef, progressDoc.data());
-        batch.delete(oldProgressRef);
-
-        // Move notes if they exist
-        if (notesSnap?.exists) {
-          batch.set(newNotesRef, notesSnap.data());
-          batch.delete(oldNotesRef);
-          mlog('info', `  uid ${shortUid} — migrating progress + notes`);
-        } else {
-          mlog('info', `  uid ${shortUid} — migrating progress only`);
-        }
-
-        await batch.commit();
-        mlog('ok', `  uid ${shortUid} — ✓ done`);
-        migrated++;
-      } catch(e) {
-        mlog('error', `  uid ${shortUid} — write failed: ${e.message}`);
-        errors++;
-      }
-    }
-
-    // ── Step 3: summary ───────────────────────────────────────────────────────
+    // Summary
     if (errors === 0) {
       mlog('ok', `✅ Complete — ${migrated} user(s) migrated successfully.`);
     } else {
@@ -1202,12 +1155,16 @@ async function runMigration() {
     }
 
   } catch(e) {
-    mlog('error', `Unexpected error: ${e.message}`);
+    // migrateUserData only throws for the initial collection group query failure
+    mlog('error', `Collection group query failed: ${e.message}`);
+    mlog('error', 'Deploy the updated firestore.rules then try again:');
+    mlog('error', 'firebase deploy --only firestore:rules');
   }
 
   btn.disabled = false;
   btn.textContent = 'Scan & Migrate →';
 }
+
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 function switchTab(tab) {
