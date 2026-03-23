@@ -22,16 +22,24 @@ service cloud.firestore {
       }
     }
 
-    // Allow admins to LIST the quizSessions collection (needed to enumerate all UIDs)
+    // Each user can access their own session data; admins can access all
     match /quizSessions/{uid} {
       allow read, write: if (request.auth != null && request.auth.uid == uid)
                          || isAdmin();
     }
-
-    // Allow users to read/write their own subcollection data; admins can read/write all
     match /quizSessions/{uid}/{document=**} {
       allow read, write: if (request.auth != null && request.auth.uid == uid)
                          || isAdmin();
+    }
+
+    // Collection group rules — required for collectionGroup() queries by admins.
+    // These let admins query across ALL "quizzes" and "notes" subcollections
+    // regardless of where they sit in the hierarchy.
+    match /{path=**}/quizzes/{docId} {
+      allow read, write: if isAdmin();
+    }
+    match /{path=**}/notes/{docId} {
+      allow read, write: if isAdmin();
     }
   }
 }
