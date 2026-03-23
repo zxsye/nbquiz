@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NB Quiz</title>
+<title>NB Quiz — Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -12,282 +12,369 @@
 :root {
   --bg:           #f7f5f0;
   --surface:      #ffffff;
+  --surface-2:    #f0ede6;
   --border:       #e2ddd5;
   --text:         #1a1714;
   --text-2:       #5a534a;
   --text-3:       #9a8f83;
   --accent:       #2563a8;
   --accent-light: #dbeafe;
-  --correct-bar:  #4ade80;
-  --wrong-bar:    #f87171;
+  --correct:      #166534;
+  --correct-bg:   #dcfce7;
+  --correct-ring: #4ade80;
+  --wrong:        #991b1b;
+  --wrong-bg:     #fee2e2;
+  --wrong-ring:   #f87171;
+  --warn:         #92400e;
+  --warn-bg:      #fef3c7;
+  --warn-ring:    #fbbf24;
   --radius:       10px;
   --radius-lg:    16px;
   --shadow:       0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.06);
   --font-serif:   'Crimson Pro', Georgia, serif;
   --font-sans:    'DM Sans', system-ui, sans-serif;
   --font-mono:    'DM Mono', monospace;
+  --transition:   200ms cubic-bezier(.4,0,.2,1);
 }
-body { font-family: var(--font-sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 48px 24px 80px; }
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); min-height: 100vh; }
 
-/* ── Header ── */
-.page-header { max-width: 760px; margin: 0 auto 0; display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 20px; border-bottom: 1.5px solid var(--border); }
-.logo { font-family: var(--font-serif); font-size: 2rem; font-weight: 600; color: var(--text); }
+/* ── Screens ── */
+.screen { display: none; }
+.screen.active { display: flex; }
+.centered-screen { min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+.logo     { font-family: var(--font-serif); font-size: 2.2rem; font-weight: 600; color: var(--text); margin-bottom: 4px; text-align: center; }
 .logo span { color: var(--accent); }
-.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
-.credit { font-size: .72rem; color: var(--text-3); font-family: var(--font-mono); }
-.user-info  { font-size: .75rem; color: var(--text-3); font-family: var(--font-mono); display: none; }
-.signout-btn { font-size: .72rem; color: var(--text-3); background: none; border: none; cursor: pointer; font-family: var(--font-mono); padding: 0; display: none; }
-.signout-btn:hover { color: var(--accent); }
-.admin-link { font-size: .72rem; font-family: var(--font-mono); font-weight: 500; color: var(--accent); text-decoration: none; border: 1px solid var(--accent); border-radius: 99px; padding: 3px 10px; display: none; align-items: center; gap: 4px; transition: background 150ms; }
-.admin-link:hover { background: var(--accent-light); }
-
-/* ── Section Tabs ── */
-.section-tabs {
-  max-width: 760px;
-  margin: 0 auto 32px;
-  display: flex;
-  gap: 0;
-  border-bottom: 1.5px solid var(--border);
-  padding-top: 2px;
-}
-.section-tab {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 12px 20px 11px;
-  font-family: var(--font-sans);
-  font-size: .875rem;
-  font-weight: 500;
-  color: var(--text-3);
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1.5px;
-  cursor: pointer;
-  transition: color 150ms, border-color 150ms;
-  white-space: nowrap;
-}
-.section-tab:hover { color: var(--text-2); }
-.section-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  font-weight: 600;
-}
-.tab-icon { font-size: 1rem; line-height: 1; }
-
-/* ── Grid ── */
-.grid { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
-
-/* ── Resources panel ── */
-.resources-panel {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-.resources-label {
-  font-family: var(--font-mono);
-  font-size: .7rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--text-3);
-  padding: 14px 20px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.resources-label::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: .6;
-}
-.resource-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0;
-}
-.resource-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px 20px;
-  text-decoration: none;
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  transition: background 150ms;
-  position: relative;
-}
-.resource-card:last-child { border-bottom: none; border-right: none; }
-.resource-card:hover { background: var(--accent-light); }
-.resource-icon {
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 9px;
-  background: var(--accent-light);
-  border: 1.5px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.1rem;
-}
-.resource-info { flex: 1; min-width: 0; }
-.resource-name {
-  font-size: .88rem;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.resource-desc {
-  font-size: .7rem;
-  color: var(--text-3);
-  font-family: var(--font-mono);
-  margin-top: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.resource-arrow {
-  font-size: .75rem;
-  color: var(--text-3);
-  flex-shrink: 0;
-  transition: transform 150ms, color 150ms;
-}
-.resource-card:hover .resource-arrow { transform: translateX(3px); color: var(--accent); }
-
-/* ── Quiz week cards ── */
-.week-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
-.week-label { font-family: var(--font-mono); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 14px 20px 10px; border-bottom: 1px solid var(--border); background: var(--bg); }
-.topic-list { padding: 8px 0; }
-.topic-row { display: flex; align-items: flex-start; padding: 12px 20px; gap: 16px; border-bottom: 1px solid var(--border); }
-.topic-row:last-child { border-bottom: none; }
-.topic-name { font-size: .95rem; font-weight: 500; color: var(--text); min-width: 100px; padding-top: 10px; }
-.pill-group { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; }
-.quiz-pill { display: flex; flex-direction: column; gap: 5px; min-width: 130px; max-width: 200px; flex: 1; }
-.pill-link { display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; border: 1.5px solid var(--border); border-radius: var(--radius); text-decoration: none; background: var(--bg); transition: border-color .15s, background .15s; }
-.pill-link:hover { border-color: var(--accent); background: var(--accent-light); }
-.pill-name  { font-family: var(--font-mono); font-size: .8rem; font-weight: 500; color: var(--accent); }
-.pill-count { font-size: .68rem; color: var(--text-3); font-family: var(--font-mono); }
-
-/* ── Progress bars ── */
-.progress-wrap { display: flex; flex-direction: column; gap: 2px; }
-.prog-bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: #e2ddd5; }
-.seg { height: 100%; transition: width .4s ease; }
-.seg-correct { background: var(--correct-bar); }
-.seg-wrong   { background: var(--wrong-bar); }
-.seg-unans   { background: #e2ddd5; }
-.flag-bar { height: 3px; border-radius: 99px; background: linear-gradient(90deg,#f59e0b,#fbbf24,#fde68a,#f59e0b,#fbbf24); background-size: 200% 100%; animation: shimmer 2s linear infinite; width: 0%; transition: width .4s ease; }
-@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
-.prog-labels { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
-.prog-label  { font-size: .65rem; font-family: var(--font-mono); color: var(--text-3); display: flex; align-items: center; gap: 3px; }
-.prog-label .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-.dot-correct { background: var(--correct-bar); }
-.dot-wrong   { background: var(--wrong-bar); }
-.dot-unans   { background: #b4b0a8; }
-.dot-flag    { background: #f59e0b; }
-.prog-pct    { font-size: .65rem; font-family: var(--font-mono); color: var(--text-3); margin-left: auto; }
-.empty { text-align: center; color: var(--text-3); font-size: .9rem; padding: 48px; }
-
-/* ── Skeleton loading ── */
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-.skel { animation: pulse 1.5s ease infinite; background: var(--border); border-radius: 6px; }
-.skel-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 20px; }
-.skel-bar  { height: 10px; margin-bottom: 8px; }
-.skel-pill { height: 36px; border-radius: var(--radius); flex: 1; min-width: 120px; max-width: 180px; }
-
-/* ── Login overlay ── */
-#loginScreen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
-#loginScreen.hidden { display: none; }
-.login-logo { font-family: var(--font-serif); font-size: 2.4rem; font-weight: 600; color: var(--text); margin-bottom: 6px; text-align: center; }
-.login-logo span { color: var(--accent); }
-.login-sub  { font-size: .85rem; color: var(--text-3); margin-bottom: 48px; text-align: center; }
-.google-btn { display: flex; align-items: center; gap: 10px; padding: 13px 28px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 99px; font-family: var(--font-sans); font-size: .9rem; font-weight: 600; color: var(--text); cursor: pointer; transition: border-color .15s, background .15s; }
+.logo-tag  { font-family: var(--font-mono); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); margin-bottom: 40px; }
+.google-btn { display: flex; align-items: center; gap: 10px; padding: 13px 28px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 99px; font-family: var(--font-sans); font-size: .9rem; font-weight: 600; color: var(--text); cursor: pointer; transition: border-color var(--transition), background var(--transition); }
 .google-btn:hover { border-color: var(--accent); background: var(--accent-light); }
-.login-error { margin-top: 16px; font-size: .8rem; color: #991b1b; min-height: 1em; text-align: center; }
-.made-by-login { position: fixed; bottom: 20px; font-size: .72rem; color: var(--text-3); font-family: var(--font-mono); }
+.screen-err { color: var(--wrong); font-size: .82rem; margin-top: 14px; min-height: 1em; text-align: center; }
+.denied-icon  { font-size: 3rem; margin-bottom: 16px; }
+.denied-title { font-family: var(--font-serif); font-size: 1.5rem; font-weight: 600; margin-bottom: 8px; }
+.denied-sub   { font-size: .85rem; color: var(--text-2); margin-bottom: 28px; text-align: center; }
 
-@media (max-width: 520px) {
-  .topic-row { flex-direction: column; gap: 8px; }
-  .topic-name { min-width: unset; padding-top: 0; }
-  .quiz-pill { max-width: 100%; }
-  .resource-cards { grid-template-columns: 1fr; }
-  .resource-card { border-right: none; }
-  .resource-card:nth-last-child(-n+2):nth-child(2n+1),
-  .resource-card:nth-last-child(-n+2):nth-child(2n+1) ~ .resource-card { border-bottom: 1px solid var(--border); }
-  .resource-card:last-child { border-bottom: none; }
-  .section-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  .section-tab { padding: 12px 14px 11px; font-size: .82rem; }
-}
+/* ── Buttons ── */
+.btn         { font-family: var(--font-sans); font-size: .85rem; font-weight: 600; border-radius: 99px; padding: 9px 22px; cursor: pointer; border: 1.5px solid transparent; transition: all var(--transition); display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #1d4f8a; border-color: #1d4f8a; }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-ghost  { background: transparent; color: var(--text-2); border-color: var(--border); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn-ghost:disabled { opacity: .4; cursor: not-allowed; }
+.btn-danger { background: var(--wrong-bg); color: var(--wrong); border-color: var(--wrong-ring); }
+.btn-danger:hover { background: #fecaca; }
+.btn-warn   { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-ring); }
+.btn-warn:hover { background: #fde68a; }
+.btn-sm { padding: 5px 14px; font-size: .78rem; }
+.btn-xs { padding: 3px 10px; font-size: .72rem; }
+
+/* ── Admin layout ── */
+.admin-layout  { flex-direction: column; min-height: 100vh; }
+.admin-header  { background: var(--surface); border-bottom: 1.5px solid var(--border); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.header-left   { display: flex; align-items: center; gap: 14px; }
+.header-logo   { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 600; color: var(--text); text-decoration: none; }
+.header-logo span { color: var(--accent); }
+.admin-badge   { font-family: var(--font-mono); font-size: .62rem; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 2px 8px; }
+.header-right  { display: flex; align-items: center; gap: 12px; }
+.user-email    { font-size: .75rem; color: var(--text-3); font-family: var(--font-mono); }
+.admin-body    { flex: 1; padding: 32px; max-width: 860px; margin: 0 auto; width: 100%; }
+.credit        { font-size: .7rem; color: var(--text-3); font-family: var(--font-mono); text-align: center; padding: 16px; }
+
+/* ── Tabs ── */
+.tabs       { display: flex; gap: 4px; margin-bottom: 28px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 4px; width: fit-content; }
+.tab        { padding: 8px 20px; border-radius: 7px; border: none; background: transparent; font-family: var(--font-sans); font-size: .88rem; font-weight: 500; color: var(--text-2); cursor: pointer; transition: all var(--transition); }
+.tab.active { background: var(--accent); color: #fff; }
+.tab-panel  { display: none; }
+.tab-panel.active { display: block; }
+.section-title { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; margin-bottom: 4px; }
+.section-sub   { font-size: .82rem; color: var(--text-2); margin-bottom: 24px; }
+
+/* ── Form ── */
+.form-group    { margin-bottom: 18px; }
+.form-label    { font-size: .72rem; font-weight: 600; color: var(--text-2); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 7px; display: block; }
+.input-row     { display: flex; gap: 8px; align-items: center; }
+.sel, .txt     { flex: 1; padding: 10px 14px; font-family: var(--font-sans); font-size: .9rem; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); outline: none; transition: border-color var(--transition); }
+.sel:focus, .txt:focus { border-color: var(--accent); }
+.sel:disabled  { opacity: .45; cursor: not-allowed; }
+.new-wrap      { display: none; align-items: center; gap: 8px; margin-top: 8px; }
+.new-wrap.open { display: flex; }
+.new-txt       { flex: 1; padding: 8px 12px; font-family: var(--font-sans); font-size: .88rem; border: 1.5px solid var(--accent); border-radius: var(--radius); background: var(--accent-light); color: var(--text); outline: none; }
+
+/* ── Dropzone ── */
+.dropzone { border: 2px dashed var(--border); border-radius: var(--radius-lg); padding: 44px 24px; text-align: center; cursor: pointer; transition: all var(--transition); background: var(--surface); }
+.dropzone:hover, .dropzone.over  { border-color: var(--accent); background: var(--accent-light); }
+.dropzone.has-file { border-color: var(--correct-ring); background: var(--correct-bg); border-style: solid; }
+.dropzone.has-error { border-color: var(--wrong-ring); background: var(--wrong-bg); border-style: solid; }
+.dz-icon  { font-size: 2rem; margin-bottom: 8px; }
+.dz-label { font-size: .9rem; color: var(--text-2); font-weight: 500; margin-bottom: 3px; }
+.dz-sub   { font-size: .75rem; color: var(--text-3); font-family: var(--font-mono); }
+.dropzone input[type=file] { display: none; }
+
+/* ── Status ── */
+.status     { padding: 12px 16px; border-radius: var(--radius); font-size: .85rem; margin-top: 16px; display: none; line-height: 1.5; }
+.status.on  { display: block; }
+.status.ok  { background: var(--correct-bg); color: var(--correct); border: 1px solid var(--correct-ring); }
+.status.err { background: var(--wrong-bg);   color: var(--wrong);   border: 1px solid var(--wrong-ring); }
+.status.inf { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent); }
+.status.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-ring); }
+
+/* ── Quiz list ── */
+.week-block  { margin-bottom: 20px; }
+.week-head   { font-family: var(--font-mono); font-size: .68rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 8px 14px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; display: flex; align-items: center; justify-content: space-between; }
+.week-head-label { flex: 1; }
+.topic-block { border: 1.5px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
+.topic-head  { font-size: .72rem; font-weight: 600; color: var(--text-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .05em; padding: 6px 14px 4px; background: var(--surface-2); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.topic-head-label { flex: 1; }
+.quiz-row      { display: flex; align-items: center; padding: 11px 14px; background: var(--surface); border-top: 1px solid var(--border); gap: 10px; }
+.quiz-row-name { font-size: .88rem; font-weight: 500; color: var(--text); font-family: var(--font-mono); flex: 1; }
+.quiz-row-meta { font-size: .7rem; color: var(--text-3); margin-top: 2px; }
+.quiz-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.empty { text-align: center; padding: 48px; color: var(--text-3); font-size: .9rem; }
+
+/* ── Edit-inline icon button ── */
+.edit-icon-btn { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 3px 7px; cursor: pointer; font-size: .72rem; color: var(--text-3); transition: all var(--transition); display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); }
+.edit-icon-btn:hover { background: var(--surface); border-color: var(--border); color: var(--accent); }
+
+/* ── Migrate log entries ── */
+.mlog-entry { font-family: var(--font-mono); font-size: .78rem; padding: 9px 13px; border-radius: 8px; line-height: 1.5; word-break: break-all; }
+.mlog-entry.info  { background: var(--accent-light); color: var(--accent); }
+.mlog-entry.ok    { background: var(--correct-bg); color: var(--correct); border: 1px solid var(--correct-ring); }
+.mlog-entry.warn  { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-ring); }
+.mlog-entry.error { background: var(--wrong-bg); color: var(--wrong); border: 1px solid var(--wrong-ring); }
+
+/* ── Modals ── */
+.modal-bg      { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
+.modal-bg.open { display: flex; }
+.modal         { background: var(--surface); border-radius: var(--radius-lg); padding: 32px; max-width: 400px; width: 100%; box-shadow: 0 16px 48px rgba(0,0,0,.18); }
+.modal-wide    { max-width: 480px; }
+.modal-title   { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; margin-bottom: 10px; }
+.modal-body    { font-size: .86rem; color: var(--text-2); margin-bottom: 20px; line-height: 1.6; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+.modal-form-group { margin-bottom: 14px; }
+.modal-form-group .form-label { margin-bottom: 5px; }
+.modal-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 </style>
 </head>
 <body>
 
-<div id="loginScreen">
-  <div class="login-logo">NB <span>Quiz</span></div>
-  <div class="login-sub">Your personal medical study companion</div>
-  <button class="google-btn" onclick="signInWithGoogle()">
+<!-- ── Login ── -->
+<div class="screen centered-screen active" id="sLogin">
+  <div class="logo">NB <span>Quiz</span></div>
+  <div class="logo-tag">Admin Portal</div>
+  <button class="google-btn" onclick="signInGoogle()">
     <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
-    Continue with Google
+    Sign in with Google
   </button>
-  <div class="login-error" id="loginError"></div>
-  <div class="made-by-login">made by Zi Lin</div>
+  <div class="screen-err" id="loginErr"></div>
 </div>
 
-<header class="page-header">
-  <div class="logo">NB <span>Quiz</span></div>
-  <div class="header-right">
-    <a class="admin-link" id="adminLink" href="/admin">⚙ Admin</a>
-    <div class="credit">made by Zi Lin</div>
-    <div class="user-info"  id="userInfo"></div>
-    <button class="signout-btn" id="signoutBtn" onclick="signOut()">sign out</button>
-  </div>
-</header>
+<!-- ── Access denied ── -->
+<div class="screen centered-screen" id="sDenied">
+  <div class="denied-icon">🚫</div>
+  <div class="denied-title">Access denied</div>
+  <div class="denied-sub" id="deniedMsg">This portal is restricted to authorised admins.</div>
+  <button class="btn btn-ghost" onclick="doSignOut()">Sign out</button>
+</div>
 
-<!-- ── Section Tabs ── -->
-<nav class="section-tabs" id="sectionTabs">
-  <button class="section-tab active" data-section="Surgery" onclick="switchSection('Surgery', this)">
-    <span class="tab-icon">🔪</span> Surgery
-  </button>
-  <button class="section-tab" data-section="GP" onclick="switchSection('GP', this)">
-    <span class="tab-icon">🩺</span> GP
-  </button>
-  <button class="section-tab" data-section="Medicine" onclick="switchSection('Medicine', this)">
-    <span class="tab-icon">💊</span> Medicine
-  </button>
-</nav>
+<!-- ── Admin ── -->
+<div class="screen admin-layout" id="sAdmin">
+  <header class="admin-header">
+    <div class="header-left">
+      <a href="/" class="header-logo">NB <span>Quiz</span></a>
+      <span class="admin-badge">Admin</span>
+    </div>
+    <div class="header-right">
+      <span class="user-email" id="userEmail"></span>
+      <button class="btn btn-ghost btn-sm" onclick="doSignOut()">Sign out</button>
+    </div>
+  </header>
 
-<main class="grid" id="grid">
-  <!-- Resources panel — swapped per section -->
-  <div class="resources-panel" id="resourcesPanel">
-    <div class="resources-label">Resources</div>
-    <div class="resource-cards" id="resourceCards"></div>
-  </div>
+  <div class="admin-body">
+    <div class="tabs">
+      <button class="tab active" id="tabBtnUpload"  onclick="switchTab('upload')">⬆ Upload</button>
+      <button class="tab"        id="tabBtnManage"  onclick="switchTab('manage')">🗂 Manage</button>
+      <button class="tab"        id="tabBtnMigrate" onclick="switchTab('migrate')">🔄 Migrate</button>
+    </div>
 
-  <!-- Skeleton while loading quiz list -->
-  <div class="skel-card" id="skeleton">
-    <div class="skel skel-bar" style="width:40px;margin-bottom:16px;"></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <div class="skel skel-pill"></div>
-      <div class="skel skel-pill"></div>
-      <div class="skel skel-pill"></div>
+    <!-- Upload panel -->
+    <div class="tab-panel active" id="panelUpload">
+      <div class="section-title">Upload a quiz</div>
+      <div class="section-sub">Drop a NotebookLM shim .html or any .json format — questions are extracted in the browser and saved instantly to Firestore. Week, topic, and name can include spaces.</div>
+
+      <div class="form-group">
+        <label class="form-label">Week</label>
+        <div class="input-row">
+          <select class="sel" id="selWeek" onchange="onWeekChange()">
+            <option value="">— select —</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="toggleNew('week')">+ New</button>
+        </div>
+        <div class="new-wrap" id="newWeekWrap">
+          <input class="new-txt" id="newWeekTxt" placeholder="e.g. W8 or Week 8" oninput="onNewInput('week')">
+          <button class="btn btn-ghost btn-sm" onclick="cancelNew('week')">✕</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Topic</label>
+        <div class="input-row">
+          <select class="sel" id="selTopic" onchange="onTopicChange()" disabled>
+            <option value="">— select week first —</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="toggleNew('topic')">+ New</button>
+        </div>
+        <div class="new-wrap" id="newTopicWrap">
+          <input class="new-txt" id="newTopicTxt" placeholder="e.g. Pre-op Assessment" oninput="onNewInput('topic')">
+          <button class="btn btn-ghost btn-sm" onclick="cancelNew('topic')">✕</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Quiz name</label>
+        <div class="input-row">
+          <select class="sel" id="selName" onchange="checkReady()" disabled>
+            <option value="">— select topic first —</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="toggleNew('name')">+ New</button>
+        </div>
+        <div class="new-wrap" id="newNameWrap">
+          <input class="new-txt" id="newNameTxt" placeholder="e.g. Part A" oninput="onNewInput('name')">
+          <button class="btn btn-ghost btn-sm" onclick="cancelNew('name')">✕</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">File</label>
+        <div class="dropzone" id="dropzone"
+          onclick="document.getElementById('fileInput').click()"
+          ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event)">
+          <div class="dz-icon"  id="dzIcon">📄</div>
+          <div class="dz-label" id="dzLabel">Click to browse or drag &amp; drop</div>
+          <div class="dz-sub"   id="dzSub">Accepts .html (shim) or .json (any NB format)</div>
+          <input type="file" id="fileInput" accept=".html,.htm,.json" onchange="onFilePick(event)">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="uploadBtn" onclick="doUpload()" disabled>Save to Firestore →</button>
+      <div class="status" id="uploadStatus"></div>
+    </div>
+
+    <!-- Manage panel -->
+    <div class="tab-panel" id="panelManage">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <div>
+          <div class="section-title">Manage quizzes</div>
+          <div class="section-sub" style="margin-bottom:0">All quizzes stored in Firestore. Rename weeks, topics, or individual quizzes inline.</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadManage()">↺ Refresh</button>
+      </div>
+      <div class="status" id="manageStatus"></div>
+      <div id="quizList"><div class="empty">Loading…</div></div>
+    </div>
+
+    <!-- Migrate panel -->
+    <div class="tab-panel" id="panelMigrate">
+      <div class="section-title">Migrate user progress</div>
+      <div class="section-sub">When a quiz is renamed, user progress stays under the old ID. Paste the old and new Firestore document IDs below to move all users' progress and notes across. The quiz questions must already be in the new location.</div>
+
+      <div class="form-group">
+        <label class="form-label">Old Quiz ID</label>
+        <input class="txt" id="migrateOldId" placeholder="e.g. W7__Neuro__v2" spellcheck="false" autocomplete="off" style="width:100%">
+        <div style="font-size:.72rem;color:var(--text-3);font-family:var(--font-mono);margin-top:5px;">Copy exactly from Firebase console: quizSessions › [uid] › quizzes › <strong>this part</strong></div>
+      </div>
+
+      <div style="text-align:center;font-size:1.2rem;color:var(--text-3);margin:-4px 0 10px;">↓</div>
+
+      <div class="form-group">
+        <label class="form-label">New Quiz ID</label>
+        <input class="txt" id="migrateNewId" placeholder="e.g. W7__Neuro__Version 2" spellcheck="false" autocomplete="off" style="width:100%">
+        <div style="font-size:.72rem;color:var(--text-3);font-family:var(--font-mono);margin-top:5px;">The document ID as it now exists in the quizzes collection.</div>
+      </div>
+
+      <button class="btn btn-primary" id="migrateRunBtn" onclick="runMigration()" style="margin-top:4px;">Scan &amp; Migrate →</button>
+
+      <div id="migrateLog" style="margin-top:20px;display:flex;flex-direction:column;gap:6px;"></div>
     </div>
   </div>
-</main>
+  <div class="credit">made by Zi Lin</div>
+</div>
+
+<!-- ── Confirm delete modal ── -->
+<div class="modal-bg" id="confirmBg">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Delete quiz?</div>
+    <div class="modal-body"  id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost"  onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="modalOK">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Rename week / topic modal ── -->
+<div class="modal-bg" id="renameBg">
+  <div class="modal">
+    <div class="modal-title" id="renameTitle">Rename</div>
+    <div class="modal-body" id="renameBody">Enter a new name for this item. All associated quizzes will be updated.</div>
+    <div class="modal-form-group" style="margin-bottom:20px">
+      <label class="form-label" id="renameFldLabel">New name</label>
+      <input class="txt" id="renameTxt" style="width:100%" placeholder="New name">
+    </div>
+    <div class="status" id="renameStatus" style="margin-top:0;margin-bottom:12px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeRenameModal()">Cancel</button>
+      <button class="btn btn-primary" id="renameOK" onclick="executeRename()">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit / reassign quiz modal ── -->
+<div class="modal-bg" id="editBg">
+  <div class="modal modal-wide">
+    <div class="modal-title">Edit Quiz</div>
+    <div class="modal-body" style="margin-bottom:16px">Change the week, topic, or name. The quiz will be moved to the new location in Firestore.</div>
+
+    <div class="modal-form-group">
+      <label class="form-label">Week</label>
+      <div class="input-row">
+        <select class="sel" id="editSelWeek" onchange="onEditWeekChange()"></select>
+        <button class="btn btn-ghost btn-sm" onclick="toggleEditNew('week')">+ New</button>
+      </div>
+      <div class="new-wrap" id="editNewWeekWrap">
+        <input class="new-txt" id="editNewWeekTxt" placeholder="e.g. W8 or Week 8" oninput="onEditNewInput('week')">
+        <button class="btn btn-ghost btn-sm" onclick="cancelEditNew('week')">✕</button>
+      </div>
+    </div>
+
+    <div class="modal-form-group">
+      <label class="form-label">Topic</label>
+      <div class="input-row">
+        <select class="sel" id="editSelTopic"></select>
+        <button class="btn btn-ghost btn-sm" onclick="toggleEditNew('topic')">+ New</button>
+      </div>
+      <div class="new-wrap" id="editNewTopicWrap">
+        <input class="new-txt" id="editNewTopicTxt" placeholder="e.g. Pre-op Assessment" oninput="onEditNewInput('topic')">
+        <button class="btn btn-ghost btn-sm" onclick="cancelEditNew('topic')">✕</button>
+      </div>
+    </div>
+
+    <div class="modal-form-group" style="margin-bottom:20px">
+      <label class="form-label">Quiz Name</label>
+      <input class="txt" id="editNameTxt" placeholder="e.g. Part A" style="width:100%">
+    </div>
+
+    <div class="status" id="editStatus" style="margin-top:0;margin-bottom:12px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-primary" id="editSaveBtn" onclick="saveEditQuiz()">Save Changes</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
+// ── Firebase init ─────────────────────────────────────────────────────────────
 firebase.initializeApp({
   apiKey:            'AIzaSyCNnvrEli5lzU3sUFvttTsQPIYQXYK1_WE',
   authDomain:        'nbquiz-6faf9.firebaseapp.com',
@@ -296,264 +383,817 @@ firebase.initializeApp({
   messagingSenderId: '913114740758',
   appId:             '1:913114740758:web:a856bb9c8eedf3cd629d37',
 });
-const auth = firebase.auth();
-const db   = firebase.firestore();
-
+const auth     = firebase.auth();
+const db       = firebase.firestore();
 const provider = new firebase.auth.GoogleAuthProvider();
-function signInWithGoogle() {
-  document.getElementById('loginError').textContent = '';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let extractedQuestions = null;
+let newVals   = { week: '', topic: '', name: '' };
+let allMeta   = [];
+let pendingDel = null;
+
+// Rename modal state
+let renameTarget = null; // { type: 'week'|'topic', week, topic? }
+
+// Edit modal state
+let pendingEdit  = null; // { quizId, oldWeek, oldTopic, oldName }
+let editNewVals  = { week: '', topic: '' };
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function signInGoogle() {
+  document.getElementById('loginErr').textContent = '';
   auth.signInWithPopup(provider).catch(() => {
-    document.getElementById('loginError').textContent = 'Sign-in failed. Please try again.';
+    document.getElementById('loginErr').textContent = 'Sign-in failed. Please try again.';
   });
 }
-function signOut() { auth.signOut(); }
-
-// ── Section state ─────────────────────────────────────────────────────────────
-const SECTIONS = {
-  Surgery: {
-    resources: [
-      { href: '/wba',                    icon: '📋', name: 'WBA Requirements',   desc: 'Workplace-based assessments' },
-      { href: '/surgery',                icon: '🔪', name: 'Surgery Handbook',   desc: 'Year 4 MD · 2026' },
-      { href: '/lecture_sched',          icon: '📅', name: 'Lecture Schedule',   desc: 'Year 4 Surgery · 2026' },
-      { href: '/surgery_master_reference', icon: '📌', name: 'Master List',      desc: 'Everything Schedule' },
-    ]
-  },
-  GP: {
-    resources: [
-      { href: '/gp_handbook',  icon: '🩺', name: 'GP Handbook',       desc: 'Year 4 MD · 2026' },
-      { href: '/gp_schedule',  icon: '📅', name: 'GP Schedule',       desc: 'Rotation timetable' },
-      { href: '/gp_resources', icon: '📋', name: 'GP Resources',      desc: 'Clinical guidelines' },
-    ]
-  },
-  Medicine: {
-    resources: [
-      { href: '/med_handbook', icon: '💊', name: 'Medicine Handbook', desc: 'Year 4 MD · 2026' },
-      { href: '/med_schedule', icon: '📅', name: 'Med Schedule',      desc: 'Ward rotation timetable' },
-      { href: '/med_resources',icon: '📋', name: 'Med Resources',     desc: 'Clinical guidelines' },
-    ]
-  }
-};
-
-let currentSection = 'Surgery';
-let currentUid     = null;
-// Cache of all quiz docs so we don't re-fetch on tab switch
-let allQuizDocs    = null;
+function doSignOut() { auth.signOut(); }
 
 auth.onAuthStateChanged(async user => {
-  if (user) {
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('userInfo').textContent = user.email;
-    document.getElementById('userInfo').style.display = 'block';
-    document.getElementById('signoutBtn').style.display = 'block';
-    try {
-      const snap = await db.collection('admins').doc(user.email).get();
-      if (snap.exists) document.getElementById('adminLink').style.display = 'inline-flex';
-    } catch(e) {}
-    currentUid = user.uid;
-    // Read section from URL hash
-    const hash = window.location.hash.replace('#','');
-    if (SECTIONS[hash]) {
-      currentSection = hash;
-      document.querySelectorAll('.section-tab').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.section === currentSection);
-      });
-    }
-    await loadQuizzes(user.uid);
-  } else {
-    document.getElementById('loginScreen').classList.remove('hidden');
-    document.getElementById('userInfo').style.display = 'none';
-    document.getElementById('signoutBtn').style.display = 'none';
-    document.getElementById('adminLink').style.display = 'none';
-  }
-});
-
-// ── Tab switching ──────────────────────────────────────────────────────────────
-function switchSection(section, btn) {
-  if (section === currentSection) return;
-  currentSection = section;
-  window.location.hash = section;
-
-  // Update tab styles
-  document.querySelectorAll('.section-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
-  // Re-render resources
-  renderResources(section);
-
-  // Clear quiz cards (keep skeleton-like re-render)
-  clearQuizCards();
-  if (allQuizDocs) {
-    renderSectionGrid(allQuizDocs, currentUid);
-  }
-}
-
-// ── Load quizzes from Firestore (once) ────────────────────────────────────────
-async function loadQuizzes(uid) {
+  if (!user) { show('sLogin'); return; }
+  let isAdmin = false;
   try {
-    const snap = await db.collection('quizzes').get();
-    allQuizDocs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    renderResources(currentSection);
-    renderSectionGrid(allQuizDocs, uid);
-  } catch(e) {
-    document.getElementById('skeleton').outerHTML = `<p class="empty">Error loading quizzes: ${escHtml(e.message)}</p>`;
-  }
-}
-
-function renderResources(section) {
-  const cards = SECTIONS[section].resources;
-  document.getElementById('resourceCards').innerHTML = cards.map(c => `
-    <a class="resource-card" href="${c.href}" target="_blank">
-      <div class="resource-icon">${c.icon}</div>
-      <div class="resource-info">
-        <div class="resource-name">${escHtml(c.name)}</div>
-        <div class="resource-desc">${escHtml(c.desc)}</div>
-      </div>
-      <div class="resource-arrow">→</div>
-    </a>
-  `).join('');
-}
-
-function clearQuizCards() {
-  // Remove all week-cards but leave the resources panel
-  document.querySelectorAll('#grid .week-card').forEach(el => el.remove());
-  // Re-add a skeleton
-  const skel = document.createElement('div');
-  skel.className = 'skel-card'; skel.id = 'skeleton';
-  skel.innerHTML = `<div class="skel skel-bar" style="width:40px;margin-bottom:16px;"></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      <div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div>
-    </div>`;
-  document.getElementById('grid').appendChild(skel);
-}
-
-function renderSectionGrid(docs, uid) {
-  // Filter by section; quizzes with no section field fall into Surgery (backwards compat)
-  const filtered = docs.filter(d => {
-    const s = (d.section || 'Surgery');
-    return s.toLowerCase() === currentSection.toLowerCase();
-  });
-
-  // Remove skeleton
-  const skel = document.getElementById('skeleton');
-  if (skel) skel.remove();
-
-  if (!filtered.length) {
-    const empty = document.createElement('p');
-    empty.className = 'empty';
-    empty.textContent = `No quizzes yet for ${currentSection}.`;
-    document.getElementById('grid').appendChild(empty);
+    const snap = await db.collection('admins').doc(user.email).get();
+    isAdmin = snap.exists;
+  } catch(e) { console.error('Admin check failed:', e); }
+  if (!isAdmin) {
+    document.getElementById('deniedMsg').textContent =
+      `${user.email} is not an authorised admin. Contact Zi Lin to request access.`;
+    show('sDenied');
     return;
   }
+  document.getElementById('userEmail').textContent = user.email;
+  enterAdmin();
+});
 
-  // Group: week → topic → [{id, name, questionCount}]
-  const groups = {};
-  filtered.forEach(d => {
-    const w = (d.week  || 'Unknown').toUpperCase();
-    const t =  d.topic || 'General';
-    if (!groups[w])    groups[w]    = {};
-    if (!groups[w][t]) groups[w][t] = [];
-    groups[w][t].push({ id: d.id, name: d.name || d.id, questionCount: d.questionCount || 0 });
-  });
+async function enterAdmin() {
+  show('sAdmin');
+  await loadAllMeta();
+  populateWeekDropdown();
+  loadManage();
+}
 
-  renderGrid(groups);
+// ── Load all quiz metadata from Firestore ─────────────────────────────────────
+async function loadAllMeta() {
+  const snap = await db.collection('quizzes').get();
+  // id: d.id must come LAST — prevents a stored "id" field from shadowing the real Firestore doc ID
+  allMeta = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+}
 
-  if (uid) {
-    const meta = filtered.map(d => ({ id: d.id, questionCount: d.questionCount || 0 }));
-    loadAllProgress(uid, meta);
-  }
+// ── Dropdowns (Upload tab) ────────────────────────────────────────────────────
+function getWeek()  { return newVals.week  || document.getElementById('selWeek').value; }
+function getTopic() { return newVals.topic || document.getElementById('selTopic').value; }
+function getName()  { return newVals.name  || document.getElementById('selName').value; }
+
+function populateWeekDropdown() {
+  const weeks = [...new Set(allMeta.map(q => q.week))]
+    .sort((a,b) => weekSortKey(a) - weekSortKey(b));
+  const sel = document.getElementById('selWeek');
+  sel.innerHTML = '<option value="">— select —</option>';
+  weeks.forEach(w => sel.innerHTML += `<option value="${w}">${w}</option>`);
 }
 
 function weekSortKey(w) {
-  const m = w.match(/^W(\d+)$/i);
+  const m = w.match(/(\d+)/);
   return m ? parseInt(m[1]) : 9999;
 }
 
-function renderGrid(groups) {
-  const sortedWeeks = Object.keys(groups).sort((a, b) => weekSortKey(a) - weekSortKey(b));
-  const grid = document.getElementById('grid');
+function onWeekChange() {
+  const week = getWeek();
+  const tSel = document.getElementById('selTopic');
+  const nSel = document.getElementById('selName');
+  tSel.disabled = true; nSel.disabled = true;
+  nSel.innerHTML = '<option value="">— select topic first —</option>';
+  if (!week) {
+    tSel.innerHTML = '<option value="">— select week first —</option>';
+    checkReady(); return;
+  }
+  const topics = [...new Set(allMeta.filter(q => q.week === week).map(q => q.topic))].sort();
+  tSel.innerHTML = '<option value="">— select —</option>';
+  topics.forEach(t => tSel.innerHTML += `<option value="${t}">${t}</option>`);
+  tSel.disabled = false;
+  checkReady();
+}
 
-  sortedWeeks.forEach(week => {
-    let rows = '';
-    Object.keys(groups[week]).sort().forEach(topic => {
-      const versions = groups[week][topic].sort((a,b) => a.name.localeCompare(b.name));
-      let pills = '';
-      versions.forEach(q => {
-        const safe = q.id.replace(/__/g, '_');
-        pills += `<div class="quiz-pill" data-quiz-id="${q.id}">
-          <a href="/quiz?id=${q.id}" class="pill-link">
-            <span class="pill-name">${escHtml(q.name)}</span>
-            <span class="pill-count">${q.questionCount}q</span>
-          </a>
-          <div class="progress-wrap" id="prog_${safe}">
-            <div class="prog-bar">
-              <div class="seg seg-correct" id="seg_c_${safe}"></div>
-              <div class="seg seg-wrong"   id="seg_w_${safe}"></div>
-              <div class="seg seg-unans"   id="seg_u_${safe}"></div>
-            </div>
-            <div class="flag-bar" id="seg_f_${safe}"></div>
-            <div class="prog-labels" id="lbl_${safe}"></div>
-          </div>
-        </div>`;
-      });
-      rows += `<div class="topic-row">
-        <span class="topic-name">${escHtml(topic)}</span>
-        <div class="pill-group">${pills}</div>
-      </div>`;
+function onTopicChange() {
+  const week = getWeek(), topic = getTopic();
+  const nSel = document.getElementById('selName');
+  nSel.disabled = true;
+  if (!week || !topic) {
+    nSel.innerHTML = '<option value="">— select topic first —</option>';
+    checkReady(); return;
+  }
+  const names = allMeta.filter(q => q.week === week && q.topic === topic).map(q => q.name).sort();
+  nSel.innerHTML = '<option value="">— select or add new —</option>';
+  names.forEach(n => nSel.innerHTML += `<option value="${n}">${n}</option>`);
+  nSel.disabled = false;
+  checkReady();
+}
+
+function toggleNew(field) {
+  const wrap = document.getElementById(`new${cap(field)}Wrap`);
+  wrap.classList.toggle('open');
+  if (!wrap.classList.contains('open')) cancelNew(field);
+}
+function cancelNew(field) {
+  newVals[field] = '';
+  document.getElementById(`new${cap(field)}Wrap`).classList.remove('open');
+  document.getElementById(`new${cap(field)}Txt`).value = '';
+  checkReady();
+}
+function onNewInput(field) {
+  // Allow spaces and all printable characters — just trim leading/trailing whitespace for storage
+  newVals[field] = document.getElementById(`new${cap(field)}Txt`).value;
+  checkReady();
+}
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function checkReady() {
+  const w = getWeek().trim(), t = getTopic().trim(), n = getName().trim();
+  document.getElementById('uploadBtn').disabled = !(w && t && n && extractedQuestions);
+}
+
+// ── Dropzone ──────────────────────────────────────────────────────────────────
+function dzOver(e)   { e.preventDefault(); document.getElementById('dropzone').classList.add('over'); }
+function dzLeave(e)  { document.getElementById('dropzone').classList.remove('over'); }
+function dzDrop(e)   { e.preventDefault(); document.getElementById('dropzone').classList.remove('over'); if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); }
+function onFilePick(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
+
+async function processFile(file) {
+  const dz = document.getElementById('dropzone');
+  dz.classList.remove('has-file', 'has-error');
+  document.getElementById('dzIcon').textContent  = '⏳';
+  document.getElementById('dzLabel').textContent = `Reading ${file.name}…`;
+  document.getElementById('dzSub').textContent   = '';
+  extractedQuestions = null;
+  checkReady();
+
+  try {
+    const questions = await extractFile(file);
+    extractedQuestions = questions;
+    dz.classList.add('has-file');
+    document.getElementById('dzIcon').textContent  = '✅';
+    document.getElementById('dzLabel').textContent = file.name;
+    document.getElementById('dzSub').textContent   = `${questions.length} questions extracted`;
+  } catch(err) {
+    dz.classList.add('has-error');
+    document.getElementById('dzIcon').textContent  = '❌';
+    document.getElementById('dzLabel').textContent = 'Extraction failed';
+    document.getElementById('dzSub').textContent   = err.message;
+  }
+  checkReady();
+}
+
+// ── Extraction functions ──────────────────────────────────────────────────────
+function cleanMath(text) {
+  if (!text) return '';
+  return text
+    .replace(/\$GCS\$/g,   'GCS').replace(/\$CT\$/g,    'CT')
+    .replace(/\$MRI\$/g,   'MRI').replace(/\$SpO_2\$/g, 'SpO2')
+    .replace(/\$PaO_2\$/g, 'PaO2').replace(/\$PaCO_2\$/g,'PaCO2')
+    .replace(/\$FiO_2\$/g, 'FiO2').replace(/\$Na\^\+\$/g,'Na+')
+    .replace(/\$K\^\+\$/g, 'K+').replace(/\\\%/g,'%')
+    .replace(/\\text\{([^}]+)\}/g, '$1')
+    .replace(/\$([^$]+)\$/g, '$1')
+    .replace(/\\u0027/g, "'");
+}
+
+/** Format 1 — NotebookLM shim .html (data-app-data attribute) */
+function extractFromShim(htmlText) {
+  const marker = 'data-app-data="';
+  const idx    = htmlText.indexOf(marker);
+  if (idx === -1) throw new Error('No data-app-data attribute found. Make sure this is a NotebookLM shim.html file.');
+  const rawStart = idx + marker.length;
+  let pos = rawStart;
+  while (pos < htmlText.length) {
+    if (htmlText.slice(pos, pos + 6) === '&quot;') { pos += 6; continue; }
+    if (htmlText[pos] === '"') break;
+    pos++;
+  }
+  const rawAttr = htmlText.slice(rawStart, pos);
+  const decoded = rawAttr
+    .replace(/&quot;/g, '"').replace(/&amp;/g, '&')
+    .replace(/&lt;/g,   '<').replace(/&gt;/g,  '>');
+  let data;
+  try { data = JSON.parse(decoded); }
+  catch(e) { throw new Error('Failed to parse JSON from shim.html: ' + e.message); }
+  const quizArr = data.quiz || [];
+  if (!quizArr.length) throw new Error('No questions found in shim.html. The quiz may not have loaded yet when you saved the page.');
+  return quizArr.map(q => {
+    const options = {}, rationales = {};
+    let correct = null;
+    (q.answerOptions || []).forEach((opt, j) => {
+      const letter = String.fromCharCode(65 + j);
+      options[letter] = cleanMath(opt.text || '');
+      if (opt.rationale) rationales[letter] = cleanMath(opt.rationale);
+      if (opt.isCorrect) correct = letter;
+    });
+    return { stem: cleanMath(q.question || ''), options, correct, rationales, hint: cleanMath(q.hint || ''), part: 1 };
+  });
+}
+
+/** Format 2 — NotebookLM exported JSON { interactive_quiz: [...] } */
+function extractFromNBJSON(data) {
+  const quizArr = data.interactive_quiz || [];
+  if (!quizArr.length) throw new Error('No questions found in interactive_quiz array.');
+  return quizArr.map(q => {
+    const options = {}, rationales = {};
+    (q.options || []).forEach(opt => {
+      if (!opt.letter) return;
+      options[opt.letter] = opt.text || '';
+      if (opt.rationale) rationales[opt.letter] = opt.rationale;
+    });
+    return { stem: q.stem || '', options, rationales, correct: q.correct_answer || '', hint: q.hint || '', part: 1 };
+  });
+}
+
+/** Format 3 — Flat array [ { question, answerOptions, hint }, ... ] */
+function extractFromFlatArray(arr) {
+  if (!arr.length) throw new Error('Array is empty — no questions found.');
+  return arr.map((q, i) => {
+    if (!q.question && !q.stem) throw new Error(`Question at index ${i} has no "question" or "stem" field.`);
+    const options = {}, rationales = {};
+    let correct = null;
+    const ansArr = q.answerOptions || q.options || [];
+    ansArr.forEach((opt, j) => {
+      const letter = opt.letter || String.fromCharCode(65 + j);
+      options[letter] = cleanMath(opt.text || '');
+      if (opt.rationale) rationales[letter] = cleanMath(opt.rationale);
+      if (opt.isCorrect || opt.correct) correct = letter;
+    });
+    return {
+      stem:       cleanMath(q.question || q.stem || ''),
+      options,
+      correct,
+      rationales,
+      hint:       cleanMath(q.hint || ''),
+      part:       q.part || 1,
+    };
+  });
+}
+
+async function extractFile(file) {
+  const text = await file.text();
+  const name = file.name.toLowerCase();
+
+  if (name.endsWith('.html') || name.endsWith('.htm')) return extractFromShim(text);
+
+  if (name.endsWith('.json')) {
+    let data;
+    try { data = JSON.parse(text); }
+    catch(e) { throw new Error('Invalid JSON: ' + e.message); }
+
+    // Flat array format
+    if (Array.isArray(data)) return extractFromFlatArray(data);
+    // NB interactive_quiz format
+    if (data.interactive_quiz) return extractFromNBJSON(data);
+    // Single question object wrapped in object — unlikely but handle gracefully
+    throw new Error('Unrecognised JSON format. Expected a flat array [...] or an object with "interactive_quiz" key.');
+  }
+
+  throw new Error('Unsupported file type. Please upload .html (shim) or .json.');
+}
+
+// ── Upload to Firestore ───────────────────────────────────────────────────────
+async function doUpload() {
+  const week  = getWeek().trim();
+  const topic = getTopic().trim();
+  const name  = getName().trim();
+  if (!week || !topic || !name || !extractedQuestions) return;
+
+  const quizId = buildQuizId(week, topic, name);
+  const title  = `${week} · ${topic} · ${name}`;
+
+  document.getElementById('uploadBtn').disabled = true;
+  setStatus('uploadStatus', 'inf', `Saving "${title}" to Firestore…`);
+
+  try {
+    const batch = db.batch();
+    const metaRef = db.collection('quizzes').doc(quizId);
+    batch.set(metaRef, {
+      week:          week,
+      topic,
+      name,
+      title,
+      questionCount: extractedQuestions.length,
+      updatedAt:     firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    const qRef = metaRef.collection('data').doc('questions');
+    batch.set(qRef, { questions: extractedQuestions });
+    await batch.commit();
+
+    setStatus('uploadStatus', 'ok',
+      `✅ Saved "${title}" (${extractedQuestions.length} questions). It's live immediately.`);
+
+    allMeta = allMeta.filter(m => m.id !== quizId);
+    allMeta.push({ id: quizId, week, topic, name });
+    populateWeekDropdown();
+
+    extractedQuestions = null;
+    document.getElementById('dropzone').classList.remove('has-file', 'has-error');
+    document.getElementById('dzIcon').textContent  = '📄';
+    document.getElementById('dzLabel').textContent = 'Click to browse or drag & drop';
+    document.getElementById('dzSub').textContent   = 'Accepts .html (shim) or .json (any NB format)';
+    document.getElementById('fileInput').value     = '';
+  } catch(err) {
+    setStatus('uploadStatus', 'err', `❌ Save failed: ${err.message}`);
+  }
+
+  document.getElementById('uploadBtn').disabled = false;
+  checkReady();
+}
+
+// ── Firestore document ID helper ──────────────────────────────────────────────
+// Uses double-underscore separator; spaces are allowed in Firestore doc IDs
+function buildQuizId(week, topic, name) {
+  return `${week}__${topic}__${name}`;
+}
+
+// ── Manage / list quizzes ─────────────────────────────────────────────────────
+async function loadManage() {
+  const container = document.getElementById('quizList');
+  hideStatus('manageStatus');
+  container.innerHTML = '<div class="empty">Loading…</div>';
+
+  try {
+    const snap = await db.collection('quizzes').get();
+    if (snap.empty) { container.innerHTML = '<div class="empty">No quizzes yet.</div>'; return; }
+
+    const groups = {};
+    snap.forEach(doc => {
+      const d = doc.data();
+      const w = d.week  || 'Unknown';
+      const t = d.topic || 'General';
+      if (!groups[w])    groups[w]    = {};
+      if (!groups[w][t]) groups[w][t] = [];
+      groups[w][t].push({ id: doc.id, name: d.name || doc.id, questionCount: d.questionCount || 0 });
     });
 
-    const card = document.createElement('div');
-    card.className = 'week-card';
-    card.innerHTML = `<div class="week-label">${escHtml(week)}</div><div class="topic-list">${rows}</div>`;
-    grid.appendChild(card);
-  });
+    let html = '';
+    Object.keys(groups)
+      .sort((a,b) => weekSortKey(a) - weekSortKey(b))
+      .forEach(week => {
+        html += `<div class="week-block">
+          <div class="week-head">
+            <span class="week-head-label">${escHtml(week)}</span>
+            <button class="edit-icon-btn" onclick="openRenameModal('week','${escAttr(week)}','')">✏ Rename week</button>
+          </div>
+          <div class="topic-block">`;
+
+        Object.keys(groups[week]).sort().forEach(topic => {
+          html += `<div class="topic-head">
+            <span class="topic-head-label">${escHtml(topic)}</span>
+            <button class="edit-icon-btn" onclick="openRenameModal('topic','${escAttr(week)}','${escAttr(topic)}')">✏ Rename topic</button>
+          </div>`;
+
+          groups[week][topic].sort((a,b) => a.name.localeCompare(b.name)).forEach(({ id, name, questionCount }) => {
+            html += `<div class="quiz-row">
+              <div style="flex:1">
+                <div class="quiz-row-name">${escHtml(name)}</div>
+                <div class="quiz-row-meta">${questionCount} questions · <a href="/quiz?id=${encodeURIComponent(id)}" target="_blank" style="color:var(--accent);">preview ↗</a></div>
+              </div>
+              <div class="quiz-row-actions">
+                <button class="btn btn-warn btn-sm" onclick="openEditModal('${escAttr(id)}','${escAttr(week)}','${escAttr(topic)}','${escAttr(name)}')">✏ Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="confirmDel('${escAttr(id)}','${escAttr(name)}')">Delete</button>
+              </div>
+            </div>`;
+          });
+        });
+
+        html += `</div></div>`;
+      });
+
+    container.innerHTML = html;
+  } catch(err) {
+    container.innerHTML = `<div class="empty">Error: ${err.message}</div>`;
+  }
 }
 
-// ── Progress bars ─────────────────────────────────────────────────────────────
-async function loadAllProgress(uid, quizMeta) {
-  const fetches = quizMeta.map(async ({ id, questionCount }) => {
-    try {
-      const snap = await db.collection('quizSessions').doc(uid)
-        .collection('quizzes').doc(id).get();
-      return { id, questionCount, data: snap.exists ? snap.data() : null };
-    } catch(e) {
-      return { id, questionCount, data: null };
+// ── Delete ────────────────────────────────────────────────────────────────────
+function confirmDel(quizId, name) {
+  pendingDel = quizId;
+  document.getElementById('modalTitle').textContent = 'Delete quiz?';
+  document.getElementById('modalBody').innerHTML =
+    `This will permanently delete <strong>${escHtml(name)}</strong> from Firestore. This cannot be undone.`;
+  document.getElementById('modalOK').onclick = executeDel;
+  document.getElementById('confirmBg').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('confirmBg').classList.remove('open');
+  pendingDel = null;
+}
+async function executeDel() {
+  const quizId = pendingDel;
+  closeModal();
+  setStatus('manageStatus', 'inf', `Deleting ${quizId}…`);
+  try {
+    await db.collection('quizzes').doc(quizId).collection('data').doc('questions').delete();
+    await db.collection('quizzes').doc(quizId).delete();
+    allMeta = allMeta.filter(m => m.id !== quizId);
+    setStatus('manageStatus', 'ok', `✅ Deleted.`);
+    await loadManage();
+  } catch(err) {
+    setStatus('manageStatus', 'err', `❌ Delete failed: ${err.message}`);
+  }
+}
+
+// ── Rename week / topic modal ─────────────────────────────────────────────────
+function openRenameModal(type, week, topic) {
+  renameTarget = { type, week, topic };
+  const isTopic = type === 'topic';
+  document.getElementById('renameTitle').textContent = isTopic ? `Rename topic` : `Rename week`;
+  document.getElementById('renameBody').textContent  = isTopic
+    ? `Renaming "${topic}" will update all quizzes in this topic group.`
+    : `Renaming "${week}" will update all quizzes in this week.`;
+  document.getElementById('renameFldLabel').textContent = isTopic ? 'New topic name' : 'New week name';
+  document.getElementById('renameTxt').value = isTopic ? topic : week;
+  hideStatus('renameStatus');
+  document.getElementById('renameOK').disabled = false;
+  document.getElementById('renameBg').classList.add('open');
+  setTimeout(() => document.getElementById('renameTxt').select(), 50);
+}
+
+function closeRenameModal() {
+  document.getElementById('renameBg').classList.remove('open');
+  renameTarget = null;
+}
+
+async function executeRename() {
+  const newVal = document.getElementById('renameTxt').value.trim();
+  if (!newVal) { setStatus('renameStatus', 'err', 'Name cannot be empty.'); return; }
+
+  const { type, week, topic } = renameTarget;
+  const isTopic = type === 'topic';
+
+  const affected = isTopic
+    ? allMeta.filter(m => m.week === week && m.topic === topic)
+    : allMeta.filter(m => m.week === week);
+
+  if (!affected.length) { closeRenameModal(); return; }
+
+  // Check no-op
+  if ((isTopic && newVal === topic) || (!isTopic && newVal === week)) {
+    closeRenameModal(); return;
+  }
+
+  document.getElementById('renameOK').disabled = true;
+  setStatus('renameStatus', 'inf', `Updating ${affected.length} quiz${affected.length > 1 ? 'zes' : ''}…`);
+
+  try {
+    let totalMigrated = 0;
+    for (const m of affected) {
+      // Log so the admin can verify the exact IDs being processed
+      console.log(`Renaming: quizzes/${m.id} → ${buildQuizId(isTopic ? m.week : newVal, isTopic ? newVal : m.topic, m.name)}`);
+      const count = await moveQuiz(m.id, isTopic ? m.week : newVal, isTopic ? newVal : m.topic, m.name);
+      totalMigrated += (count || 0);
     }
+    await loadAllMeta();
+    populateWeekDropdown();
+    const suffix = totalMigrated > 0 ? ` Progress migrated for ${totalMigrated} user(s).` : '';
+    setStatus('renameStatus', 'ok', `✅ Renamed successfully.${suffix}`);
+    setTimeout(() => { closeRenameModal(); loadManage(); }, 1200);
+  } catch(err) {
+    setStatus('renameStatus', 'err', `❌ Failed: ${err.message}`);
+    document.getElementById('renameOK').disabled = false;
+  }
+}
+
+// ── Edit / reassign quiz modal ────────────────────────────────────────────────
+function openEditModal(quizId, week, topic, name) {
+  pendingEdit = { quizId, oldWeek: week, oldTopic: topic, oldName: name };
+  editNewVals = { week: '', topic: '' };
+
+  // Populate week dropdown
+  const weeks = [...new Set(allMeta.map(q => q.week))].sort((a,b) => weekSortKey(a) - weekSortKey(b));
+  const weekSel = document.getElementById('editSelWeek');
+  weekSel.innerHTML = '';
+  weeks.forEach(w => {
+    weekSel.innerHTML += `<option value="${escHtml(w)}" ${w === week ? 'selected' : ''}>${escHtml(w)}</option>`;
   });
-  const results = await Promise.all(fetches);
-  results.forEach(r => renderBar(r.id, r.questionCount, r.data));
+
+  // Reset new-entry wraps
+  cancelEditNew('week');
+  cancelEditNew('topic');
+
+  // Populate topic dropdown for the current week
+  populateEditTopicDropdown(week, topic);
+
+  document.getElementById('editNameTxt').value = name;
+  hideStatus('editStatus');
+  document.getElementById('editSaveBtn').disabled = false;
+  document.getElementById('editBg').classList.add('open');
 }
 
-function renderBar(quizId, total, data) {
-  const safe = quizId.replace(/__/g, '_');
-  if (!document.getElementById('prog_' + safe)) return;
-  if (!data || !total) return;
-
-  const results = data.results || [];
-  const flagged = data.flagged || [];
-
-  const correct = results.filter(r => r && r.wasCorrect).length;
-  const wrong   = results.filter(r => r && !r.wasCorrect && !r.skipped).length;
-  const unans   = total - correct - wrong;
-  const flags   = flagged.filter(Boolean).length;
-  const pct     = Math.round(correct / total * 100);
-
-  document.getElementById('seg_c_' + safe).style.width = (correct/total*100).toFixed(1) + '%';
-  document.getElementById('seg_w_' + safe).style.width = (wrong/total*100).toFixed(1)   + '%';
-  document.getElementById('seg_u_' + safe).style.width = (unans/total*100).toFixed(1)   + '%';
-  document.getElementById('seg_f_' + safe).style.width = (flags/total*100).toFixed(1)   + '%';
-
-  document.getElementById('lbl_' + safe).innerHTML = `
-    <span class="prog-label"><span class="dot dot-correct"></span>${correct} correct</span>
-    <span class="prog-label"><span class="dot dot-wrong"></span>${wrong} wrong</span>
-    <span class="prog-label"><span class="dot dot-unans"></span>${unans} left</span>
-    ${flags > 0 ? `<span class="prog-label"><span class="dot dot-flag"></span>${flags} flagged</span>` : ''}
-    <span class="prog-pct">${pct}%</span>
-  `;
+function populateEditTopicDropdown(week, selectedTopic) {
+  const tSel   = document.getElementById('editSelTopic');
+  const topics = [...new Set(allMeta.filter(q => q.week === week).map(q => q.topic))].sort();
+  if (!topics.length) {
+    tSel.innerHTML = '<option value="">— add a new topic below —</option>';
+    tSel.disabled  = true;
+  } else {
+    tSel.disabled  = false;
+    tSel.innerHTML = '';
+    topics.forEach(t => {
+      tSel.innerHTML += `<option value="${escHtml(t)}" ${t === selectedTopic ? 'selected' : ''}>${escHtml(t)}</option>`;
+    });
+  }
 }
+
+function onEditWeekChange() {
+  const week = editNewVals.week || document.getElementById('editSelWeek').value;
+  cancelEditNew('topic');
+  // If changing week, show topics for the new week without pre-selection
+  const selectedTopic = week === pendingEdit?.oldWeek ? pendingEdit.oldTopic : '';
+  populateEditTopicDropdown(week, selectedTopic);
+}
+
+function toggleEditNew(field) {
+  const wrap = document.getElementById(`editNew${cap(field)}Wrap`);
+  wrap.classList.toggle('open');
+  if (!wrap.classList.contains('open')) cancelEditNew(field);
+  // Disable the dropdown when new entry is open
+  if (field === 'week') {
+    document.getElementById('editSelWeek').disabled = wrap.classList.contains('open');
+  } else {
+    document.getElementById('editSelTopic').disabled = wrap.classList.contains('open');
+  }
+}
+
+function cancelEditNew(field) {
+  editNewVals[field] = '';
+  const wrap = document.getElementById(`editNew${cap(field)}Wrap`);
+  wrap.classList.remove('open');
+  document.getElementById(`editNew${cap(field)}Txt`).value = '';
+  if (field === 'week')  document.getElementById('editSelWeek').disabled  = false;
+  if (field === 'topic') document.getElementById('editSelTopic').disabled = false;
+}
+
+function onEditNewInput(field) {
+  editNewVals[field] = document.getElementById(`editNew${cap(field)}Txt`).value;
+  if (field === 'week') onEditWeekChange();
+}
+
+function closeEditModal() {
+  document.getElementById('editBg').classList.remove('open');
+  pendingEdit = null;
+}
+
+async function saveEditQuiz() {
+  const newWeek  = (editNewVals.week  || document.getElementById('editSelWeek').value).trim();
+  const newTopic = (editNewVals.topic || document.getElementById('editSelTopic').value).trim();
+  const newName  = document.getElementById('editNameTxt').value.trim();
+
+  if (!newWeek)  { setStatus('editStatus', 'err', 'Week is required.'); return; }
+  if (!newTopic) { setStatus('editStatus', 'err', 'Topic is required.'); return; }
+  if (!newName)  { setStatus('editStatus', 'err', 'Quiz name is required.'); return; }
+
+  const { quizId } = pendingEdit;
+  const newQuizId  = buildQuizId(newWeek, newTopic, newName);
+
+  if (newQuizId === quizId) { closeEditModal(); return; }
+
+  document.getElementById('editSaveBtn').disabled = true;
+  setStatus('editStatus', 'inf', 'Moving quiz…');
+
+  try {
+    const migrated = await moveQuiz(quizId, newWeek, newTopic, newName);
+    await loadAllMeta();
+    populateWeekDropdown();
+    const msg = migrated > 0
+      ? `✅ Moved. Progress migrated for ${migrated} user(s).`
+      : '✅ Quiz moved. No user progress found to migrate.';
+    setStatus('editStatus', 'ok', msg);
+    setTimeout(() => { closeEditModal(); loadManage(); }, 1400);
+  } catch(err) {
+    setStatus('editStatus', 'err', `❌ Failed: ${err.message}`);
+    document.getElementById('editSaveBtn').disabled = false;
+  }
+}
+
+// ── Core move/rename helper ───────────────────────────────────────────────────
+//
+// Strategy for user-data migration:
+//   Rather than collection-group queries (which need a Firestore composite
+//   index that may not exist), we enumerate every doc under quizSessions/,
+//   then check each user's quizzes/{oldId} and notes/{oldId} directly.
+//   This is O(users) reads but is index-free and reliable.
+//
+async function moveQuiz(oldQuizId, newWeek, newTopic, newName) {
+  const newQuizId = buildQuizId(newWeek, newTopic, newName);
+  if (newQuizId === oldQuizId) return 0; // nothing to do
+
+  // ── 1. Read old quiz metadata ───────────────────────────────────────────────
+  const oldMetaRef = db.collection('quizzes').doc(oldQuizId);
+  let oldMetaSnap;
+  try {
+    oldMetaSnap = await oldMetaRef.get();
+  } catch(e) {
+    throw new Error(`Could not read quiz "${oldQuizId}" — Firestore path: quizzes/${oldQuizId}. Detail: ${e.message}`);
+  }
+  if (!oldMetaSnap.exists) {
+    throw new Error(
+      `Quiz not found at Firestore path: quizzes/${oldQuizId}\n` +
+      `This usually means the stored week/topic/name fields don't match ` +
+      `the document ID. Check the browser console for the exact ID being used.`
+    );
+  }
+
+  // ── 2. Read old questions ───────────────────────────────────────────────────
+  const oldQRef  = oldMetaRef.collection('data').doc('questions');
+  const oldQSnap = await oldQRef.get().catch(() => null);
+
+  // ── 3. Write new quiz metadata + questions, delete old ─────────────────────
+  const newTitle   = `${newWeek} · ${newTopic} · ${newName}`;
+  const newMetaRef = db.collection('quizzes').doc(newQuizId);
+  const newQRef    = newMetaRef.collection('data').doc('questions');
+
+  const quizBatch = db.batch();
+  // Strip any stored 'id' field to avoid confusion — the Firestore doc ID IS the ID
+  const { id: _ignored, ...cleanData } = oldMetaSnap.data();
+  quizBatch.set(newMetaRef, {
+    ...cleanData,
+    week:      newWeek,
+    topic:     newTopic,
+    name:      newName,
+    title:     newTitle,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+  if (oldQSnap?.exists) {
+    quizBatch.set(newQRef, oldQSnap.data());
+    quizBatch.delete(oldQRef);
+  }
+  quizBatch.delete(oldMetaRef);
+  await quizBatch.commit();
+
+  // ── 4. Migrate user progress + notes via collection group query ───────────
+  const { migrated: _m, errors: _e } = await migrateUserData(oldQuizId, newQuizId);
+  return _m;
+}
+
+// ── Shared user-data migration (used by moveQuiz and the Migrate tab) ─────────
+// Uses collectionGroup('quizzes') to find all user progress docs for oldId
+// without needing to enumerate quizSessions top-level docs (which are virtual).
+// Requires firestore.rules: match /{path=**}/quizzes/{d} { allow read,write: if isAdmin(); }
+// Returns { migrated, errors, found }. Throws only if the collection group query itself fails.
+// Per-user batch failures are caught individually so one bad write never blocks the rest —
+// this mirrors the exact error-handling logic in migrate.html.
+async function migrateUserData(oldId, newId, logFn) {
+  const log = logFn || ((type, msg) => console.log(`[${type}] ${msg}`));
+
+  // ── 1. Find all progress docs across all users via collection group ──────
+  let progressSnap;
+  try {
+    progressSnap = await db.collectionGroup('quizzes').get();
+  } catch(e) {
+    throw new Error(
+      `Collection group query failed. Deploy the updated firestore.rules first. ` +
+      `Run: firebase deploy --only firestore:rules — Detail: ${e.message}`
+    );
+  }
+
+  // Filter to only docs at path quizSessions/{uid}/quizzes/{oldId}
+  const progressDocs = progressSnap.docs.filter(d =>
+    d.id === oldId && d.ref.path.startsWith('quizSessions/')
+  );
+
+  log('info', `Found ${progressDocs.length} progress doc(s) matching "${oldId}".`);
+
+  if (progressDocs.length === 0) return { migrated: 0, errors: 0, found: 0 };
+
+  // ── 2. For each user, migrate progress + notes ───────────────────────────
+  let migrated = 0, errors = 0;
+
+  for (const progressDoc of progressDocs) {
+    const uid      = progressDoc.ref.parent.parent.id;
+    const shortUid = uid.slice(0, 8) + '\u2026';
+    log('info', `Processing uid ${shortUid}`);
+
+    const oldProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(oldId);
+    const newProgressRef = db.collection('quizSessions').doc(uid).collection('quizzes').doc(newId);
+    const oldNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(oldId);
+    const newNotesRef    = db.collection('quizSessions').doc(uid).collection('notes').doc(newId);
+
+    // Check notes — warn if read fails but continue
+    let notesSnap = null;
+    try {
+      notesSnap = await oldNotesRef.get();
+    } catch(e) {
+      log('warn', `  uid ${shortUid} — could not read notes (skipping notes): ${e.message}`);
+    }
+
+    try {
+      const batch = db.batch();
+      batch.set(newProgressRef, progressDoc.data());
+      batch.delete(oldProgressRef);
+      if (notesSnap && notesSnap.exists) {
+        batch.set(newNotesRef, notesSnap.data());
+        batch.delete(oldNotesRef);
+        log('info', `  uid ${shortUid} — migrating progress + notes`);
+      } else {
+        log('info', `  uid ${shortUid} — migrating progress only`);
+      }
+      await batch.commit();
+      log('ok', `  uid ${shortUid} — done`);
+      migrated++;
+    } catch(e) {
+      log('error', `  uid ${shortUid} — write failed: ${e.message}`);
+      errors++;
+    }
+  }
+
+  return { migrated, errors, found: progressDocs.length };
+}
+
+// ── Migrate tab: run ───────────────────────────────────────────────────────────
+async function runMigration() {
+  const oldId = document.getElementById('migrateOldId').value.trim();
+  const newId = document.getElementById('migrateNewId').value.trim();
+  const logEl = document.getElementById('migrateLog');
+  logEl.innerHTML = '';
+
+  function mlog(type, msg) {
+    const el = document.createElement('div');
+    el.className = `mlog-entry ${type}`;
+    el.textContent = msg;
+    logEl.appendChild(el);
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  if (!oldId) { mlog('error', 'Old Quiz ID is required.'); return; }
+  if (!newId)  { mlog('error', 'New Quiz ID is required.'); return; }
+  if (oldId === newId) { mlog('error', 'IDs are identical — nothing to do.'); return; }
+
+  const btn = document.getElementById('migrateRunBtn');
+  btn.disabled = true;
+  btn.textContent = 'Running…';
+
+  mlog('info', `Old ID: "${oldId}"`);
+  mlog('info', `New ID: "${newId}"`);
+  mlog('info', 'Querying collection group "quizzes" for matching progress docs…');
+
+  try {
+    // Delegate entirely to migrateUserData, passing mlog so all per-user
+    // progress, warnings, and errors appear in the UI log panel.
+    const { migrated, errors, found } = await migrateUserData(oldId, newId, mlog);
+
+    if (found === 0) {
+      mlog('warn', `No progress docs found for "${oldId}".`);
+      mlog('warn', 'Check the ID is exactly right — it is case-sensitive.');
+      btn.disabled = false; btn.textContent = 'Scan & Migrate →';
+      return;
+    }
+
+    // Summary
+    if (errors === 0) {
+      mlog('ok', `✅ Complete — ${migrated} user(s) migrated successfully.`);
+    } else {
+      mlog('warn', `Finished with ${errors} error(s). ${migrated} succeeded, ${errors} failed.`);
+    }
+
+  } catch(e) {
+    // migrateUserData only throws for the initial collection group query failure
+    mlog('error', `Collection group query failed: ${e.message}`);
+    mlog('error', 'Deploy the updated firestore.rules then try again:');
+    mlog('error', 'firebase deploy --only firestore:rules');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Scan & Migrate →';
+}
+
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  ['upload','manage','migrate'].forEach(t => {
+    document.getElementById(`tabBtn${cap(t)}`).classList.toggle('active', t === tab);
+    document.getElementById(`panel${cap(t)}`).classList.toggle('active',  t === tab);
+  });
+  if (tab === 'manage') loadManage();
+  if (tab === 'migrate') {
+    document.getElementById('migrateLog').innerHTML = '';
+    document.getElementById('migrateOldId').value = '';
+    document.getElementById('migrateNewId').value = '';
+  }
+}
+
+// ── Status helpers ────────────────────────────────────────────────────────────
+function setStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `status on ${type}`;
+  el.textContent = msg;
+}
+function hideStatus(id) { document.getElementById(id).className = 'status'; }
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// For HTML attribute values that will be inside single-quoted onclick handlers
+function escAttr(s) {
+  return String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
 }
 </script>
 </body>

@@ -30,7 +30,7 @@
 body { font-family: var(--font-sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 48px 24px 80px; }
 
 /* ── Header ── */
-.page-header { max-width: 760px; margin: 0 auto 48px; display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 20px; border-bottom: 1.5px solid var(--border); }
+.page-header { max-width: 760px; margin: 0 auto 0; display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 20px; border-bottom: 1.5px solid var(--border); }
 .logo { font-family: var(--font-serif); font-size: 2rem; font-weight: 600; color: var(--text); }
 .logo span { color: var(--accent); }
 .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
@@ -40,6 +40,40 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .signout-btn:hover { color: var(--accent); }
 .admin-link { font-size: .72rem; font-family: var(--font-mono); font-weight: 500; color: var(--accent); text-decoration: none; border: 1px solid var(--accent); border-radius: 99px; padding: 3px 10px; display: none; align-items: center; gap: 4px; transition: background 150ms; }
 .admin-link:hover { background: var(--accent-light); }
+
+/* ── Section Tabs ── */
+.section-tabs {
+  max-width: 760px;
+  margin: 0 auto 32px;
+  display: flex;
+  gap: 0;
+  border-bottom: 1.5px solid var(--border);
+  padding-top: 2px;
+}
+.section-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 20px 11px;
+  font-family: var(--font-sans);
+  font-size: .875rem;
+  font-weight: 500;
+  color: var(--text-3);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1.5px;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms;
+  white-space: nowrap;
+}
+.section-tab:hover { color: var(--text-2); }
+.section-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+.tab-icon { font-size: 1rem; line-height: 1; }
 
 /* ── Grid ── */
 .grid { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
@@ -91,8 +125,6 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   transition: background 150ms;
   position: relative;
 }
-.resource-card:last-child { border-right: none; }
-/* Remove bottom border on last row (works for 1 or 2 items) */
 .resource-card:last-child { border-bottom: none; border-right: none; }
 .resource-card:hover { background: var(--accent-light); }
 .resource-icon {
@@ -193,6 +225,8 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   .resource-card:nth-last-child(-n+2):nth-child(2n+1),
   .resource-card:nth-last-child(-n+2):nth-child(2n+1) ~ .resource-card { border-bottom: 1px solid var(--border); }
   .resource-card:last-child { border-bottom: none; }
+  .section-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .section-tab { padding: 12px 14px 11px; font-size: .82rem; }
 }
 </style>
 </head>
@@ -219,44 +253,24 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   </div>
 </header>
 
+<!-- ── Section Tabs ── -->
+<nav class="section-tabs" id="sectionTabs">
+  <button class="section-tab active" data-section="Surgery" onclick="switchSection('Surgery', this)">
+    <span class="tab-icon">🔪</span> Surgery
+  </button>
+  <button class="section-tab" data-section="GP" onclick="switchSection('GP', this)">
+    <span class="tab-icon">🩺</span> GP
+  </button>
+  <button class="section-tab" data-section="Medicine" onclick="switchSection('Medicine', this)">
+    <span class="tab-icon">💊</span> Medicine
+  </button>
+</nav>
+
 <main class="grid" id="grid">
-  <!-- Resources panel — always shown, no auth needed for structure -->
-  <div class="resources-panel">
+  <!-- Resources panel — swapped per section -->
+  <div class="resources-panel" id="resourcesPanel">
     <div class="resources-label">Resources</div>
-    <div class="resource-cards" id="resourceCards">
-      <a class="resource-card" href="/wba" target="_blank">
-        <div class="resource-icon">📋</div>
-        <div class="resource-info">
-          <div class="resource-name">WBA Requirements</div>
-          <div class="resource-desc">Workplace-based assessments</div>
-        </div>
-        <div class="resource-arrow">→</div>
-      </a>
-      <a class="resource-card" href="/surgery" target="_blank">
-        <div class="resource-icon">🔪</div>
-        <div class="resource-info">
-          <div class="resource-name">Surgery Handbook</div>
-          <div class="resource-desc">Year 4 MD · 2026</div>
-        </div>
-        <div class="resource-arrow">→</div>
-      </a>
-      <a class="resource-card" href="/lecture_sched" target="_blank">
-        <div class="resource-icon">📅</div>
-        <div class="resource-info">
-          <div class="resource-name">Lecture Schedule</div>
-          <div class="resource-desc">Year 4 Surgery · 2026</div>
-        </div>
-        <div class="resource-arrow">→</div>
-      </a>
-      <a class="resource-card" href="/surgery_master_reference" target="_blank">
-        <div class="resource-icon">📌</div>
-        <div class="resource-info">
-          <div class="resource-name">Master List</div>
-          <div class="resource-desc">Everything Schedule</div>
-        </div>
-        <div class="resource-arrow">→</div>
-      </a>
-    </div>
+    <div class="resource-cards" id="resourceCards"></div>
   </div>
 
   <!-- Skeleton while loading quiz list -->
@@ -294,17 +308,56 @@ function signInWithGoogle() {
 }
 function signOut() { auth.signOut(); }
 
+// ── Section state ─────────────────────────────────────────────────────────────
+const SECTIONS = {
+  Surgery: {
+    resources: [
+      { href: '/wba',                    icon: '📋', name: 'WBA Requirements',   desc: 'Workplace-based assessments' },
+      { href: '/surgery',                icon: '🔪', name: 'Surgery Handbook',   desc: 'Year 4 MD · 2026' },
+      { href: '/lecture_sched',          icon: '📅', name: 'Lecture Schedule',   desc: 'Year 4 Surgery · 2026' },
+      { href: '/surgery_master_reference', icon: '📌', name: 'Master List',      desc: 'Everything Schedule' },
+    ]
+  },
+  GP: {
+    resources: [
+      { href: '/gp_handbook',  icon: '🩺', name: 'GP Handbook',       desc: 'Year 4 MD · 2026' },
+      { href: '/gp_schedule',  icon: '📅', name: 'GP Schedule',       desc: 'Rotation timetable' },
+      { href: '/gp_resources', icon: '📋', name: 'GP Resources',      desc: 'Clinical guidelines' },
+    ]
+  },
+  Medicine: {
+    resources: [
+      { href: '/med_handbook', icon: '💊', name: 'Medicine Handbook', desc: 'Year 4 MD · 2026' },
+      { href: '/med_schedule', icon: '📅', name: 'Med Schedule',      desc: 'Ward rotation timetable' },
+      { href: '/med_resources',icon: '📋', name: 'Med Resources',     desc: 'Clinical guidelines' },
+    ]
+  }
+};
+
+let currentSection = 'Surgery';
+let currentUid     = null;
+// Cache of all quiz docs so we don't re-fetch on tab switch
+let allQuizDocs    = null;
+
 auth.onAuthStateChanged(async user => {
   if (user) {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('userInfo').textContent = user.email;
     document.getElementById('userInfo').style.display = 'block';
     document.getElementById('signoutBtn').style.display = 'block';
-    // Check admin status (silently — non-admins just don't see the link)
     try {
       const snap = await db.collection('admins').doc(user.email).get();
       if (snap.exists) document.getElementById('adminLink').style.display = 'inline-flex';
     } catch(e) {}
+    currentUid = user.uid;
+    // Read section from URL hash
+    const hash = window.location.hash.replace('#','');
+    if (SECTIONS[hash]) {
+      currentSection = hash;
+      document.querySelectorAll('.section-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.section === currentSection);
+      });
+    }
     await loadQuizzes(user.uid);
   } else {
     document.getElementById('loginScreen').classList.remove('hidden');
@@ -314,31 +367,100 @@ auth.onAuthStateChanged(async user => {
   }
 });
 
-// ── Load quizzes from Firestore ───────────────────────────────────────────────
+// ── Tab switching ──────────────────────────────────────────────────────────────
+function switchSection(section, btn) {
+  if (section === currentSection) return;
+  currentSection = section;
+  window.location.hash = section;
+
+  // Update tab styles
+  document.querySelectorAll('.section-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  // Re-render resources
+  renderResources(section);
+
+  // Clear quiz cards (keep skeleton-like re-render)
+  clearQuizCards();
+  if (allQuizDocs) {
+    renderSectionGrid(allQuizDocs, currentUid);
+  }
+}
+
+// ── Load quizzes from Firestore (once) ────────────────────────────────────────
 async function loadQuizzes(uid) {
   try {
     const snap = await db.collection('quizzes').get();
+    allQuizDocs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-    // Group: week → topic → [{id, name, questionCount}]
-    const groups = {};
-    snap.forEach(doc => {
-      const d = doc.data();
-      const w = (d.week  || 'Unknown').toUpperCase();
-      const t = d.topic  || 'General';
-      if (!groups[w])    groups[w]    = {};
-      if (!groups[w][t]) groups[w][t] = [];
-      groups[w][t].push({ id: doc.id, name: d.name || doc.id, questionCount: d.questionCount || 0 });
-    });
-
-    if (!Object.keys(groups).length) {
-      document.getElementById('skeleton').outerHTML = '<p class="empty">No quizzes yet.</p>';
-      return;
-    }
-
-    renderGrid(groups);
-    await loadAllProgress(uid, snap.docs.map(d => ({ id: d.id, questionCount: d.data().questionCount || 0 })));
+    renderResources(currentSection);
+    renderSectionGrid(allQuizDocs, uid);
   } catch(e) {
-    document.getElementById('skeleton').outerHTML = `<p class="empty">Error loading quizzes: ${e.message}</p>`;
+    document.getElementById('skeleton').outerHTML = `<p class="empty">Error loading quizzes: ${escHtml(e.message)}</p>`;
+  }
+}
+
+function renderResources(section) {
+  const cards = SECTIONS[section].resources;
+  document.getElementById('resourceCards').innerHTML = cards.map(c => `
+    <a class="resource-card" href="${c.href}" target="_blank">
+      <div class="resource-icon">${c.icon}</div>
+      <div class="resource-info">
+        <div class="resource-name">${escHtml(c.name)}</div>
+        <div class="resource-desc">${escHtml(c.desc)}</div>
+      </div>
+      <div class="resource-arrow">→</div>
+    </a>
+  `).join('');
+}
+
+function clearQuizCards() {
+  // Remove all week-cards but leave the resources panel
+  document.querySelectorAll('#grid .week-card').forEach(el => el.remove());
+  // Re-add a skeleton
+  const skel = document.createElement('div');
+  skel.className = 'skel-card'; skel.id = 'skeleton';
+  skel.innerHTML = `<div class="skel skel-bar" style="width:40px;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div class="skel skel-pill"></div><div class="skel skel-pill"></div><div class="skel skel-pill"></div>
+    </div>`;
+  document.getElementById('grid').appendChild(skel);
+}
+
+function renderSectionGrid(docs, uid) {
+  // Filter by section; quizzes with no section field fall into Surgery (backwards compat)
+  const filtered = docs.filter(d => {
+    const s = (d.section || 'Surgery');
+    return s.toLowerCase() === currentSection.toLowerCase();
+  });
+
+  // Remove skeleton
+  const skel = document.getElementById('skeleton');
+  if (skel) skel.remove();
+
+  if (!filtered.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = `No quizzes yet for ${currentSection}.`;
+    document.getElementById('grid').appendChild(empty);
+    return;
+  }
+
+  // Group: week → topic → [{id, name, questionCount}]
+  const groups = {};
+  filtered.forEach(d => {
+    const w = (d.week  || 'Unknown').toUpperCase();
+    const t =  d.topic || 'General';
+    if (!groups[w])    groups[w]    = {};
+    if (!groups[w][t]) groups[w][t] = [];
+    groups[w][t].push({ id: d.id, name: d.name || d.id, questionCount: d.questionCount || 0 });
+  });
+
+  renderGrid(groups);
+
+  if (uid) {
+    const meta = filtered.map(d => ({ id: d.id, questionCount: d.questionCount || 0 }));
+    loadAllProgress(uid, meta);
   }
 }
 
@@ -349,10 +471,6 @@ function weekSortKey(w) {
 
 function renderGrid(groups) {
   const sortedWeeks = Object.keys(groups).sort((a, b) => weekSortKey(a) - weekSortKey(b));
-  // Remove skeleton
-  const skel = document.getElementById('skeleton');
-  if (skel) skel.remove();
-
   const grid = document.getElementById('grid');
 
   sortedWeeks.forEach(week => {
