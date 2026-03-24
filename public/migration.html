@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NB Quiz — Schema Migration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f5f0; --surface: #ffffff; --surface-2: #f0ede6;
+  --border: #e2ddd5; --text: #1a1714; --text-2: #5a534a; --text-3: #9a8f83;
+  --accent: #2563a8; --accent-light: #dbeafe;
+  --correct: #166534; --correct-bg: #dcfce7; --correct-ring: #4ade80;
+  --wrong: #991b1b; --wrong-bg: #fee2e2; --wrong-ring: #f87171;
+  --warn: #92400e; --warn-bg: #fef3c7; --warn-ring: #fbbf24;
+  --radius: 10px; --radius-lg: 16px;
+  --font-serif: 'Crimson Pro', Georgia, serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+body { font-family: var(--font-sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+.screen { display: none; }
+.screen.active { display: flex; }
+.centered { min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+.logo { font-family: var(--font-serif); font-size: 2rem; font-weight: 600; margin-bottom: 4px; text-align: center; }
+.logo span { color: var(--accent); }
+.logo-tag { font-family: var(--font-mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); margin-bottom: 40px; }
+.google-btn { display: flex; align-items: center; gap: 10px; padding: 13px 28px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 99px; font-family: var(--font-sans); font-size: .9rem; font-weight: 600; cursor: pointer; transition: all 200ms; }
+.google-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+.err-msg { color: var(--wrong); font-size: .82rem; margin-top: 14px; }
+
+/* Layout */
+.page { flex-direction: column; min-height: 100vh; }
+.topbar { background: var(--surface); border-bottom: 1.5px solid var(--border); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; }
+.topbar-logo { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; }
+.topbar-logo span { color: var(--accent); }
+.badge { font-family: var(--font-mono); font-size: .62rem; text-transform: uppercase; letter-spacing: .08em; background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; border-radius: 4px; padding: 2px 8px; margin-left: 10px; }
+.body { max-width: 860px; margin: 0 auto; width: 100%; padding: 32px; }
+.btn { font-family: var(--font-sans); font-size: .85rem; font-weight: 600; border-radius: 99px; padding: 9px 22px; cursor: pointer; border: 1.5px solid transparent; transition: all 200ms; display: inline-flex; align-items: center; gap: 8px; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #1d4f8a; }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--text-2); border-color: var(--border); }
+.btn-ghost:hover { background: var(--surface-2); }
+.btn-danger { background: var(--wrong-bg); color: var(--wrong); border-color: var(--wrong-ring); }
+.btn-warn { background: var(--warn-bg); color: var(--warn); border-color: var(--warn-ring); }
+
+/* Cards */
+.card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); padding: 28px; margin-bottom: 20px; }
+.card-title { font-family: var(--font-serif); font-size: 1.2rem; font-weight: 600; margin-bottom: 8px; }
+.card-sub { font-size: .83rem; color: var(--text-2); margin-bottom: 20px; line-height: 1.6; }
+.form-label { font-size: .72rem; font-weight: 600; color: var(--text-2); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .07em; margin-bottom: 7px; display: block; }
+.sel { padding: 8px 12px; font-family: var(--font-sans); font-size: .88rem; border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); outline: none; }
+.sel:focus { border-color: var(--accent); }
+
+/* Quiz mapping table */
+.map-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.map-table th { font-family: var(--font-mono); font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text-3); padding: 8px 12px; text-align: left; border-bottom: 1.5px solid var(--border); }
+.map-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.map-table tr:last-child td { border-bottom: none; }
+.old-id { font-family: var(--font-mono); font-size: .78rem; color: var(--text-2); }
+.qcount { font-family: var(--font-mono); font-size: .75rem; color: var(--text-3); }
+
+/* Log */
+.log { display: flex; flex-direction: column; gap: 5px; max-height: 400px; overflow-y: auto; border: 1.5px solid var(--border); border-radius: var(--radius); padding: 12px; background: var(--bg); font-family: var(--font-mono); font-size: .78rem; }
+.log-entry { padding: 5px 10px; border-radius: 6px; line-height: 1.5; word-break: break-all; }
+.log-entry.info  { color: var(--text-2); }
+.log-entry.ok    { background: var(--correct-bg); color: var(--correct); border: 1px solid var(--correct-ring); }
+.log-entry.warn  { background: var(--warn-bg); color: var(--warn); }
+.log-entry.error { background: var(--wrong-bg); color: var(--wrong); border: 1px solid var(--wrong-ring); }
+.log-entry.head  { color: var(--accent); font-weight: 600; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 4px; }
+
+/* Status pill */
+.status-pill { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-mono); font-size: .7rem; padding: 3px 10px; border-radius: 99px; }
+.pill-pending { background: var(--surface-2); color: var(--text-3); border: 1px solid var(--border); }
+.pill-ok      { background: var(--correct-bg); color: var(--correct); border: 1px solid var(--correct-ring); }
+.pill-err     { background: var(--wrong-bg); color: var(--wrong); border: 1px solid var(--wrong-ring); }
+
+.warning-box { background: var(--warn-bg); border: 1.5px solid var(--warn-ring); border-radius: var(--radius); padding: 14px 18px; font-size: .85rem; color: var(--warn); line-height: 1.6; margin-bottom: 20px; }
+.warning-box strong { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="screen centered active" id="sLogin">
+  <div class="logo">NB <span>Quiz</span></div>
+  <div class="logo-tag">Schema Migration Tool</div>
+  <button class="google-btn" onclick="signIn()">
+    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+    Sign in with Google
+  </button>
+  <div class="err-msg" id="loginErr"></div>
+</div>
+
+<!-- Denied -->
+<div class="screen centered" id="sDenied">
+  <div style="font-size:3rem;margin-bottom:16px;">🚫</div>
+  <div style="font-family:var(--font-serif);font-size:1.4rem;font-weight:600;margin-bottom:8px;">Access denied</div>
+  <div style="font-size:.85rem;color:var(--text-2);margin-bottom:24px;" id="deniedMsg"></div>
+  <button class="btn btn-ghost" onclick="auth.signOut()">Sign out</button>
+</div>
+
+<!-- Main -->
+<div class="screen page" id="sMain">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;">
+      <div class="topbar-logo">NB <span>Quiz</span></div>
+      <span class="badge">⚠ Migration Tool</span>
+    </div>
+    <button class="btn btn-ghost" style="font-size:.8rem;padding:6px 14px;" onclick="auth.signOut()">Sign out</button>
+  </div>
+
+  <div class="body">
+
+    <!-- Warning -->
+    <div class="warning-box">
+      <strong>⚠ One-time schema migration.</strong> This tool migrates all quizzes from compound IDs
+      (e.g. <code>W7__Neuro__v1</code>) to stable Firestore-generated autoIds, adds a <code>section</code>
+      field to each quiz, and converts user notes from flat fields (<code>n_0, n_1…</code>) to an array.
+      Run this <strong>once</strong> after which you can delete this file. All existing user progress will be preserved.
+    </div>
+
+    <!-- Step 1: Assign sections -->
+    <div class="card" id="step1Card">
+      <div class="card-title">Step 1 — Assign sections to quizzes</div>
+      <div class="card-sub">All existing quizzes will migrate. Assign each a section before running. You can change these later in the admin panel.</div>
+      <div id="quizMapWrap">
+        <div style="color:var(--text-3);font-size:.85rem;">Loading quizzes…</div>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="runBtn" onclick="runMigration()" disabled>Run Migration →</button>
+        <button class="btn btn-ghost" onclick="setAllSections('Surgery')">All → Surgery</button>
+        <button class="btn btn-ghost" onclick="setAllSections('GP')">All → GP</button>
+        <button class="btn btn-ghost" onclick="setAllSections('Medicine')">All → Medicine</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Log -->
+    <div class="card" id="logCard" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:0;">Migration Log</div>
+        <div id="summaryPill" class="status-pill pill-pending">Running…</div>
+      </div>
+      <div class="log" id="logEl"></div>
+      <div id="cleanupSection" style="display:none;margin-top:20px;">
+        <div class="card-sub" style="margin-bottom:14px;">Migration complete. Click below to delete the old quiz documents. <strong>Do this only after verifying the new admin panel shows all quizzes correctly.</strong></div>
+        <button class="btn btn-danger" id="cleanupBtn" onclick="deleteOldDocs()">🗑 Delete old docs</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:            'AIzaSyCNnvrEli5lzU3sUFvttTsQPIYQXYK1_WE',
+  authDomain:        'nbquiz-6faf9.firebaseapp.com',
+  projectId:         'nbquiz-6faf9',
+  storageBucket:     'nbquiz-6faf9.firebasestorage.app',
+  messagingSenderId: '913114740758',
+  appId:             '1:913114740758:web:a856bb9c8eedf3cd629d37',
+});
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// State
+let quizDocs    = [];   // { id, data }
+let oldToNew    = {};   // { oldId: newAutoId }
+let oldDocIds   = [];   // list of old compound IDs to delete after verification
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function signIn() {
+  document.getElementById('loginErr').textContent = '';
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(() => {
+    document.getElementById('loginErr').textContent = 'Sign-in failed.';
+  });
+}
+
+auth.onAuthStateChanged(async user => {
+  if (!user) { show('sLogin'); return; }
+  const snap = await db.collection('admins').doc(user.email).get().catch(() => null);
+  if (!snap?.exists) {
+    document.getElementById('deniedMsg').textContent = `${user.email} is not an authorised admin.`;
+    show('sDenied'); return;
+  }
+  show('sMain');
+  await loadQuizzes();
+});
+
+// ── Load existing quizzes ──────────────────────────────────────────────────────
+async function loadQuizzes() {
+  const snap = await db.collection('quizzes').get();
+  quizDocs = snap.docs.map(d => ({ id: d.id, data: d.data() }))
+    .filter(d => !d.data.autoMigrated) // skip already-migrated docs
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  if (!quizDocs.length) {
+    document.getElementById('quizMapWrap').innerHTML =
+      '<div style="color:var(--correct);font-family:var(--font-mono);font-size:.85rem;">✅ No legacy quizzes found — migration may already be complete.</div>';
+    return;
+  }
+
+  // Determine default section from quiz name heuristics
+  function guessSection(id) {
+    const low = id.toLowerCase();
+    if (low.includes('gp')) return 'GP';
+    if (low.includes('med') || low.includes('pharm') || low.includes('cardio') || low.includes('resp')) return 'Medicine';
+    return 'Surgery';
+  }
+
+  let html = `<table class="map-table">
+    <thead><tr>
+      <th>Old ID</th><th>Week</th><th>Topic</th><th>Name</th><th>Qs</th><th>Section</th>
+    </tr></thead><tbody>`;
+
+  quizDocs.forEach((q, i) => {
+    const def = guessSection(q.id);
+    html += `<tr>
+      <td class="old-id">${escHtml(q.id)}</td>
+      <td>${escHtml(q.data.week || '')}</td>
+      <td>${escHtml(q.data.topic || '')}</td>
+      <td>${escHtml(q.data.name || '')}</td>
+      <td class="qcount">${q.data.questionCount || '?'}</td>
+      <td>
+        <select class="sel" id="sec_${i}" style="font-size:.8rem;padding:5px 8px;">
+          <option value="Surgery"  ${def==='Surgery'  ? 'selected':''}>Surgery</option>
+          <option value="GP"       ${def==='GP'       ? 'selected':''}>GP</option>
+          <option value="Medicine" ${def==='Medicine' ? 'selected':''}>Medicine</option>
+        </select>
+      </td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('quizMapWrap').innerHTML = html;
+  document.getElementById('runBtn').disabled = false;
+}
+
+function setAllSections(section) {
+  quizDocs.forEach((_, i) => {
+    const el = document.getElementById(`sec_${i}`);
+    if (el) el.value = section;
+  });
+}
+
+// ── Run migration ─────────────────────────────────────────────────────────────
+async function runMigration() {
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('logCard').style.display = 'block';
+  document.getElementById('logCard').scrollIntoView({ behavior: 'smooth' });
+
+  const logEl = document.getElementById('logEl');
+  logEl.innerHTML = '';
+
+  let migratedQuizzes = 0, migratedUsers = 0, errors = 0;
+
+  function log(type, msg) {
+    const el = document.createElement('div');
+    el.className = `log-entry ${type}`;
+    el.textContent = msg;
+    logEl.appendChild(el);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  // ── Phase 1: Create new quiz docs ─────────────────────────────────────────
+  log('head', '── Phase 1: Creating new quiz documents ──');
+
+  oldToNew = {};
+  oldDocIds = [];
+
+  for (let i = 0; i < quizDocs.length; i++) {
+    const { id: oldId, data } = quizDocs[i];
+    const section = document.getElementById(`sec_${i}`)?.value || 'Surgery';
+
+    log('info', `[${i+1}/${quizDocs.length}] Migrating: ${oldId}`);
+
+    try {
+      // Read old questions subcollection
+      const qSnap = await db.collection('quizzes').doc(oldId)
+        .collection('data').doc('questions').get();
+
+      // Create new doc with autoId
+      const { id: _ignored, title: _t, ...cleanData } = data;
+      const newRef = await db.collection('quizzes').add({
+        ...cleanData,
+        section,
+        title: `${data.week} · ${data.topic} · ${data.name}`,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        autoMigrated: true,
+      });
+
+      // Copy questions subcollection
+      if (qSnap.exists) {
+        await newRef.collection('data').doc('questions').set(qSnap.data());
+      }
+
+      oldToNew[oldId] = newRef.id;
+      oldDocIds.push(oldId);
+      log('ok', `  ✓ Created ${newRef.id} (section: ${section})`);
+      migratedQuizzes++;
+
+    } catch(e) {
+      log('error', `  ✗ Failed: ${e.message}`);
+      errors++;
+    }
+  }
+
+  log('ok', `Phase 1 complete: ${migratedQuizzes} quizzes created, ${errors} errors.`);
+
+  // ── Phase 2: Migrate user progress ───────────────────────────────────────
+  log('head', '── Phase 2: Migrating user progress ──');
+
+  // Get all user progress via collectionGroup
+  let progressSnap;
+  try {
+    progressSnap = await db.collectionGroup('quizzes').get();
+  } catch(e) {
+    log('error', `collectionGroup query failed: ${e.message}`);
+    log('error', 'Make sure firestore.rules allows admin collectionGroup reads.');
+    setSummary(false);
+    return;
+  }
+
+  // Group progress docs by uid and oldId
+  const progressByUid = {}; // uid → [{ ref, id, data }]
+  for (const doc of progressSnap.docs) {
+    if (!doc.ref.path.startsWith('quizSessions/')) continue;
+    if (!oldToNew[doc.id]) continue; // not a legacy ID
+    const uid = doc.ref.parent.parent.id;
+    if (!progressByUid[uid]) progressByUid[uid] = [];
+    progressByUid[uid].push({ ref: doc.ref, id: doc.id, data: doc.data() });
+  }
+
+  const uids = Object.keys(progressByUid);
+  log('info', `Found ${uids.length} user(s) with progress to migrate.`);
+
+  for (const uid of uids) {
+    const shortUid = uid.slice(0, 8) + '…';
+    log('info', `Processing user ${shortUid}`);
+
+    for (const { ref: oldRef, id: oldId, data: progressData } of progressByUid[uid]) {
+      const newId = oldToNew[oldId];
+      if (!newId) continue;
+
+      try {
+        const newProgressRef = db.collection('quizSessions').doc(uid)
+          .collection('quizzes').doc(newId);
+
+        // Also migrate notes: read old flat n_0, n_1 fields → convert to array
+        const oldNotesRef = db.collection('quizSessions').doc(uid)
+          .collection('notes').doc(oldId);
+        const newNotesRef = db.collection('quizSessions').doc(uid)
+          .collection('notes').doc(newId);
+
+        const notesSnap = await oldNotesRef.get().catch(() => null);
+
+        const batch = db.batch();
+
+        // Migrate progress
+        batch.set(newProgressRef, {
+          ...progressData,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        batch.delete(oldRef);
+
+        // Migrate notes: convert n_0, n_1... to notes[] array
+        if (notesSnap?.exists) {
+          const d = notesSnap.data();
+          const notesArr = [];
+          // Find highest index
+          Object.keys(d).forEach(k => {
+            const m = k.match(/^n_(\d+)$/);
+            if (m) {
+              const idx = parseInt(m[1]);
+              notesArr[idx] = d[k] || '';
+            }
+          });
+          // Fill gaps with empty string
+          const len = progressData.results?.length || notesArr.length;
+          const filled = Array.from({ length: len }, (_, i) => notesArr[i] || '');
+          batch.set(newNotesRef, { notes: filled });
+          batch.delete(oldNotesRef);
+        }
+
+        await batch.commit();
+        log('ok', `  ✓ ${shortUid} — ${oldId} → ${newId}`);
+        migratedUsers++;
+
+      } catch(e) {
+        log('error', `  ✗ ${shortUid} — ${oldId}: ${e.message}`);
+        errors++;
+      }
+    }
+  }
+
+  log('ok', `Phase 2 complete: ${migratedUsers} user progress docs migrated.`);
+
+  // ── Done ─────────────────────────────────────────────────────────────────
+  log('head', `── Migration complete — ${migratedQuizzes} quizzes, ${migratedUsers} user docs, ${errors} errors ──`);
+
+  if (errors === 0) {
+    log('ok', '✅ All done. Verify the new admin panel then click "Delete old docs" below.');
+    setSummary(true);
+    document.getElementById('cleanupSection').style.display = 'block';
+  } else {
+    log('warn', `⚠ Completed with ${errors} error(s). Check log and resolve before deleting old docs.`);
+    setSummary(false);
+  }
+}
+
+// ── Delete old docs (Phase 3 — run after verification) ───────────────────────
+async function deleteOldDocs() {
+  if (!confirm(`This will permanently delete ${oldDocIds.length} old quiz documents. Are you sure?`)) return;
+
+  document.getElementById('cleanupBtn').disabled = true;
+  const logEl = document.getElementById('logEl');
+
+  function log(type, msg) {
+    const el = document.createElement('div');
+    el.className = `log-entry ${type}`;
+    el.textContent = msg;
+    logEl.appendChild(el);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  log('head', '── Phase 3: Deleting old quiz documents ──');
+
+  let deleted = 0;
+  for (const oldId of oldDocIds) {
+    try {
+      await db.collection('quizzes').doc(oldId)
+        .collection('data').doc('questions').delete().catch(() => {});
+      await db.collection('quizzes').doc(oldId).delete();
+      log('ok', `✓ Deleted: ${oldId}`);
+      deleted++;
+    } catch(e) {
+      log('error', `✗ ${oldId}: ${e.message}`);
+    }
+  }
+
+  log('ok', `Phase 3 complete: ${deleted} old documents deleted.`);
+  log('ok', '🎉 Schema migration fully complete. You can now remove this file.');
+  setSummary(true);
+}
+
+function setSummary(ok) {
+  const el = document.getElementById('summaryPill');
+  el.className = `status-pill ${ok ? 'pill-ok' : 'pill-err'}`;
+  el.textContent = ok ? '✅ Success' : '⚠ Errors';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
