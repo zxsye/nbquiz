@@ -445,10 +445,18 @@ async function loadQuiz() {
     initSidebar();
 
     if (restored && results.some(r => r !== null)) {
-      renderQuestion(current);
-      const r = results[current];
-      if (r && !r.skipped) { selected = r.chosen; submitAnswer(); }
-      updateProgress();
+      // Check if the user already finished the quiz in their saved session
+      if (current >= QUESTIONS.length) {
+        current = QUESTIONS.length; // Ensure it doesn't exceed the array length
+        showResults();
+        updateSidebar();
+        updateProgress();
+      } else {
+        renderQuestion(current);
+        const r = results[current];
+        if (r && !r.skipped) { selected = r.chosen; submitAnswer(); }
+        updateProgress();
+      }
     } else {
       renderQuestion(0);
     }
@@ -586,6 +594,13 @@ function copySidebarResults() {
 // ── Render question ───────────────────────────────────────────────────────────
 function renderQuestion(idx) {
   const q = QUESTIONS[idx];
+
+  // Add this safety check:
+  if (!q) {
+      console.error(`Question at index ${idx} is undefined.`);
+      return; 
+  }
+
   answered = false; selected = null;
 
   document.getElementById('qLabel').textContent  = `Question ${idx + 1}`;
