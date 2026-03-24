@@ -762,7 +762,10 @@ function nextQuestion() {
   current++;
   saveState();
   if (current >= QUESTIONS.length) showResults();
-  else { renderQuestion(current); document.getElementById('submitBtn').onclick = submitAnswer; }
+  else {
+    renderQuestion(current);
+    const r = results[current];
+    if (r && !r.skipped) { selected = r.chosen; submitAnswer(); }
 }
 
 // ── Progress ──────────────────────────────────────────────────────────────────
