@@ -13,6 +13,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$',  right: '$',  display: false},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '\\[', right: '\\]', display: true}
+    ]
+  })"></script>
+
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -250,7 +263,6 @@ kbd.pressed {
 </head>
 <body>
 
-<!-- ── Login ── -->
 <div id="loginScreen">
   <div class="login-logo">NB <span>Quiz</span></div>
   <div class="login-sub">Your personal medical study companion</div>
@@ -262,13 +274,11 @@ kbd.pressed {
   <div class="made-by-login">made by Zi Lin</div>
 </div>
 
-<!-- ── Loading screen ── -->
 <div class="full-screen" id="loadingScreen">
   <div class="loading-spinner"></div>
   <div class="loading-label">Loading quiz…</div>
 </div>
 
-<!-- ── Error screen ── -->
 <div class="full-screen hidden" id="errorScreen">
   <div class="error-icon">⚠️</div>
   <div class="error-title">Quiz not found</div>
@@ -276,7 +286,6 @@ kbd.pressed {
   <a href="/" style="margin-top:16px;color:var(--accent);font-size:.9rem;">← Back to quiz list</a>
 </div>
 
-<!-- ── Sidebar ── -->
 <aside class="sidebar" id="sidebar" style="display:none">
   <a href="/" class="home-btn">← Home</a>
   <div class="sidebar-header">
@@ -291,7 +300,6 @@ kbd.pressed {
   </div>
 </aside>
 
-<!-- ── Main content ── -->
 <div class="main-content" id="mainContent" style="display:none">
   <header class="app-header">
     <a href="/" class="app-title">NB <span>Quiz</span></a>
@@ -344,7 +352,6 @@ kbd.pressed {
     </div>
   </div>
 
-  <!-- ── Keyboard hints bar ── -->
   <div class="kbd-hints" id="kbdHints">
     <div class="kbd-group">
       <kbd id="kbdQ">Q</kbd><kbd id="kbdW">W</kbd><kbd id="kbdE">E</kbd><kbd id="kbdR">R</kbd><kbd id="kbdT">T</kbd>
@@ -637,7 +644,7 @@ function renderQuestion(idx) {
 
   document.getElementById('qLabel').textContent   = `Question ${idx + 1}`;
   document.getElementById('partTag').textContent  = `Part ${q.part || 1}`;
-  document.getElementById('stem').textContent     = q.stem;
+  document.getElementById('stem').innerHTML       = q.stem; // Fixed to innerHTML
 
   const flagBtn = document.getElementById('flagBtn');
   flagBtn.textContent      = flagged[idx] ? '🚩 Unflag' : '⚑ Flag';
@@ -672,11 +679,13 @@ function renderQuestion(idx) {
     btn.dataset.letter  = letter;
     btn.onclick         = () => selectOption(letter);
     const rat = q.rationales?.[letter] || '';
+    
+    // Fixed formatting here: removed escHtml
     btn.innerHTML = `
       <div class="opt-letter">${letter}</div>
       <div class="opt-body">
-        <div class="opt-text">${escHtml(q.options[letter])}</div>
-        ${rat ? `<div class="opt-rationale" id="rat-${letter}">${escHtml(rat)}</div>` : ''}
+        <div class="opt-text">${q.options[letter]}</div>
+        ${rat ? `<div class="opt-rationale" id="rat-${letter}">${rat}</div>` : ''}
       </div>
       <div class="opt-icon" id="icon-${letter}"></div>`;
     optContainer.appendChild(btn);
@@ -694,6 +703,18 @@ function renderQuestion(idx) {
 
   document.getElementById('quizCard').style.animation = 'none';
   requestAnimationFrame(() => { document.getElementById('quizCard').style.animation = 'fadeUp .3s ease both'; });
+
+  // Added KaTeX render call
+  if (window.renderMathInElement) {
+    renderMathInElement(document.getElementById('quizCard'), {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$',  right: '$',  display: false},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '\\[', right: '\\]', display: true}
+      ]
+    });
+  }
 }
 
 function toggleHint() {
@@ -1012,9 +1033,9 @@ function selectByIndex(idx) {
 
 /**
  * Keyboard-aware advance:
- *   • if answered                → next question
- *   • if an option is selected   → submit
- *   • otherwise                  → skip (same as clicking Skip →)
+ * • if answered                → next question
+ * • if an option is selected   → submit
+ * • otherwise                  → skip (same as clicking Skip →)
  */
 function keyboardAdvance() {
   if (answered)      nextQuestion();
