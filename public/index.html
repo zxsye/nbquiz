@@ -434,9 +434,10 @@ function renderSectionGrid(docs, uid) {
     return s.toLowerCase() === currentSection.toLowerCase();
   });
 
-  // Remove skeleton
+  // Remove skeleton and any stale empty message
   const skel = document.getElementById('skeleton');
   if (skel) skel.remove();
+  document.querySelectorAll('#grid .empty').forEach(el => el.remove());
 
   if (!filtered.length) {
     const empty = document.createElement('p');
