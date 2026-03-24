@@ -11,11 +11,23 @@
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="manifest" href="/manifest.json">
 
-
 <title>NB Quiz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.body, {
+    delimiters: [
+      {left: '$$', right: '$$', display: true},
+      {left: '$',  right: '$',  display: false},
+      {left: '\\(', right: '\\)', display: false},
+      {left: '\\[', right: '\\]', display: true}
+    ]
+  })"></script>
+
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -262,7 +274,6 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   </div>
 </header>
 
-<!-- ── Section Tabs ── -->
 <nav class="section-tabs" id="sectionTabs">
   <button class="section-tab active" data-section="Surgery" onclick="switchSection('Surgery', this)">
     <span class="tab-icon">🔪</span> Surgery
@@ -276,13 +287,11 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 </nav>
 
 <main class="grid" id="grid">
-  <!-- Resources panel — swapped per section -->
   <div class="resources-panel" id="resourcesPanel">
     <div class="resources-label">Resources</div>
     <div class="resource-cards" id="resourceCards"></div>
   </div>
 
-  <!-- Skeleton while loading quiz list -->
   <div class="skel-card" id="skeleton">
     <div class="skel skel-bar" style="width:40px;margin-bottom:16px;"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -415,8 +424,8 @@ function renderResources(section) {
     <a class="resource-card" href="${c.href}" target="_blank">
       <div class="resource-icon">${c.icon}</div>
       <div class="resource-info">
-        <div class="resource-name">${escHtml(c.name)}</div>
-        <div class="resource-desc">${escHtml(c.desc)}</div>
+        <div class="resource-name">${c.name}</div>
+        <div class="resource-desc">${c.desc}</div>
       </div>
       <div class="resource-arrow">→</div>
     </a>
@@ -492,7 +501,7 @@ function renderGrid(groups) {
         const safe = q.id.replace(/__/g, '_');
         pills += `<div class="quiz-pill" data-quiz-id="${q.id}">
           <a href="/quiz?id=${q.id}" class="pill-link">
-            <span class="pill-name">${escHtml(q.name)}</span>
+            <span class="pill-name">${q.name}</span>
             <span class="pill-count">${q.questionCount}q</span>
           </a>
           <div class="progress-wrap" id="prog_${safe}">
@@ -507,16 +516,28 @@ function renderGrid(groups) {
         </div>`;
       });
       rows += `<div class="topic-row">
-        <span class="topic-name">${escHtml(topic)}</span>
+        <span class="topic-name">${topic}</span>
         <div class="pill-group">${pills}</div>
       </div>`;
     });
 
     const card = document.createElement('div');
     card.className = 'week-card';
-    card.innerHTML = `<div class="week-label">${escHtml(week)}</div><div class="topic-list">${rows}</div>`;
+    card.innerHTML = `<div class="week-label">${week}</div><div class="topic-list">${rows}</div>`;
     grid.appendChild(card);
   });
+  
+  // Re-render KaTeX after building the grid
+  if (window.renderMathInElement) {
+    renderMathInElement(document.getElementById('grid'), {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$',  right: '$',  display: false},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '\\[', right: '\\]', display: true}
+      ]
+    });
+  }
 }
 
 // ── Progress bars ─────────────────────────────────────────────────────────────
