@@ -728,7 +728,7 @@ function renderQuestion(idx) {
   document.getElementById('stem').innerHTML = wrapLatex(q.stem);
 
   const flagBtn = document.getElementById('flagBtn');
-  flagBtn.textContent       = flagged[idx] ? '🚩 Unflag' : '⚑ Flag';
+  flagBtn.innerHTML         = flagged[idx] ? '🚩<span class="btn-label"> Unflag</span>' : '⚑<span class="btn-label"> Flag</span>';
   flagBtn.style.borderColor = flagged[idx] ? 'var(--wrong-ring)' : 'var(--border)';
   flagBtn.style.color       = flagged[idx] ? 'var(--wrong)'      : 'var(--text-2)';
 
@@ -820,7 +820,7 @@ function onNoteInput() {
 function toggleFlag() {
   flagged[current] = !flagged[current];
   const btn = document.getElementById('flagBtn');
-  btn.textContent       = flagged[current] ? '🚩 Unflag' : '⚑ Flag';
+  btn.innerHTML       = flagged[current] ? '🚩<span class="btn-label"> Unflag</span>' : '⚑<span class="btn-label"> Flag</span>';
   btn.style.borderColor = flagged[current] ? 'var(--wrong-ring)' : 'var(--border)';
   btn.style.color       = flagged[current] ? 'var(--wrong)'      : 'var(--text-2)';
   updateSidebar();
