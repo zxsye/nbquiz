@@ -214,6 +214,20 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
   #backBtn .btn-label, #skipBtn .btn-label { display:none; }
   #backBtn, #skipBtn { padding:11px 16px; font-size:1rem; }
 }
+/* ── Hide-options mode ───────────────────────────────────── */
+.mode-btn { display:flex; align-items:center; gap:8px; width:100%; padding:9px 12px; background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius); font-family:var(--font-sans); font-size:.78rem; font-weight:600; color:var(--text-2); cursor:pointer; transition:all var(--transition); margin-bottom:16px; }
+.mode-btn:hover { background:var(--surface-2); }
+.mode-btn.active { background:var(--accent-light); border-color:var(--accent); color:var(--accent); }
+.mode-btn-label { flex:1; text-align:left; }
+.mode-btn-switch { width:28px; height:16px; border-radius:8px; background:var(--border); position:relative; transition:background var(--transition); flex-shrink:0; }
+.mode-btn.active .mode-btn-switch { background:var(--accent); }
+.mode-btn-switch::after { content:''; position:absolute; width:12px; height:12px; border-radius:50%; background:#fff; top:2px; left:2px; transition:transform var(--transition); box-shadow:0 1px 2px rgba(0,0,0,.2); }
+.mode-btn.active .mode-btn-switch::after { transform:translateX(12px); }
+.options-wrap { position:relative; }
+.options.veiled { filter:blur(6px); pointer-events:none; user-select:none; -webkit-user-select:none; }
+.options-veil { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:5; border-radius:var(--radius); background:rgba(247,245,240,.7); backdrop-filter:blur(1px); -webkit-backdrop-filter:blur(1px); }
+.options-veil-btn { font-family:var(--font-sans); font-size:.88rem; font-weight:600; color:var(--text-2); background:var(--surface); border:1.5px solid var(--border); border-radius:99px; padding:10px 24px; cursor:pointer; transition:all var(--transition); box-shadow:var(--shadow); }
+.options-veil-btn:hover,.options-veil-btn:active { border-color:var(--accent); color:var(--accent); background:var(--accent-light); }
 </style>
 </head>
 <body>
@@ -247,6 +261,10 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
     <span>Quiz Status</span>
     <span style="font-size:.8rem;color:var(--text-3);font-family:var(--font-mono);" id="sidebarCount">0/—</span>
   </div>
+  <button class="mode-btn" id="hideModeBtn" onclick="toggleHideMode()">
+    <span class="mode-btn-label">🙈 Hide options</span>
+    <span class="mode-btn-switch"></span>
+  </button>
   <div class="q-grid" id="qGrid"></div>
   <div style="margin-top:auto;display:flex;flex-direction:column;gap:10px;">
     <button class="btn btn-ghost" id="sidebarCopyBtn" style="width:100%;border:1.5px solid var(--border);padding:8px;font-size:.85rem;" onclick="copySidebarResults()">📋 Copy Status</button>
@@ -286,7 +304,9 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
       <button class="hint-toggle" onclick="toggleHint()">💡 Show hint</button>
       <div class="hint-body" id="hintBody"></div>
     </div>
-    <div class="options" id="options"></div>
+    <div class="options-wrap" id="optionsWrap">
+      <div class="options" id="options"></div>
+    </div>
     <div class="note-wrap" id="noteWrap">
       <div class="note-side-header">📝 Notes</div>
       <button class="note-toggle" id="noteToggleBtn" onclick="toggleNote()">📝 Add note</button>
@@ -385,6 +405,8 @@ let notes     = []; // array of strings, one per question
 let currentFilter = 'wrong';
 let _noteSaveTimer = null;
 let uid = null;
+let hideOptionsMode  = false;
+let optionsRevealed  = false;
 let QUIZ_META = null;
 
 
@@ -652,6 +674,34 @@ function buildBreadcrumb() {
   return parts.filter(Boolean).join('  ·  ');
 }
 
+// ── Hide-options mode ─────────────────────────────────────────────────────────
+function toggleHideMode() {
+  hideOptionsMode = !hideOptionsMode;
+  document.getElementById('hideModeBtn').classList.toggle('active', hideOptionsMode);
+  if (!answered) { optionsRevealed = false; applyVeil(); }
+}
+
+function revealOptions() {
+  optionsRevealed = true;
+  applyVeil();
+}
+
+function applyVeil() {
+  const wrap = document.getElementById('optionsWrap');
+  const opts = document.getElementById('options');
+  if (!wrap || !opts) return;
+  const existing = document.getElementById('optionsVeil');
+  if (existing) existing.remove();
+  opts.classList.remove('veiled');
+  if (hideOptionsMode && !optionsRevealed) {
+    opts.classList.add('veiled');
+    const veil = document.createElement('div');
+    veil.className = 'options-veil'; veil.id = 'optionsVeil';
+    veil.innerHTML = '<button class="options-veil-btn" onclick="revealOptions()">👁 Reveal options</button>';
+    wrap.appendChild(veil);
+  }
+}
+
 // ── Render question ───────────────────────────────────────────────────────────
 function renderQuestion(idx) {
   const q = QUESTIONS[idx];
@@ -728,6 +778,10 @@ function renderQuestion(idx) {
   document.getElementById('quizCard').style.animation = 'none';
   requestAnimationFrame(() => { document.getElementById('quizCard').style.animation = 'fadeUp .3s ease both'; });
 
+  // reset veil for new question
+  optionsRevealed = false;
+  applyVeil();
+
   if (window.renderMathInElement) {
     renderMathInElement(document.getElementById('quizCard'), {
       delimiters: [
@@ -772,6 +826,7 @@ function toggleFlag() {
 // ── Answer logic ──────────────────────────────────────────────────────────────
 function selectOption(letter) {
   if (answered) return;
+  if (hideOptionsMode && !optionsRevealed) return;
   selected = letter;
   document.querySelectorAll('.option').forEach(el =>
     el.classList.toggle('selected', el.dataset.letter === letter));
@@ -780,6 +835,8 @@ function selectOption(letter) {
 
 function submitAnswer() {
   if (!selected || answered) return;
+  optionsRevealed = true;
+  applyVeil();
   answered = true;
   const q = QUESTIONS[current];
   const isCorrect = selected === q.correct;
