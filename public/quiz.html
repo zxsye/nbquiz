@@ -201,6 +201,8 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
   .note-body.open { display:flex; flex-direction:column; animation:fadeIn .2s ease; }
   .note-textarea { min-height:90px; resize:vertical; flex:none; }
   .kbd-hints { display:none; }
+  #backBtn .btn-label, #skipBtn .btn-label { display:none; }
+  #backBtn, #skipBtn { padding:11px 16px; font-size:1rem; }
 }
 @media (max-width: 520px) {
   .stem { font-size:1.1rem; padding:14px 20px 20px; }
@@ -211,8 +213,6 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
   .note-wrap { padding:12px 20px; }
   .results-grade { font-size:3.5rem; }
   .results-stats { gap:24px; }
-  #backBtn .btn-label, #skipBtn .btn-label { display:none; }
-  #backBtn, #skipBtn { padding:11px 16px; font-size:1rem; }
 }
 /* ── Hide-options mode ───────────────────────────────────── */
 .mode-btn { display:flex; align-items:center; gap:8px; width:100%; padding:9px 12px; background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius); font-family:var(--font-sans); font-size:.78rem; font-weight:600; color:var(--text-2); cursor:pointer; transition:all var(--transition); margin-bottom:16px; }
