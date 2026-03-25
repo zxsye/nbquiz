@@ -126,7 +126,8 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .option.correct .opt-icon, .option.wrong .opt-icon { display:block; }
 
 /* Footer */
-.card-footer { grid-column:1; padding:0 28px 28px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.card-footer { grid-column:1; padding:0 28px 28px; display:flex; flex-direction: column; align-items:center; justify-content:space-between; gap:12px; }
+#flagBtn { padding: 6px 14px; font-size: .8rem; }
 .btn { font-family:var(--font-sans); font-size:.9rem; font-weight:600; border-radius:99px; padding:11px 26px; cursor:pointer; border:1.5px solid transparent; transition:all var(--transition); display:inline-flex; align-items:center; gap:8px; justify-content:center; }
 .btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
 .btn-primary:hover { background:#1d4f8a; box-shadow:0 4px 14px rgba(37,99,168,.3); }
@@ -318,14 +319,16 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
       </div>
     </div>
     <div class="card-footer">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <button class="btn btn-ghost" id="flagBtn" onclick="toggleFlag()" style="padding:6px 14px;font-size:.8rem;">⚑ Flag</button>
-        <div id="feedbackMsg" class="feedback-msg" style="visibility:hidden">–</div>
-      </div>
-      <div style="display:flex;gap:10px;margin-left:auto;">
-        <button class="btn btn-ghost" id="backBtn" onclick="goBack()" style="display:none;">← <span class="btn-label">Back</span></button>
-        <button class="btn btn-ghost" id="skipBtn" onclick="nextQuestion()">→ <span class="btn-label">Next</span></button>
-        <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()" disabled>Check answer</button>
+      <div id="feedbackMsg" class="feedback-msg" style="visibility: hidden; width: 100%; text-align: center; margin-bottom: 12px; min-height: 1.2em;">–</div>
+      <div style="display: flex; width: 100%; justify-content: space-between; align-items: center;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="btn btn-ghost" id="flagBtn" onclick="toggleFlag()">⚑<span class="btn-label"> Flag</span></button>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn btn-ghost" id="backBtn" onclick="goBack()" style="display:none;">← <span class="btn-label">Back</span></button>
+          <button class="btn btn-ghost" id="skipBtn" onclick="nextQuestion()">→ <span class="btn-label">Next</span></button>
+          <button class="btn btn-primary" id="submitBtn" onclick="submitAnswer()" disabled>Check answer</button>
+        </div>
       </div>
     </div>
   </div>
@@ -863,7 +866,7 @@ function submitAnswer() {
 
   setFeedback(isCorrect ? '✅ Correct!' : `❌ The answer was ${q.correct}`, isCorrect ? 'correct' : 'wrong');
   const submitBtn = document.getElementById('submitBtn');
-  submitBtn.textContent = current < QUESTIONS.length - 1 ? 'Next →' : 'See results';
+  submitBtn.textContent = current < QUESTIONS.length - 1 ? '→' : 'See results';
   submitBtn.onclick     = nextQuestion;
   submitBtn.disabled    = false;
   document.getElementById('skipBtn').style.display = 'none';
