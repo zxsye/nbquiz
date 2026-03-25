@@ -521,7 +521,7 @@ function cleanMath(text) {
     .replace(/\$GCS\$/g,'GCS').replace(/\$CT\$/g,'CT').replace(/\$MRI\$/g,'MRI')
     .replace(/\$SpO_2\$/g,'SpO2').replace(/\$PaO_2\$/g,'PaO2').replace(/\$PaCO_2\$/g,'PaCO2')
     .replace(/\$FiO_2\$/g,'FiO2').replace(/\$Na\^\+\$/g,'Na+').replace(/\$K\^\+\$/g,'K+')
-    .replace(/\\\%/g,'%').replace(/\\text\{([^}]+)\}/g,'$1').replace(/\$([^$]+)\$/g,'$1')
+    .replace(/\\\%/g,'%').replace(/\\text\{([^}]+)\}/g,'$1').replace(/\$([^$]+)\$/g,'\\($1\\)')
     .replace(/\\u0027/g,"'");
 }
 function extractFromShim(htmlText) {

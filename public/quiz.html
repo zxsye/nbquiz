@@ -591,6 +591,50 @@ function copySidebarResults() {
   });
 }
 
+
+// ── Wrap undelimited LaTeX commands in $…$ so KaTeX renders them ─────────────
+function wrapLatex(text) {
+  if (!text) return text;
+  let out = '', i = 0;
+  while (i < text.length) {
+    // Pass through already-delimited math ($…$, $$…$$, \(…\), \[…\])
+    if (text[i] === '$') {
+      const dbl = text[i+1] === '$', delim = dbl ? '$$' : '$';
+      const end = text.indexOf(delim, i + delim.length);
+      if (end !== -1) { out += text.slice(i, end + delim.length); i = end + delim.length; continue; }
+    }
+    if (text[i] === '\\' && (text[i+1] === '(' || text[i+1] === '[')) {
+      const close = text[i+1] === '(' ? '\\)' : '\\]';
+      const end = text.indexOf(close, i + 2);
+      if (end !== -1) { out += text.slice(i, end + 2); i = end + 2; continue; }
+    }
+    // Undelimited \command — consume name + {arg} blocks + _/^ subscripts/superscripts
+    if (text[i] === '\\' && /[a-zA-Z]/.test(text[i+1] || '')) {
+      const start = i++;
+      while (i < text.length && /[a-zA-Z]/.test(text[i])) i++;
+      let more = true;
+      while (more) {
+        more = false;
+        if (i < text.length && text[i] === '{') {
+          let d = 1; i++;
+          while (i < text.length && d) { d += (text[i]==='{'); d -= (text[i]==='}'); i++; }
+          more = true;
+        } else if (i < text.length && (text[i]==='_' || text[i]==='^')) {
+          i++;
+          if (i < text.length && text[i]==='{') {
+            let d=1; i++;
+            while (i < text.length && d) { d+=(text[i]==='{'); d-=(text[i]==='}'); i++; }
+          } else { while (i < text.length && /[a-zA-Z0-9]/.test(text[i])) i++; }
+          more = true;
+        }
+      }
+      out += '$' + text.slice(start, i) + '$'; continue;
+    }
+    out += text[i++];
+  }
+  return out;
+}
+
 // ── Render question ───────────────────────────────────────────────────────────
 function renderQuestion(idx) {
   const q = QUESTIONS[idx];
@@ -605,7 +649,7 @@ function renderQuestion(idx) {
 
   document.getElementById('qLabel').textContent  = `Question ${idx + 1}`;
   document.getElementById('partTag').textContent = `Part ${q.part || 1}`;
-  document.getElementById('stem').innerHTML      = q.stem;
+  document.getElementById('stem').innerHTML = wrapLatex(q.stem);
 
   const flagBtn = document.getElementById('flagBtn');
   flagBtn.textContent       = flagged[idx] ? '🚩 Unflag' : '⚑ Flag';
@@ -626,7 +670,7 @@ function renderQuestion(idx) {
   const hb = document.getElementById('hintBody');
   if (q.hint) {
     hw.style.display = 'block';
-    hb.textContent   = q.hint;
+    hb.innerHTML = wrapLatex(q.hint);
     hb.classList.remove('open');
   } else {
     hw.style.display = 'none';
@@ -639,11 +683,11 @@ function renderQuestion(idx) {
     btn.className      = 'option';
     btn.dataset.letter = letter;
     btn.onclick        = () => selectOption(letter);
-    const rat = q.rationales?.[letter] || '';
+    const rat = wrapLatex(q.rationales?.[letter] || '');
     btn.innerHTML = `
       <div class="opt-letter">${letter}</div>
       <div class="opt-body">
-        <div class="opt-text">${q.options[letter]}</div>
+        <div class="opt-text">${wrapLatex(q.options[letter])}</div>
         ${rat ? `<div class="opt-rationale" id="rat-${letter}">${rat}</div>` : ''}
       </div>
       <div class="opt-icon" id="icon-${letter}"></div>`;
