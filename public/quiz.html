@@ -84,7 +84,8 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 .card-header { grid-column:1; padding:20px 28px 0; display:flex; align-items:center; gap:10px; }
 .q-label { font-family:var(--font-mono); font-size:.7rem; font-weight:500; color:var(--text-3); text-transform:uppercase; letter-spacing:.08em; }
-.part-tag { font-family:var(--font-mono); font-size:.65rem; font-weight:500; background:var(--surface-2); border:1px solid var(--border); border-radius:4px; padding:2px 7px; color:var(--text-3); }
+.part-tag { font-family:var(--font-mono); font-size:.65rem; font-weight:500; background:var(--surface-2); border:1px solid var(--border); border-radius:4px; padding:2px 7px; color:var(--text-3); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:default; transition:max-width var(--transition); user-select:none; -webkit-user-select:none; }
+.part-tag.expanded { max-width:520px; }
 .stem { grid-column:1; font-family:var(--font-serif); font-size:1.25rem; line-height:1.65; color:var(--text); padding:16px 28px 24px; border-bottom:1px solid var(--border); }
 
 /* Hint */
@@ -278,7 +279,7 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
   <div class="card" id="quizCard">
     <div class="card-header">
       <span class="q-label" id="qLabel">Question 1</span>
-      <span class="part-tag" id="partTag">Part 1</span>
+      <span class="part-tag" id="partTag" onclick="this.classList.toggle('expanded')">Part 1</span>
     </div>
     <div class="stem" id="stem"></div>
     <div class="hint-wrap" id="hintWrap">
@@ -384,6 +385,8 @@ let notes     = []; // array of strings, one per question
 let currentFilter = 'wrong';
 let _noteSaveTimer = null;
 let uid = null;
+let QUIZ_META = null;
+
 
 const provider = new firebase.auth.GoogleAuthProvider();
 function signInWithGoogle() {
@@ -422,7 +425,8 @@ async function loadQuiz() {
     const metaSnap = await db.collection('quizzes').doc(QUIZ_ID).get();
     if (!metaSnap.exists) { showError(`Quiz "${QUIZ_ID}" not found.`); return; }
     const meta = metaSnap.data();
-
+    QUIZ_META = meta;
+    
     const qSnap = await db.collection('quizzes').doc(QUIZ_ID)
       .collection('data').doc('questions').get();
     if (!qSnap.exists) { showError('Questions not found for this quiz.'); return; }
@@ -635,6 +639,19 @@ function wrapLatex(text) {
   return out;
 }
 
+
+function buildBreadcrumb() {
+  if (!QUIZ_META) return '';
+  const ICONS = { Surgery: '🔪', GP: '🩺', Medicine: '💊' };
+  const icon = ICONS[QUIZ_META.section] || '';
+  const parts = [
+    icon ? icon + '\u202f' + QUIZ_META.section : QUIZ_META.section,
+    QUIZ_META.week,
+    QUIZ_META.topic,
+  ];
+  return parts.filter(Boolean).join('  ·  ');
+}
+
 // ── Render question ───────────────────────────────────────────────────────────
 function renderQuestion(idx) {
   const q = QUESTIONS[idx];
@@ -648,7 +665,11 @@ function renderQuestion(idx) {
   answered = false; selected = null;
 
   document.getElementById('qLabel').textContent  = `Question ${idx + 1}`;
-  document.getElementById('partTag').textContent = `Part ${q.part || 1}`;
+  const _bc = buildBreadcrumb();
+  const _tag = document.getElementById('partTag');
+  _tag.textContent = _bc || `Part ${q.part || 1}`;
+  _tag.title       = _bc;           // hover tooltip on desktop
+  _tag.classList.remove('expanded'); // collapse on every new question
   document.getElementById('stem').innerHTML = wrapLatex(q.stem);
 
   const flagBtn = document.getElementById('flagBtn');
