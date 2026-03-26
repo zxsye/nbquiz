@@ -303,7 +303,7 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
   .sidebar { width:100%; height:auto; max-height:250px; border-right:none; border-bottom:1.5px solid var(--border); flex-shrink:0; }
   .main-content { width:100%; height:auto; overflow:visible; padding:20px 16px 80px; }
   .card { display:flex; flex-direction:column; }
-  .note-wrap { grid-column:1 / -1; grid-row:unset; border-left:none; border-top:1.5px solid var(--border); background:var(--surface-2); padding:16px 20px; border-bottom:1.5px solid var(--border); margin-bottom: 10px; }
+  .note-wrap { grid-column:unset; grid-row:unset; border-left:none; border-top:1.5px solid var(--border); background:var(--surface-2); padding:16px 20px; border-bottom:1.5px solid var(--border); margin-bottom: 10px; }
   .note-side-header { display:none; }
   .note-toggle { display:inline-flex; align-items:center; gap:7px; font-size:.8rem; font-weight:500; color:var(--text-2); cursor:pointer; background:var(--surface-2); border:1.5px solid var(--border); border-radius:99px; padding:5px 14px; transition:all var(--transition); }
   .note-toggle:hover { background:var(--border); }
@@ -322,13 +322,13 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
 .collapsed-bar-horizontal {
     display: none; /* Hidden by default */
     position: fixed;
-    top: 0;
+    bottom: 0;
     left: 0;
     right: 0;
     height: 68px;
     background: var(--surface);
-    border-bottom: 1.5px solid var(--border);
-    box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    border-top: 1.5px solid var(--border);
+    box-shadow: 0 -1px 4px rgba(0,0,0,.08);
     z-index: 500;
     padding: 0 12px;
     align-items: center;
