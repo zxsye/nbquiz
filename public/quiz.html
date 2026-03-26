@@ -165,13 +165,39 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 }
 .collapsed-status {
     font-family: var(--font-mono);
-    font-size: .7rem;
-    color: var(--text-3);
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    transform: rotate(180deg);
-    padding: 8px 0;
-    flex-shrink: 0;
+    font-size: .8rem;
+    color: var(--text-2);
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 0;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+}
+.collapsed-status::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 50%;
+    width: 1.5px;
+    background: var(--border);
+    transform: translateX(-50%) rotate(15deg);
+}
+.collapsed-status .num {
+    position: absolute;
+    top: 4px;
+    left: 6px;
+    font-weight: 600;
+}
+.collapsed-status .den {
+    position: absolute;
+    bottom: 4px;
+    right: 6px;
 }
 
 /* Main */
@@ -759,8 +785,9 @@ function updateSidebar() {
     }
   });
   const done = results.filter(r => r !== null).length;
-  document.getElementById('sidebarCount').textContent = `${done}/${QUESTIONS.length}`;
-  document.getElementById('collapsedStatus').textContent = `${done}/${QUESTIONS.length}`;
+  const total = QUESTIONS.length;
+  document.getElementById('sidebarCount').textContent = `${done}/${total}`;
+  document.getElementById('collapsedStatus').innerHTML = `<span class="num">${done}</span><span class="den">${total || '—'}</span>`;
 }
 
 function copySidebarResults() {
