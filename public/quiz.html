@@ -346,6 +346,14 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
   #backBtn, #skipBtn { padding:11px 16px; font-size:1rem; }
   #flagBtn { padding: 11px 16px; font-size: 1rem; }
 
+  #submitBtn .submit-answer-suffix {
+    display: none;
+  }
+  #submitBtn {
+    padding-left: 21px;
+    padding-right: 21px;
+  }
+
   .sidebar.collapsed {
     width: 100%;
   }
@@ -979,7 +987,7 @@ function renderQuestion(idx) {
 
   const submitBtn = document.getElementById('submitBtn');
   submitBtn.disabled    = true;
-  submitBtn.textContent = 'Check answer';
+  submitBtn.innerHTML = 'Check<span class="submit-answer-suffix"> answer</span>';
   submitBtn.onclick     = submitAnswer;
   document.getElementById('skipBtn').style.display = '';
   document.getElementById('backBtn').style.display = idx > 0 ? '' : 'none';
