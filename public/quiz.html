@@ -298,86 +298,11 @@ kbd { display:inline-flex; align-items:center; justify-content:center; backgroun
 kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:var(--accent); }
 
 /* Responsive */
-@media (max-width: 1000px) {
-  body { flex-direction:column; overflow-y:auto; }
-  .sidebar { width:100%; height:auto; max-height:250px; border-right:none; border-bottom:1.5px solid var(--border); flex-shrink:0; }
-  .main-content { width:100%; height:auto; overflow:visible; padding:20px 16px 80px; }
-  .card { display:flex; flex-direction:column; }
-  .note-wrap { grid-column:unset; grid-row:unset; border-left:none; border-top:1.5px solid var(--border); background:var(--surface-2); padding:16px 20px; border-bottom:1.5px solid var(--border); margin-bottom: 10px; }
-  .note-side-header { display:none; }
-  .note-toggle { display:inline-flex; align-items:center; gap:7px; font-size:.8rem; font-weight:500; color:var(--text-2); cursor:pointer; background:var(--surface-2); border:1.5px solid var(--border); border-radius:99px; padding:5px 14px; transition:all var(--transition); }
-  .note-toggle:hover { background:var(--border); }
-  .note-toggle.has-note { color:var(--accent); border-color:var(--accent); background:var(--accent-light); }
-  .note-body { display:none; flex:none; margin-top:10px; }
-  .note-body.open { display:flex; flex-direction:column; animation:fadeIn .2s ease; }
-  .note-textarea { min-height:90px; resize:vertical; flex:none; }
-  .card-footer { }
-  .kbd-hints { display:none; }
-  #backBtn .btn-label, #skipBtn .btn-label, #flagBtn .btn-label { display:none; }
-  #backBtn, #skipBtn { padding:11px 16px; font-size:1rem; }
-  #flagBtn { padding: 11px 16px; font-size: 1rem; }
-}
 
-/* Horizontal Collapsed Bar */
-.collapsed-bar-horizontal {
-    display: none; /* Hidden by default */
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 68px;
-    background: var(--surface);
-    border-top: 1.5px solid var(--border);
-    box-shadow: 0 -1px 4px rgba(0,0,0,.08);
-    z-index: 500;
-    padding: 0 12px;
-    align-items: center;
-    gap: 12px;
-}
 
-@media (max-width: 1000px) {
-    /* When screen is narrow, show the horizontal bar if sidebar is collapsed */
-    body.sidebar-collapsed .collapsed-bar-horizontal {
-        display: flex;
-    }
-    /* Hide the main sidebar completely when collapsed on narrow screens */
-    body.sidebar-collapsed .sidebar {
-        display: none;
-    }
 
-    .collapsed-bar-horizontal .collapsed-status {
-        flex-shrink: 0;
-    }
-    .collapsed-bar-horizontal .collapsed-q-list {
-        flex-direction: row;
-        overflow-x: auto;
-        overflow-y: hidden;
-        gap: 8px;
-        flex: 1;
-        padding: 8px 0;
-        -webkit-overflow-scrolling: touch; /* Momentum scrolling on iOS */
-    }
-    .collapsed-bar-horizontal .collapsed-q-list::-webkit-scrollbar {
-        height: 0px; /* Hidden */
-    }
-    .collapsed-bar-horizontal .collapsed-q-list::-webkit-scrollbar-thumb {
-        background: var(--border);
-        border-radius: 2px;
-    }
-    .collapsed-bar-horizontal .collapsed-q-item {
-        width: 42px;
-        height: 42px;
-        flex-shrink: 0;
-    }
-    .collapsed-bar-horizontal .sidebar-collapsed-actions {
-        flex-direction: row;
-        gap: 8px;
-    }
-    .collapsed-bar-horizontal .collapsed-icon-btn {
-        width: 42px;
-        height: 42px;
-    }
-}
+
+
 
 @media (max-width: 520px) {
   .stem { font-size:1.1rem; padding:14px 20px 20px; }
@@ -407,17 +332,7 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
 </head>
 <body>
 
-<div class="collapsed-bar-horizontal" id="collapsedBarHorizontal">
-      <div class="collapsed-status" id="collapsedStatusHorizontal">0/—</div>
-      <div class="sidebar-collapsed-divider" style="height: 32px; width: 1px; margin: 0 4px;"></div>
-      <div class="collapsed-q-list" id="collapsedQGridHorizontal"></div>
-      <div class="sidebar-collapsed-divider" style="height: 32px; width: 1px; margin: 0 4px;"></div>
-      <div class="sidebar-collapsed-actions">
-        <button class="collapsed-icon-btn" id="collapsedHideModeBtnHorizontal" onclick="toggleHideMode()">🙈</button>
-        <button class="collapsed-icon-btn" onclick="copySidebarResults()">📋</button>
-        <button class="collapsed-icon-btn" onclick="showResults()">🔚</button>
-      </div>
-</div>
+
 
 <div id="loginScreen">
   <div class="login-logo">NB <span>Quiz</span></div>
@@ -780,10 +695,8 @@ function initSidebar() {
 function initSidebarGrids() {
     const qGrid = document.getElementById('qGrid');
     const collapsedQGrid = document.getElementById('collapsedQGrid');
-    const collapsedQGridHorizontal = document.getElementById('collapsedQGridHorizontal');
     qGrid.innerHTML = '';
     collapsedQGrid.innerHTML = '';
-    collapsedQGridHorizontal.innerHTML = '';
 
     QUESTIONS.forEach((_, i) => {
         // Expanded view
@@ -802,10 +715,6 @@ function initSidebarGrids() {
         collapsedDiv.innerHTML = `${i + 1}<div class="flag-icon">🚩</div><div class="note-icon">📝</div>`;
         collapsedQGrid.appendChild(collapsedDiv);
         
-        // Collapsed view (horizontal)
-        const collapsedDivHorizontal = collapsedDiv.cloneNode(true);
-        collapsedDivHorizontal.id = `collapsed-grid-item-horizontal-${i}`;
-        collapsedQGridHorizontal.appendChild(collapsedDivHorizontal);
     });
 }
 
@@ -833,10 +742,6 @@ function updateSidebar() {
         collapsedGridItem.className = collapsedClasses.join(' ');
     }
 
-    const collapsedGridItemHorizontal = document.getElementById(`collapsed-grid-item-horizontal-${i}`);
-    if(collapsedGridItemHorizontal) {
-        collapsedGridItemHorizontal.className = collapsedClasses.join(' ');
-    }
   });
 
   const done = results.filter(r => r !== null).length;
@@ -844,7 +749,6 @@ function updateSidebar() {
   const statusText = `${done}/${total || '—'}`;
   document.getElementById('sidebarCount').textContent = statusText;
   document.getElementById('collapsedStatus').textContent = statusText;
-  document.getElementById('collapsedStatusHorizontal').textContent = statusText;
 }
 
 function copySidebarResults() {
@@ -930,18 +834,15 @@ function toggleHideMode() {
   hideOptionsMode = !hideOptionsMode;
   const hideModeBtn = document.getElementById('hideModeBtn');
   const collapsedHideModeBtn = document.getElementById('collapsedHideModeBtn');
-  const collapsedHideModeBtnHorizontal = document.getElementById('collapsedHideModeBtnHorizontal');
   
   hideModeBtn.classList.toggle('active', hideOptionsMode);
   collapsedHideModeBtn.classList.toggle('active', hideOptionsMode);
-  if(collapsedHideModeBtnHorizontal) collapsedHideModeBtnHorizontal.classList.toggle('active', hideOptionsMode);
   
   const label = hideModeBtn.querySelector('.mode-btn-label');
   const emoji = hideOptionsMode ? '🐵' : '🙈';
   
   label.textContent = hideOptionsMode ? '🐵 Show options' : '🙈 Hide options';
   collapsedHideModeBtn.textContent = emoji;
-  if(collapsedHideModeBtnHorizontal) collapsedHideModeBtnHorizontal.textContent = emoji;
 
   if (!answered) { optionsRevealed = false; applyVeil(); }
 }
