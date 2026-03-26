@@ -236,23 +236,23 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .option.correct .opt-icon, .option.wrong .opt-icon { display:block; }
 .opt-eliminate {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
+  align-self: flex-start;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1.5px solid transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: .6rem;
+  padding-top: 1px;
+  font-size: .65rem;
   font-weight: 400;
   color: transparent;
   transition: color var(--transition), background var(--transition), border-color var(--transition);
-  margin-left: 4px;
   user-select: none;
   -webkit-user-select: none;
-  line-height: 1;
 }
 .option:hover:not(.locked) .opt-eliminate { color: var(--text-3); border-color: var(--border); }
 .opt-eliminate:hover { background: var(--wrong-bg) !important; color: var(--wrong) !important; border-color: var(--wrong-ring) !important; }
