@@ -299,6 +299,7 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
 
 /* Responsive */
 @media (max-width: 1000px) {
+  .sidebar-toggle { display: none; }
   body { flex-direction:column; overflow-y:auto; }
   .sidebar { width:100%; height:auto; border-right:none; border-bottom:1.5px solid var(--border); flex-shrink:0; }
   .main-content { width:100%; height:auto; overflow:visible; padding:20px 16px 80px; }
@@ -316,6 +317,16 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
   #backBtn .btn-label, #skipBtn .btn-label, #flagBtn .btn-label { display:none; }
   #backBtn, #skipBtn { padding:11px 16px; font-size:1rem; }
   #flagBtn { padding: 11px 16px; font-size: 1rem; }
+
+  .sidebar.collapsed {
+    width: 100%;
+  }
+  .sidebar.collapsed .sidebar-content {
+    display: flex;
+  }
+  .sidebar.collapsed .sidebar-collapsed-content {
+    display: none;
+  }
 }
 
 
@@ -830,6 +841,7 @@ function buildBreadcrumb() {
 }
 
 function toggleSidebar() {
+  if (window.innerWidth <= 1000) return;
   document.body.classList.toggle('sidebar-collapsed');
   document.getElementById('sidebar').classList.toggle('collapsed');
 }
