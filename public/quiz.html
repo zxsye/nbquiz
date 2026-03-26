@@ -120,10 +120,6 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   width: 100%;
   align-items: center;
   padding: 0 12px;
-  scrollbar-width: none; /* Firefox */
-}
-.collapsed-q-list::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Edge */
 }
 .collapsed-q-item {
   width: 42px;
@@ -238,6 +234,34 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .opt-rationale.visible { display:block; animation:fadeIn .25s ease; }
 .opt-icon { flex-shrink:0; font-size:1.1rem; margin-top:2px; display:none; }
 .option.correct .opt-icon, .option.wrong .opt-icon { display:block; }
+.opt-eliminate {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .6rem;
+  font-weight: 400;
+  color: transparent;
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
+  margin-left: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+  line-height: 1;
+}
+.option:hover:not(.locked) .opt-eliminate { color: var(--text-3); border-color: var(--border); }
+.opt-eliminate:hover { background: var(--wrong-bg) !important; color: var(--wrong) !important; border-color: var(--wrong-ring) !important; }
+.option.eliminated .opt-eliminate { color: var(--text-3); border-color: var(--border); background: var(--surface-2); }
+.option.locked .opt-eliminate { display: none; }
+.option.eliminated .opt-text { text-decoration: line-through; color: var(--text-3); }
+.option.eliminated .opt-letter { opacity: .4; }
+.option.eliminated:not(.locked) { opacity: .6; }
+.option.eliminated:hover:not(.locked) { border-color: var(--border); background: var(--surface); box-shadow: none; }
 
 /* Footer */
 .card-footer { grid-column:1; padding:0 28px 28px; display:flex; flex-direction: column; align-items:center; justify-content:space-between; gap:12px; }
@@ -546,6 +570,7 @@ let _noteSaveTimer = null;
 let uid = null;
 let hideOptionsMode  = false;
 let optionsRevealed  = false;
+let eliminated       = {}; // keyed by option letter for current question
 let QUIZ_META = null;
 
 
@@ -898,7 +923,7 @@ function renderQuestion(idx) {
       return; 
   }
 
-  answered = false; selected = null;
+  answered = false; selected = null; eliminated = {};
 
   document.getElementById('qLabel').textContent  = `Question ${idx + 1}`;
   const _bc = buildBreadcrumb();
@@ -947,6 +972,7 @@ function renderQuestion(idx) {
         <div class="opt-text">${wrapLatex(q.options[letter])}</div>
         ${rat ? `<div class="opt-rationale" id="rat-${letter}">${rat}</div>` : ''}
       </div>
+      <div class="opt-eliminate" id="elim-${letter}" onclick="event.stopPropagation();toggleEliminate('${letter}')" title="Eliminate option">✕</div>
       <div class="opt-icon" id="icon-${letter}"></div>`;
     optContainer.appendChild(btn);
   });
@@ -998,6 +1024,19 @@ function onNoteInput() {
   clearTimeout(_noteSaveTimer);
   _noteSaveTimer = setTimeout(() => { saveNote(idx); updateSidebar(); }, 800);
 }
+function toggleEliminate(letter) {
+  if (answered) return;
+  eliminated[letter] = !eliminated[letter];
+  const opt = document.querySelector(`.option[data-letter="${letter}"]`);
+  if (!opt) return;
+  opt.classList.toggle('eliminated', eliminated[letter]);
+  if (eliminated[letter] && selected === letter) {
+    selected = null;
+    opt.classList.remove('selected');
+    document.getElementById('submitBtn').disabled = true;
+  }
+}
+
 function toggleFlag() {
   flagged[current] = !flagged[current];
   const btn = document.getElementById('flagBtn');
@@ -1273,6 +1312,20 @@ keys.register('f',          'Toggle flag',          () => { flashKbd('f');      
 keys.register('h',          'Toggle hint',          () => { flashKbd('h'); if (document.getElementById('hintWrap').style.display !== 'none') toggleHint(); });
 keys.register('n',          'Open / close note',    () => { flashKbd('n');          toggleNote(); });
 keys.register('Escape',     'Close note panel',     () => { const nb = document.getElementById('noteBody'); if (nb.classList.contains('open')) nb.classList.remove('open'); });
+
+// Elimination shortcuts: alt + option letter (q/w/e/r/t) or alt + number (1–5)
+['q','w','e','r','t'].forEach((k, i) => {
+  keys.register('alt+' + k, `Eliminate option ${i + 1}`, () => {
+    const letters = Object.keys(QUESTIONS[current]?.options || {}).sort();
+    if (letters[i]) toggleEliminate(letters[i]);
+  });
+});
+[1,2,3,4,5].forEach((n, i) => {
+  keys.register('alt+' + n, `Eliminate option ${n}`, () => {
+    const letters = Object.keys(QUESTIONS[current]?.options || {}).sort();
+    if (letters[i]) toggleEliminate(letters[i]);
+  });
+});
 </script>
 </body>
 </html>
