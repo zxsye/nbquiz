@@ -1314,17 +1314,16 @@ keys.register('n',          'Open / close note',    () => { flashKbd('n');      
 keys.register('Escape',     'Close note panel',     () => { const nb = document.getElementById('noteBody'); if (nb.classList.contains('open')) nb.classList.remove('open'); });
 
 // Elimination shortcuts: alt + option letter (q/w/e/r/t) or alt + number (1–5)
-['q','w','e','r','t'].forEach((k, i) => {
-  keys.register('alt+' + k, `Eliminate option ${i + 1}`, () => {
-    const letters = Object.keys(QUESTIONS[current]?.options || {}).sort();
-    if (letters[i]) toggleEliminate(letters[i]);
-  });
-});
-[1,2,3,4,5].forEach((n, i) => {
-  keys.register('alt+' + n, `Eliminate option ${n}`, () => {
-    const letters = Object.keys(QUESTIONS[current]?.options || {}).sort();
-    if (letters[i]) toggleEliminate(letters[i]);
-  });
+// Uses e.code (physical key) instead of e.key to avoid alt-modified characters on Mac/Windows
+document.addEventListener('keydown', e => {
+  if (!e.altKey) return;
+  if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+  const codeMap = { KeyQ:0, KeyW:1, KeyE:2, KeyR:3, KeyT:4, Digit1:0, Digit2:1, Digit3:2, Digit4:3, Digit5:4 };
+  const idx = codeMap[e.code];
+  if (idx === undefined) return;
+  e.preventDefault();
+  const letters = Object.keys(QUESTIONS[current]?.options || {}).sort();
+  if (letters[idx] !== undefined) toggleEliminate(letters[idx]);
 });
 </script>
 </body>
