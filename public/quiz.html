@@ -298,21 +298,85 @@ kbd { display:inline-flex; align-items:center; justify-content:center; backgroun
 kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:var(--accent); }
 
 /* Responsive */
+@media (max-width: 1000px) {
+  body { flex-direction:column; overflow-y:auto; }
+  .sidebar { width:100%; height:auto; border-right:none; border-bottom:1.5px solid var(--border); flex-shrink:0; }
+  .main-content { width:100%; height:auto; overflow:visible; padding:20px 16px 80px; }
+  .card { display:flex; flex-direction:column; }
+  .note-wrap { grid-column:unset; grid-row:unset; border-left:none; border-top:1.5px solid var(--border); background:var(--surface-2); padding:16px 20px; border-bottom:1.5px solid var(--border); margin-bottom: 10px; }
+  .note-side-header { display:none; }
+  .note-toggle { display:inline-flex; align-items:center; gap:7px; font-size:.8rem; font-weight:500; color:var(--text-2); cursor:pointer; background:var(--surface-2); border:1.5px solid var(--border); border-radius:99px; padding:5px 14px; transition:all var(--transition); }
+  .note-toggle:hover { background:var(--border); }
+  .note-toggle.has-note { color:var(--accent); border-color:var(--accent); background:var(--accent-light); }
+  .note-body { display:none; flex:none; margin-top:10px; }
+  .note-body.open { display:flex; flex-direction:column; animation:fadeIn .2s ease; }
+  .note-textarea { min-height:90px; resize:vertical; flex:none; }
+  .card-footer { }
+  .kbd-hints { display:none; }
+  #backBtn .btn-label, #skipBtn .btn-label, #flagBtn .btn-label { display:none; }
+  #backBtn, #skipBtn { padding:11px 16px; font-size:1rem; }
+  #flagBtn { padding: 11px 16px; font-size: 1rem; }
+}
 
+/* Horizontal Collapsed Bar */
+.collapsed-bar-horizontal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 68px;
+    background: var(--surface);
+    border-top: 1.5px solid var(--border);
+    box-shadow: 0 -1px 4px rgba(0,0,0,.08);
+    z-index: 500;
+    padding: 0 12px;
+    align-items: center;
+    gap: 12px;
+}
 
+@media (max-width: 1000px) {
+    /* When screen is narrow, show the horizontal bar if sidebar is collapsed */
+    body.sidebar-collapsed .collapsed-bar-horizontal {
+        display: flex;
+    }
+    /* Hide the main sidebar completely when collapsed on narrow screens */
+    body.sidebar-collapsed .sidebar {
+        display: none;
+    }
 
-
-
-
-@media (max-width: 520px) {
-  .stem { font-size:1.1rem; padding:14px 20px 20px; }
-  .options { padding:16px 20px 20px; }
-  .card-footer { padding:0 20px 20px; flex-wrap:wrap; }
-  .card-header { padding:16px 20px 0; }
-  .hint-wrap { padding:0 20px; }
-  .note-wrap { padding:14px 20px; }
-  .results-grade { font-size:3.5rem; }
-  .results-stats { gap:24px; }
+    .collapsed-bar-horizontal .collapsed-status {
+        flex-shrink: 0;
+    }
+    .collapsed-bar-horizontal .collapsed-q-list {
+        flex-direction: row;
+        overflow-x: auto;
+        overflow-y: hidden;
+        gap: 8px;
+        flex: 1;
+        padding: 8px 0;
+        -webkit-overflow-scrolling: touch; /* Momentum scrolling on iOS */
+    }
+    .collapsed-bar-horizontal .collapsed-q-list::-webkit-scrollbar {
+        height: 0px; /* Hidden */
+    }
+    .collapsed-bar-horizontal .collapsed-q-list::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 2px;
+    }
+    .collapsed-bar-horizontal .collapsed-q-item {
+        width: 42px;
+        height: 42px;
+        flex-shrink: 0;
+    }
+    .collapsed-bar-horizontal .sidebar-collapsed-actions {
+        flex-direction: row;
+        gap: 8px;
+    }
+    .collapsed-bar-horizontal .collapsed-icon-btn {
+        width: 42px;
+        height: 42px;
+    }
 }
 /* ── Hide-options mode ───────────────────────────────────── */
 .mode-btn { display:flex; align-items:center; gap:8px; width:100%; padding:9px 12px; background:var(--bg); border:1.5px solid var(--border); border-radius:var(--radius); font-family:var(--font-sans); font-size:.78rem; font-weight:600; color:var(--text-2); cursor:pointer; transition:all var(--transition); margin-bottom:16px; }
