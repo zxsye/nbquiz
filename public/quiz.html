@@ -64,7 +64,6 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 /* --- Sidebar --- */
 .sidebar.collapsed {
   width: 72px;
-  overflow: hidden; /* add this */
 }
 .sidebar-toggle {
   position: absolute;
@@ -121,6 +120,10 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   width: 100%;
   align-items: center;
   padding: 0 12px;
+  scrollbar-width: none; /* Firefox */
+}
+.collapsed-q-list::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
 }
 .collapsed-q-item {
   width: 42px;
