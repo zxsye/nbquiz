@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button, input, select, textarea { font-family: inherit; }
 :root {
   --bg: #f7f5f0;
   --surface: #ffffff;
@@ -25,7 +26,7 @@
   --radius-lg: 16px;
   --shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.06);
   --font-serif: 'Crimson Pro', Georgia, serif;
-  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-sans: 'DM Sans', 'Helvetica Neue', Helvetica, sans-serif;
   --font-mono: 'DM Mono', monospace;
 }
 body {
@@ -221,6 +222,7 @@ body {
   background: var(--surface);
   padding: 12px 14px;
   cursor: pointer;
+  font-family: var(--font-sans);
 }
 .note-item:hover { background: var(--accent-light); }
 .note-item.active { background: #eef6ff; }
@@ -231,6 +233,7 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: var(--font-sans);
 }
 .note-meta {
   margin-top: 2px;
@@ -242,6 +245,7 @@ body {
   padding: 18px 14px;
   color: var(--text-3);
   font-size: .84rem;
+  font-family: var(--font-sans);
 }
 
 /* Reader */
@@ -279,6 +283,7 @@ body {
   align-items: center;
   font-size: .75rem;
   color: var(--text-2);
+  font-family: var(--font-sans);
 }
 .reader-main {
   display: grid;
@@ -316,6 +321,7 @@ body {
   color: var(--text-3);
   font-size: .78rem;
   padding: 10px 8px;
+  font-family: var(--font-sans);
 }
 .outline-item {
   width: 100%;
@@ -330,6 +336,7 @@ body {
   align-items: center;
   gap: 7px;
   margin-bottom: 3px;
+  font-family: var(--font-sans);
 }
 .outline-item:hover {
   border-color: var(--border);
@@ -366,6 +373,7 @@ body {
   text-align: center;
   color: var(--text-3);
   font-size: .95rem;
+  font-family: var(--font-sans);
 }
 
 /* Tiles */
@@ -528,6 +536,7 @@ body {
   background: var(--surface);
   padding: 12px;
   margin-bottom: 14px;
+  font-family: var(--font-sans);
 }
 .doc-content h1, .doc-content h2, .doc-content h3, .doc-content h4, .doc-content h5, .doc-content h6 {
   margin-bottom: .6em;
