@@ -285,6 +285,7 @@ body {
   grid-template-columns: 260px 1fr;
   min-height: 0;
   flex: 1;
+  overflow-y: auto;
 }
 .outline {
   border-right: 1px solid var(--border);
@@ -292,6 +293,11 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  overflow-y: auto;
 }
 .outline-head {
   padding: 11px 12px 10px;
@@ -336,8 +342,9 @@ body {
   font-family: var(--font-mono);
 }
 .outline-item-title {
-  font-size: .78rem;
+  font-size: .82rem;
   line-height: 1.3;
+  font-family: var(--font-sans);
 }
 .outline-item.ancestor {
   color: var(--text-3);
@@ -352,7 +359,7 @@ body {
 }
 .reader-body {
   padding: 16px;
-  overflow: auto;
+  overflow-y: auto;
 }
 .empty-reader {
   padding: 50px 20px;
@@ -372,6 +379,28 @@ body {
 .tile.marked {
   border-color: #f59e0b;
   background: #fffbeb;
+}
+.tile.mark-sweep {
+  animation: markSweep .6s ease forwards;
+  background: linear-gradient(225deg, #fffbeb 0%, #fffbeb 100%);
+  background-size: 200% 200%;
+}
+@keyframes markSweep {
+  0% {
+    background: linear-gradient(225deg, #fef3c7 0%, var(--surface) 30%, var(--surface) 100%);
+    border-color: var(--border);
+  }
+  30% {
+    background: linear-gradient(225deg, #fef3c7 0%, #fef3c7 40%, var(--surface) 60%, var(--surface) 100%);
+    border-color: #f59e0b;
+  }
+  60% {
+    background: linear-gradient(225deg, #fffbeb 0%, #fef3c7 50%, #fef3c7 80%, var(--surface) 100%);
+  }
+  100% {
+    background: #fffbeb;
+    border-color: #f59e0b;
+  }
 }
 .tile.tile-context-only .tile-head {
   background: #f7f4ee;
@@ -405,7 +434,8 @@ body {
 }
 .tile-title {
   font-weight: 600;
-  font-size: .9rem;
+  font-size: .95rem;
+  font-family: var(--font-sans);
   color: var(--text);
 }
 .mark-btn {
@@ -418,20 +448,50 @@ body {
   font-size: .68rem;
   font-family: var(--font-mono);
   padding: 4px 10px;
+  transition: all .2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.mark-btn:hover {
+  border-color: #f59e0b;
+  color: var(--mark);
+  background: #fef3c7;
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, .25);
 }
 .mark-btn.marked {
   border-color: #d97706;
   color: var(--mark);
   background: var(--mark-bg);
 }
-.tile-content { padding: 10px 12px; }
+.mark-btn.marked:hover {
+  background: #fde68a;
+  border-color: #b45309;
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(180, 83, 9, .3);
+}
+.unmark-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #f59e0b, #dc2626);
+  animation: unmarkFill 1.5s linear forwards;
+  border-radius: 0 0 99px 99px;
+}
+@keyframes unmarkFill {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+.tile-content { padding: 10px 12px; margin-top: 2px; }
 .tile-content:empty { display: none; }
 .tile-content > :first-child { margin-top: 0; }
 .tile-content > :last-child { margin-bottom: 0; }
 .tile-content p, .tile-content ul, .tile-content ol, .tile-content pre, .tile-content blockquote {
   margin: 0 0 .7em;
   line-height: 1.5;
-  font-size: .88rem;
+  font-size: .95rem;
+  font-family: var(--font-sans);
 }
 .tile-content code {
   background: #f4f1ea;
@@ -452,11 +512,15 @@ body {
   padding: 10px;
   overflow-x: auto;
 }
+.tile-content ul, .tile-content ol { padding-left: 1.8em; }
+.tile-content table { border-collapse: collapse; width: 100%; margin: 0 0 .7em; font-size: .95rem; font-family: var(--font-sans); }
+.tile-content th, .tile-content td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; font-size: .95rem; }
+.tile-content th { background: var(--surface-2); font-weight: 600; }
 .tile-content a { color: var(--accent); }
 .tile-children {
-  padding: 0 10px 10px 14px;
+  padding: 8px 10px 10px 22px;
   border-left: 4px solid #ece8df;
-  margin-left: 10px;
+  margin-left: 14px;
 }
 .doc-content {
   border: 1.5px solid var(--border);
@@ -476,7 +540,7 @@ body {
   .layout { grid-template-columns: 1fr; }
   .note-list { max-height: 240px; }
   .reader-main { grid-template-columns: 1fr; }
-  .outline { border-right: none; border-bottom: 1px solid var(--border); max-height: 220px; }
+  .outline { border-right: none; border-bottom: 1px solid var(--border); max-height: 220px; position: static; }
 }
 </style>
 </head>
@@ -899,18 +963,79 @@ function renderTile(node, markedSet, isMarkedOnly) {
     <div class="tile-head">
       <span class="tile-level">H${node.level}</span>
       <div class="tile-title">${titleHtml}</div>
-      <button class="${markBtnClass}" onclick="toggleMark('${escAttr(node.id)}')">${isMarked ? 'Marked' : 'Mark'}</button>
+      <button class="${markBtnClass}" onmousedown="startUnmark(event, '${escAttr(node.id)}')" onmouseup="cancelUnmark('${escAttr(node.id)}')" onmouseleave="cancelUnmark('${escAttr(node.id)}')" ontouchstart="startUnmark(event, '${escAttr(node.id)}')" ontouchend="cancelUnmark('${escAttr(node.id)}')">${isMarked ? 'Marked' : 'Mark'}</button>
     </div>
     ${contentHtml}
     ${node.children.length ? `<div class="tile-children">${node.children.map(child => renderTile(child, markedSet, isMarkedOnly)).join('')}</div>` : ''}
   </article>`;
 }
 
-async function toggleMark(nodeId) {
+let unmarkTimers = {};
+let unmarkProgressEls = {};
+
+function startUnmark(e, nodeId) {
   const note = getCurrentNote();
   if (!note) return;
   const set = new Set(Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : []);
-  if (set.has(nodeId)) set.delete(nodeId); else set.add(nodeId);
+  if (!set.has(nodeId)) {
+    doMark(nodeId);
+    return;
+  }
+  const btn = e.currentTarget;
+  const progress = document.createElement('span');
+  progress.className = 'unmark-progress';
+  btn.appendChild(progress);
+  unmarkProgressEls[nodeId] = progress;
+
+  unmarkTimers[nodeId] = setTimeout(() => {
+    doUnmark(nodeId);
+    clearUnmarkProgress(nodeId);
+  }, 1500);
+}
+
+function cancelUnmark(nodeId) {
+  if (unmarkTimers[nodeId]) {
+    clearTimeout(unmarkTimers[nodeId]);
+    delete unmarkTimers[nodeId];
+  }
+  clearUnmarkProgress(nodeId);
+}
+
+function clearUnmarkProgress(nodeId) {
+  if (unmarkProgressEls[nodeId]) {
+    unmarkProgressEls[nodeId].remove();
+    delete unmarkProgressEls[nodeId];
+  }
+}
+
+async function doMark(nodeId) {
+  const note = getCurrentNote();
+  if (!note) return;
+  const set = new Set(Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : []);
+  set.add(nodeId);
+  const markedHeadingIds = Array.from(set);
+  note.markedHeadingIds = markedHeadingIds;
+  renderReader();
+  const tile = document.getElementById(domTileId(nodeId));
+  if (tile) {
+    tile.classList.add('mark-sweep');
+    setTimeout(() => tile.classList.remove('mark-sweep'), 650);
+  }
+  try {
+    await notesCollection().doc(note.id).update({
+      markedHeadingIds,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    setComposerStatus('Mark update failed: ' + err.message, true);
+  }
+}
+
+async function doUnmark(nodeId) {
+  const note = getCurrentNote();
+  if (!note) return;
+  const set = new Set(Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : []);
+  set.delete(nodeId);
   const markedHeadingIds = Array.from(set);
   note.markedHeadingIds = markedHeadingIds;
   renderReader();
