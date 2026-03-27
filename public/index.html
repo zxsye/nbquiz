@@ -330,6 +330,7 @@ function signOut() { auth.signOut(); }
 const SECTIONS = {
   Surgery: {
     resources: [
+      { href: '/notes',                  icon: '📝', name: 'Notes',              desc: 'Markdown note-taking app' },
       { href: '/wba',                    icon: '📋', name: 'WBA Requirements',   desc: 'Workplace-based assessments' },
       { href: '/surgery',                icon: '🔪', name: 'Surgery Handbook',   desc: 'Year 4 MD · 2026' },
       { href: '/lecture_sched',          icon: '📅', name: 'Lecture Schedule',   desc: 'Year 4 Surgery · 2026' },
@@ -338,6 +339,7 @@ const SECTIONS = {
   },
   GP: {
     resources: [
+      { href: '/notes',        icon: '📝', name: 'Notes',            desc: 'Markdown note-taking app' },
       { href: '/gp_handbook',  icon: '🩺', name: 'GP Handbook',       desc: 'Year 4 MD · 2026' },
       { href: '/gp_schedule',  icon: '📅', name: 'GP Schedule',       desc: 'Rotation timetable' },
       { href: '/gp_resources', icon: '📋', name: 'GP Resources',      desc: 'Clinical guidelines' },
@@ -345,6 +347,7 @@ const SECTIONS = {
   },
   Medicine: {
     resources: [
+      { href: '/notes',        icon: '📝', name: 'Notes',             desc: 'Markdown note-taking app' },
       { href: '/med_handbook', icon: '💊', name: 'Medicine Handbook', desc: 'Year 4 MD · 2026' },
       { href: '/med_schedule', icon: '📅', name: 'Med Schedule',      desc: 'Ward rotation timetable' },
       { href: '/med_resources',icon: '📋', name: 'Med Resources',     desc: 'Clinical guidelines' },
