@@ -121,12 +121,13 @@ body {
 
 /* Main app layout */
 .layout {
-  max-width: 1300px;
+  max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 300px 220px 1fr;
   gap: 20px;
   padding: 20px 24px 40px;
+  align-items: start;
 }
 .panel {
   background: var(--surface);
@@ -140,6 +141,9 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
 }
 .panel-head {
   padding: 14px 16px;
@@ -212,7 +216,7 @@ body {
   font-size: .75rem;
   color: var(--text-3);
 }
-.note-list { overflow-y: auto; max-height: 52vh; }
+.note-list { overflow-y: auto; flex: 1; }
 .note-item {
   display: block;
   width: 100%;
@@ -248,61 +252,14 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Reader */
-.reader {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  min-height: 70vh;
-}
-.reader-top {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-}
-.reader-title {
-  font-family: var(--font-serif);
-  font-size: 1.35rem;
-  font-weight: 600;
-}
-.chip {
-  font-size: .68rem;
-  color: var(--text-3);
-  font-family: var(--font-mono);
-  border: 1px solid var(--border);
-  border-radius: 99px;
-  padding: 4px 10px;
-}
-.toggle-wrap {
-  margin-left: auto;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  font-size: .75rem;
-  color: var(--text-2);
-  font-family: var(--font-sans);
-}
-.reader-main {
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  min-height: 0;
-  flex: 1;
-  overflow-y: auto;
-}
-.outline {
-  border-right: 1px solid var(--border);
-  background: #fcfbf8;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+/* Outline panel (standalone column) */
+.outline-panel {
   position: sticky;
-  top: 0;
-  align-self: start;
-  max-height: 100vh;
+  top: 20px;
+  max-height: calc(100vh - 40px);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 .outline-head {
   padding: 11px 12px 10px;
@@ -312,10 +269,13 @@ body {
   text-transform: uppercase;
   color: var(--text-3);
   font-family: var(--font-mono);
+  background: var(--surface-2);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 .outline-body {
-  overflow: auto;
+  overflow-y: auto;
   padding: 8px;
+  flex: 1;
 }
 .outline-empty {
   color: var(--text-3);
@@ -364,9 +324,50 @@ body {
   background: #fffbeb;
   color: var(--mark);
 }
+
+/* Reader */
+.reader {
+  display: flex;
+  flex-direction: column;
+  min-height: 70vh;
+}
+.reader-top {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.reader-title {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+.chip {
+  font-size: .68rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 4px 10px;
+}
+.toggle-wrap {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: .75rem;
+  color: var(--text-2);
+  font-family: var(--font-sans);
+}
 .reader-body {
   padding: 16px;
-  overflow-y: auto;
 }
 .empty-reader {
   padding: 50px 20px;
@@ -484,7 +485,7 @@ body {
   left: 0;
   height: 3px;
   background: linear-gradient(90deg, #f59e0b, #dc2626);
-  animation: unmarkFill 1.5s linear forwards;
+  animation: unmarkFill .8s linear forwards;
   border-radius: 0 0 99px 99px;
 }
 @keyframes unmarkFill {
@@ -578,6 +579,11 @@ body {
   opacity: 1;
 }
 
+@media (max-width: 1200px) {
+  .layout { grid-template-columns: 280px 1fr; }
+  .outline-panel { display: none; }
+}
+
 @media (max-width: 1000px) {
   .sidebar-toggle { display: flex; }
   .layout { grid-template-columns: 1fr; }
@@ -593,13 +599,12 @@ body {
     transform: translateX(-100%);
     transition: transform .3s cubic-bezier(.4,0,.2,1);
     overflow-y: auto;
+    max-height: none;
   }
   .layout > .sidebar.drawer-open {
     transform: translateX(0);
   }
-  .note-list { max-height: none; flex: 1; }
-  .reader-main { grid-template-columns: 1fr; }
-  .outline { border-right: none; border-bottom: 1px solid var(--border); max-height: 220px; position: static; }
+  .outline-panel { display: none; }
 }
 </style>
 </head>
@@ -646,6 +651,13 @@ body {
 
   <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeSidebar()"></div>
 
+  <aside class="panel outline-panel">
+    <div class="outline-head">Heading outline</div>
+    <div class="outline-body" id="outlineBody">
+      <div class="outline-empty">No headings to show.</div>
+    </div>
+  </aside>
+
   <section class="panel reader">
     <div class="reader-top">
       <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar">
@@ -659,16 +671,8 @@ body {
         Show marked tiles only
       </label>
     </div>
-    <div class="reader-main">
-      <aside class="outline">
-        <div class="outline-head">Heading outline</div>
-        <div class="outline-body" id="outlineBody">
-          <div class="outline-empty">No headings to show.</div>
-        </div>
-      </aside>
-      <div class="reader-body" id="readerBody">
-        <div class="empty-reader">Create or import a markdown note to start.</div>
-      </div>
+    <div class="reader-body" id="readerBody">
+      <div class="empty-reader">Create or import a markdown note to start.</div>
     </div>
   </section>
 </main>
@@ -1055,7 +1059,7 @@ function startUnmark(e, nodeId) {
   unmarkTimers[nodeId] = setTimeout(() => {
     doUnmark(nodeId);
     clearUnmarkProgress(nodeId);
-  }, 1500);
+  }, 800);
 }
 
 function cancelUnmark(nodeId) {
@@ -1168,9 +1172,12 @@ function pruneTreeToMarked(root, markedSet) {
 }
 
 function pruneNode(node, markedSet) {
+  if (markedSet.has(node.id)) {
+    // Node is marked: include it with all its descendants (not just marked ones)
+    return cloneTree(node);
+  }
   const children = node.children.map(child => pruneNode(child, markedSet)).filter(Boolean);
-  const include = markedSet.has(node.id) || children.length > 0;
-  if (!include) return null;
+  if (!children.length) return null;
   return {
     id: node.id,
     level: node.level,
