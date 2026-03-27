@@ -545,9 +545,59 @@ body {
   margin: 0 0 .7em;
 }
 
+/* Mobile sidebar toggle button — hidden on desktop */
+.sidebar-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 1.1rem;
+  transition: border-color .2s, background .2s;
+  flex-shrink: 0;
+}
+.sidebar-toggle:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+
+/* Drawer backdrop */
+.drawer-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  z-index: 900;
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.drawer-backdrop.visible {
+  display: block;
+  opacity: 1;
+}
+
 @media (max-width: 1000px) {
+  .sidebar-toggle { display: flex; }
   .layout { grid-template-columns: 1fr; }
-  .note-list { max-height: 240px; }
+  .layout > .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 80vw;
+    max-width: 380px;
+    height: 100vh;
+    z-index: 950;
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    transform: translateX(-100%);
+    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    overflow-y: auto;
+  }
+  .layout > .sidebar.drawer-open {
+    transform: translateX(0);
+  }
+  .note-list { max-height: none; flex: 1; }
   .reader-main { grid-template-columns: 1fr; }
   .outline { border-right: none; border-bottom: 1px solid var(--border); max-height: 220px; position: static; }
 }
@@ -594,8 +644,13 @@ body {
     <div class="note-list" id="noteList"></div>
   </aside>
 
+  <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeSidebar()"></div>
+
   <section class="panel reader">
     <div class="reader-top">
+      <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <div class="reader-title" id="readerTitle">No note selected</div>
       <div class="chip" id="tileCountChip">0 tiles</div>
       <div class="chip" id="markedCountChip">0 marked</div>
@@ -708,6 +763,7 @@ function selectNote(noteId) {
   renderNotesList();
   syncComposerToCurrent();
   renderReader();
+  if (window.innerWidth <= 1000) closeSidebar();
 }
 
 function getCurrentNote() {
@@ -1203,6 +1259,25 @@ function escHtml(s) {
 }
 function escAttr(s) {
   return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('drawerBackdrop');
+  const isOpen = sidebar.classList.contains('drawer-open');
+  if (isOpen) {
+    closeSidebar();
+  } else {
+    sidebar.classList.add('drawer-open');
+    backdrop.classList.add('visible');
+  }
+}
+
+function closeSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const backdrop = document.getElementById('drawerBackdrop');
+  sidebar.classList.remove('drawer-open');
+  backdrop.classList.remove('visible');
 }
 </script>
 </body>
