@@ -693,23 +693,24 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
 
 /* "Vertical mode" (portrait tablets): stack panels full-width */
 @media (max-width: 1200px) and (orientation: portrait) {
-  .sidebar-toggle { display: flex; }
+  .sidebar-toggle { display: none; }
+  .drawer-backdrop { display: none !important; }
   .layout { grid-template-columns: 1fr; }
   .layout > .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 80vw;
-    max-width: 380px;
-    height: 100vh;
-    z-index: 950;
-    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-    transform: translateX(-100%);
-    transition: transform .3s cubic-bezier(.4,0,.2,1);
-    overflow-y: auto;
+    position: static;
+    top: auto;
+    left: auto;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    z-index: auto;
+    border-radius: var(--radius-lg);
+    transform: none;
+    transition: none;
+    overflow: hidden;
     max-height: none;
   }
-  .layout > .sidebar.drawer-open { transform: translateX(0); }
+  .layout > .sidebar.drawer-open { transform: none; }
   body:not(.outline-in-sidebar) .outline-panel { display: none; }
   body:not(.outline-in-sidebar) .reader-outline-strip { display: block; }
 }
@@ -962,12 +963,14 @@ async function createNote() {
     return;
   }
   const title = titleInput || deriveTitleFromMarkdown(markdown);
+  const parsed = parseMarkdownHierarchy(markdown);
+  const markedHeadingIds = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
   setComposerStatus('Creating note...');
   try {
     const ref = await notesCollection().add({
       title,
       markdown,
-      markedHeadingIds: [],
+      markedHeadingIds,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
@@ -995,9 +998,7 @@ async function saveCurrentNote() {
   }
   const title = titleInput || deriveTitleFromMarkdown(markdown);
   const parsed = parseMarkdownHierarchy(markdown);
-  const validIds = new Set(flattenNodes(parsed.root.children).map(n => n.id));
-  const oldMarked = Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : [];
-  const filteredMarked = oldMarked.filter(id => validIds.has(id));
+  const filteredMarked = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
 
   setComposerStatus('Saving changes...');
   try {
@@ -1092,7 +1093,9 @@ function renderReader() {
   const parseResult = parseMarkdownHierarchy(markdown);
   renderedTree = parseResult.root;
   const allNodes = flattenNodes(renderedTree.children);
-  const markedSet = new Set(Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : []);
+  const markedSet = new Set(allNodes.filter(n => n.isMarked).map(n => n.id));
+  const legacyMarked = Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : [];
+  for (const legacyId of legacyMarked) markedSet.add(legacyId);
   renderedMarkedCount = allNodes.filter(n => markedSet.has(n.id)).length;
 
   readerTitle.textContent = note.title || 'Untitled note';
@@ -1251,7 +1254,10 @@ let unmarkProgressEls = {};
 function startUnmark(e, nodeId) {
   const note = getCurrentNote();
   if (!note) return;
-  const set = new Set(Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : []);
+  const parsed = parseMarkdownHierarchy(note.markdown || '');
+  const set = new Set(flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id));
+  const legacyMarked = Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : [];
+  for (const legacyId of legacyMarked) set.add(legacyId);
   if (!set.has(nodeId)) {
     doMark(nodeId);
     return;
@@ -1286,9 +1292,13 @@ function clearUnmarkProgress(nodeId) {
 async function doMark(nodeId) {
   const note = getCurrentNote();
   if (!note) return;
-  const set = new Set(Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : []);
-  set.add(nodeId);
-  const markedHeadingIds = Array.from(set);
+  const updatedMarkdown = updateHeadingMarkInMarkdown(note.markdown || '', nodeId, true);
+  if (!updatedMarkdown) return;
+  note.markdown = updatedMarkdown;
+  const markdownEl = document.getElementById('noteMarkdown');
+  if (markdownEl) markdownEl.value = updatedMarkdown;
+  const parsed = parseMarkdownHierarchy(updatedMarkdown);
+  const markedHeadingIds = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
   note.markedHeadingIds = markedHeadingIds;
   renderReader();
   const tile = document.getElementById(domTileId(nodeId));
@@ -1298,6 +1308,7 @@ async function doMark(nodeId) {
   }
   try {
     await notesCollection().doc(note.id).update({
+      markdown: updatedMarkdown,
       markedHeadingIds,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
@@ -1309,13 +1320,18 @@ async function doMark(nodeId) {
 async function doUnmark(nodeId) {
   const note = getCurrentNote();
   if (!note) return;
-  const set = new Set(Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : []);
-  set.delete(nodeId);
-  const markedHeadingIds = Array.from(set);
+  const updatedMarkdown = updateHeadingMarkInMarkdown(note.markdown || '', nodeId, false);
+  if (!updatedMarkdown) return;
+  note.markdown = updatedMarkdown;
+  const markdownEl = document.getElementById('noteMarkdown');
+  if (markdownEl) markdownEl.value = updatedMarkdown;
+  const parsed = parseMarkdownHierarchy(updatedMarkdown);
+  const markedHeadingIds = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
   note.markedHeadingIds = markedHeadingIds;
   renderReader();
   try {
     await notesCollection().doc(note.id).update({
+      markdown: updatedMarkdown,
       markedHeadingIds,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
@@ -1330,17 +1346,19 @@ function parseMarkdownHierarchy(markdown) {
   const stack = [root];
   let inFence = false;
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     if (/^(```|~~~)/.test(line.trim())) {
       inFence = !inFence;
       stack[stack.length - 1].contentLines.push(line);
       continue;
     }
     if (!inFence) {
-      const match = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
+      const match = line.match(/^(#{1,6})\s+(⭐\s*)?(.+?)\s*#*\s*$/);
       if (match) {
         const level = match[1].length;
-        const rawTitle = match[2].trim();
+        const isMarked = Boolean(match[2]);
+        const rawTitle = match[3].trim();
         while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
         const parent = stack[stack.length - 1];
         const slug = slugify(rawTitle) || 'section';
@@ -1351,6 +1369,8 @@ function parseMarkdownHierarchy(markdown) {
           id,
           level,
           title: rawTitle,
+          isMarked,
+          lineIndex: i,
           contentLines: [],
           children: [],
           childSlugCounts: {},
@@ -1363,6 +1383,27 @@ function parseMarkdownHierarchy(markdown) {
     stack[stack.length - 1].contentLines.push(line);
   }
   return { root };
+}
+
+function updateHeadingMarkInMarkdown(markdown, nodeId, shouldMark) {
+  const source = String(markdown || '').replace(/\r\n/g, '\n');
+  const lines = source.split('\n');
+  const parsed = parseMarkdownHierarchy(source);
+  const allNodes = flattenNodes(parsed.root.children);
+  const node = allNodes.find(n => n.id === nodeId);
+  if (!node || typeof node.lineIndex !== 'number') return source;
+  const line = lines[node.lineIndex] || '';
+  const headingMatch = line.match(/^(\s*)(#{1,6})(\s+)(⭐\s*)?(.+?)(\s*#*\s*)$/);
+  if (!headingMatch) return source;
+  const leading = headingMatch[1] || '';
+  const hashes = headingMatch[2] || '';
+  const spacing = headingMatch[3] || ' ';
+  const title = (headingMatch[5] || '').trim();
+  const trailing = headingMatch[6] || '';
+  lines[node.lineIndex] = shouldMark
+    ? `${leading}${hashes}${spacing}⭐ ${title}${trailing}`
+    : `${leading}${hashes}${spacing}${title}${trailing}`;
+  return lines.join('\n');
 }
 
 function pruneTreeToMarked(root, markedSet) {
@@ -1398,6 +1439,8 @@ function cloneTree(node) {
     id: node.id,
     level: node.level,
     title: node.title,
+    isMarked: Boolean(node.isMarked),
+    lineIndex: node.lineIndex,
     contentLines: [...(node.contentLines || [])],
     children: (node.children || []).map(cloneTree),
   };
@@ -1437,7 +1480,7 @@ function markdownToInlineHtml(md) {
 function deriveTitleFromMarkdown(markdown) {
   const lines = String(markdown || '').split(/\r?\n/);
   for (const line of lines) {
-    const heading = line.match(/^#{1,6}\s+(.+?)\s*#*\s*$/);
+    const heading = line.match(/^#{1,6}\s+(?:⭐\s*)?(.+?)\s*#*\s*$/);
     if (heading && heading[1]) return heading[1].trim();
   }
   for (const line of lines) {
