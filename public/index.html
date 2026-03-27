@@ -117,59 +117,272 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 /* ── STICKY GLASS RESOURCES PANEL ── */
 .resources-panel {
   position: sticky;
-  top: 16px; /* Sticks to the top of the viewport */
-  z-index: 50; /* Stays above the other cards */
+  top: 16px;
+  z-index: 50;
   margin-bottom: 8px;
-  /* Removed background and border so only the buttons show */
   background: transparent;
   border: none;
   box-shadow: none;
 }
-.resources-label { display: none; } /* Hidden to save vertical space */
+.resources-label { display: none; } 
 
 .resource-cards {
   display: flex;
-  gap: 12px;
+  gap: 16px; /* Increased gap to allow shadows room to breathe */
   overflow-x: auto;
-  padding: 4px 4px 16px 4px; /* Padding allows drop shadows to show without clipping */
+  padding: 16px 4px 24px 4px; /* Padding for heavy shadows */
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
   mask-image: linear-gradient(to right, black 90%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, black 95%, transparent 100%);
 }
-.resource-cards::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+.resource-cards::-webkit-scrollbar { display: none; }
 
-/* Glass Button Styles for Resource Cards */
-.resource-card {
+/* ========== EXACT COMPLEX BUTTON IMPLEMENTATION ========== */
+
+.button-wrap {
+  position: relative;
+  z-index: 2;
+  border-radius: 999vw;
+  background: transparent;
+  pointer-events: none;
+  transition: all var(--anim--hover-time) var(--anim--hover-ease);
+  /* Flex settings for the grid alignment */
+  flex-shrink: 0;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border-radius: var(--radius-lg);
+}
+
+/* Make wrap fill pill container */
+.quiz-pill .button-wrap { width: 100%; }
+
+.button-shadow {
+  --shadow-cuttoff-fix: 2em;
+  position: absolute;
+  width: calc(100% + var(--shadow-cuttoff-fix));
+  height: calc(100% + var(--shadow-cuttoff-fix));
+  top: calc(0% - var(--shadow-cuttoff-fix) / 2);
+  left: calc(0% - var(--shadow-cuttoff-fix) / 2);
+  filter: blur(clamp(2px, 0.125em, 12px));
+  -webkit-filter: blur(clamp(2px, 0.125em, 12px));
+  overflow: visible;
+  pointer-events: none;
+}
+
+.button-shadow::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: 999vw;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.1));
+  width: calc(100% - var(--shadow-cuttoff-fix) - 0.25em);
+  height: calc(100% - var(--shadow-cuttoff-fix) - 0.25em);
+  top: calc(var(--shadow-cuttoff-fix) - 0.5em);
+  left: calc(var(--shadow-cuttoff-fix) - 0.875em);
+  padding: 0.125em;
+  box-sizing: border-box;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  transition: all var(--anim--hover-time) var(--anim--hover-ease);
+  overflow: visible;
+  opacity: 1;
+}
+
+.nb-btn {
+  --border-width: 2px;
+  all: unset;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  position: relative;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  pointer-events: auto;
+  z-index: 3;
   text-decoration: none;
-  flex-shrink: 0; /* Prevents cards from squishing */
-  
-  background: linear-gradient(-75deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.5));
-  box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.03),
-              inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.8),
-              0 0.25em 0.15em -0.1em rgba(0, 0, 0, 0.08),
-              0 0 0 1px rgba(255, 255, 255, 1);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: linear-gradient(
+    -75deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0.05)
+  );
+  border-radius: 999vw;
+  box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05),
+    inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.8),
+    0 0.25em 0.125em -0.125em rgba(0, 0, 0, 0.2),
+    0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.2),
+    0 0 0 0 rgba(255, 255, 255, 1);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   transition: all var(--anim--hover-time) var(--anim--hover-ease);
 }
-.resource-card:hover {
+
+.nb-btn:hover, .nb-btn:focus-visible {
   transform: scale(0.975);
-  background: linear-gradient(-75deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.7));
+  backdrop-filter: blur(0.01em);
+  -webkit-backdrop-filter: blur(0.01em);
   box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05),
-              inset 0 -0.125em 0.125em rgba(255, 255, 255, 1),
-              0 0.15em 0.05em -0.1em rgba(0, 0, 0, 0.15),
-              0 0 0 1px rgba(0, 0, 0, 0.1); /* Removed var(--accent) */
+    inset 0 -0.125em 0.125em rgba(255, 255, 255, 1),
+    0 0.15em 0.05em -0.1em rgba(0, 0, 0, 0.25),
+    0 0 0.05em 0.1em inset rgba(255, 255, 255, 0.8),
+    0 0 0 0 rgba(255, 255, 255, 1);
 }
+
+.nb-btn:focus-visible { outline: 2px solid rgba(0, 0, 0, 0.5); outline-offset: 4px; }
+
+.nb-btn > span {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: "Inter", sans-serif;
+  color: rgba(50, 50, 50, 1);
+  text-shadow: 0em 0.25em 0.05em rgba(0, 0, 0, 0.1);
+  transition: all var(--anim--hover-time) var(--anim--hover-ease);
+}
+
+/* Inner layouts for specific instances */
+.quiz-pill .nb-btn > span {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 12px;
+}
+
+.resource-card.nb-btn > span {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+}
+
+.nb-btn:hover > span, .nb-btn:focus-visible > span {
+  text-shadow: 0.025em 0.025em 0.025em rgba(0, 0, 0, 0.12);
+}
+
+.nb-btn > span::after {
+  content: "";
+  display: block;
+  position: absolute;
+  width: calc(100% - var(--border-width));
+  height: calc(100% - var(--border-width));
+  top: calc(0% + var(--border-width) / 2);
+  left: calc(0% + var(--border-width) / 2);
+  box-sizing: border-box;
+  border-radius: 999vw;
+  overflow: clip;
+  background: linear-gradient(
+    var(--angle-2),
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.7) 40% 50%,
+    rgba(255, 255, 255, 0) 55%
+  );
+  z-index: 3;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  background-size: 200% 200%;
+  background-position: 0% 50%;
+  background-repeat: no-repeat;
+  transition: background-position calc(var(--anim--hover-time) * 1.25) var(--anim--hover-ease),
+    --angle-2 calc(var(--anim--hover-time) * 1.25) var(--anim--hover-ease);
+}
+
+.nb-btn:hover > span::after, .nb-btn:focus-visible > span::after {
+  background-position: 25% 50%;
+}
+
+.nb-btn:active > span::after {
+  background-position: 50% 15%;
+  --angle-2: -15deg;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .nb-btn > span::after,
+  .nb-btn:active > span::after { --angle-2: -45deg; }
+}
+
+.nb-btn::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  border-radius: 999vw;
+  width: calc(100% + var(--border-width));
+  height: calc(100% + var(--border-width));
+  top: calc(0% - var(--border-width) / 2);
+  left: calc(0% - var(--border-width) / 2);
+  padding: var(--border-width);
+  box-sizing: border-box;
+  background: conic-gradient(
+      from var(--angle-1) at 50% 50%,
+      rgba(0, 0, 0, 0.25),
+      rgba(0, 0, 0, 0) 5% 40%,
+      rgba(0, 0, 0, 0.25) 50%,
+      rgba(0, 0, 0, 0) 60% 95%,
+      rgba(0, 0, 0, 0.25)
+    ),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8));
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  transition: all var(--anim--hover-time) var(--anim--hover-ease), --angle-1 500ms ease;
+  box-shadow: inset 0 0 0 calc(var(--border-width) / 2) rgba(255, 255, 255, 0.5);
+}
+
+.nb-btn:hover::after, .nb-btn:focus-visible::after { --angle-1: -125deg; }
+.nb-btn:active::after { --angle-1: -75deg; }
+
+@media (hover: none) and (pointer: coarse) {
+  .nb-btn::after, .nb-btn:hover::after, .nb-btn:active::after { --angle-1: -75deg; }
+}
+
+.button-wrap:has(.nb-btn:hover) .button-shadow,
+.button-wrap:has(.nb-btn:focus-visible) .button-shadow {
+  filter: blur(clamp(2px, 0.0625em, 6px));
+  -webkit-filter: blur(clamp(2px, 0.0625em, 6px));
+  transition: filter var(--anim--hover-time) var(--anim--hover-ease);
+}
+
+.button-wrap:has(.nb-btn:hover) .button-shadow::after,
+.button-wrap:has(.nb-btn:focus-visible) .button-shadow::after {
+  top: calc(var(--shadow-cuttoff-fix) - 0.875em);
+  opacity: 1;
+}
+
+.button-wrap:has(.nb-btn:active) { transform: rotate3d(1, 0, 0, 25deg); }
+
+.button-wrap:has(.nb-btn:active) .nb-btn {
+  box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05),
+    inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.5),
+    0 0.125em 0.125em -0.125em rgba(0, 0, 0, 0.2),
+    0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.2),
+    0 0.225em 0.05em 0 rgba(0, 0, 0, 0.05),
+    0 0.25em 0 0 rgba(255, 255, 255, 0.75),
+    inset 0 0.25em 0.05em 0 rgba(0, 0, 0, 0.15);
+}
+
+.button-wrap:has(.nb-btn:active) .button-shadow {
+  filter: blur(clamp(2px, 0.125em, 12px));
+  -webkit-filter: blur(clamp(2px, 0.125em, 12px));
+}
+
+.button-wrap:has(.nb-btn:active) .button-shadow::after {
+  top: calc(var(--shadow-cuttoff-fix) - 0.5em);
+  opacity: 0.75;
+}
+
+.button-wrap:has(.nb-btn:active) > .nb-btn > span {
+  text-shadow: 0.025em 0.25em 0.05em rgba(0, 0, 0, 0.12);
+}
+
+/* Content specific text styling inside the generic complex buttons */
 .resource-icon { font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
 .resource-info { display: flex; flex-direction: column; }
 .resource-name { font-size: .88rem; font-weight: 600; color: var(--text); white-space: nowrap; }
 .resource-desc { font-size: .68rem; color: var(--text-3); font-family: var(--font-mono); margin-top: 1px; white-space: nowrap; }
+
+.pill-name  { font-family: var(--font-mono); font-size: .8rem; font-weight: 500; color: var(--text); }
+.pill-count { font-size: .68rem; color: var(--text-3); font-family: var(--font-mono); }
 
 
 /* ── Quiz week cards ── */
@@ -181,31 +394,6 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .topic-name { font-size: .95rem; font-weight: 500; color: var(--text); min-width: 100px; padding-top: 10px; }
 .pill-group { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; }
 .quiz-pill { display: flex; flex-direction: column; gap: 5px; min-width: 130px; max-width: 200px; flex: 1; }
-
-/* ── Optimized Glassmorphic Link ── */
-.pill-link { 
-  display: flex; align-items: center; justify-content: space-between; 
-  padding: 7px 12px; border-radius: var(--radius); text-decoration: none; 
-  background: linear-gradient(-75deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.5));
-  box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.03),
-              inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.8),
-              0 0.15em 0.1em -0.1em rgba(0, 0, 0, 0.08),
-              0 0 0 1px var(--border);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  transition: all var(--anim--hover-time) var(--anim--hover-ease);
-}
-.pill-link:hover { 
-  transform: scale(0.975);
-  background: linear-gradient(-75deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.7));
-  box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05),
-              inset 0 -0.125em 0.125em rgba(255, 255, 255, 1),
-              0 0.15em 0.05em -0.1em rgba(0, 0, 0, 0.15),
-              0 0 0 1px rgba(0, 0, 0, 0.1); /* Removed var(--accent) */
-}
-
-.pill-name  { font-family: var(--font-mono); font-size: .8rem; font-weight: 500; color: var(--accent); }
-.pill-count { font-size: .68rem; color: var(--text-3); font-family: var(--font-mono); }
 
 /* ── Progress bars ── */
 .progress-wrap { display: flex; flex-direction: column; gap: 2px; }
@@ -233,29 +421,12 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .skel-bar  { height: 10px; margin-bottom: 8px; }
 .skel-pill { height: 36px; border-radius: var(--radius); flex: 1; min-width: 120px; max-width: 180px; }
 
-/* ── Login overlay & Hero Button ── */
+/* ── Login overlay ── */
 #loginScreen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
 #loginScreen.hidden { display: none; }
 .login-logo { font-family: var(--font-serif); font-size: 2.4rem; font-weight: 600; color: var(--text); margin-bottom: 6px; text-align: center; }
 .login-logo span { color: var(--accent); }
 .login-sub  { font-size: .85rem; color: var(--text-3); margin-bottom: 48px; text-align: center; }
-
-/* Full Glass Hero Button Implementation */
-.button-wrap { position: relative; z-index: 2; border-radius: 999vw; background: transparent; pointer-events: none; transition: all var(--anim--hover-time) var(--anim--hover-ease); }
-.button-shadow { --shadow-cuttoff-fix: 2em; position: absolute; width: calc(100% + var(--shadow-cuttoff-fix)); height: calc(100% + var(--shadow-cuttoff-fix)); top: calc(0% - var(--shadow-cuttoff-fix) / 2); left: calc(0% - var(--shadow-cuttoff-fix) / 2); filter: blur(10px); overflow: visible; pointer-events: none; }
-.button-shadow::after { content: ""; position: absolute; z-index: 0; inset: 0; border-radius: 999vw; background: linear-gradient(180deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.05)); width: calc(100% - var(--shadow-cuttoff-fix) - 0.25em); height: calc(100% - var(--shadow-cuttoff-fix) - 0.25em); top: calc(var(--shadow-cuttoff-fix) - 0.5em); left: calc(var(--shadow-cuttoff-fix) - 0.875em); padding: 0.125em; box-sizing: border-box; mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; transition: all var(--anim--hover-time) var(--anim--hover-ease); }
-
-.google-btn-new { --border-width: 2px; all: unset; cursor: pointer; position: relative; pointer-events: auto; z-index: 3; background: linear-gradient(-75deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.6)); border-radius: 999vw; box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05), inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.8), 0 0.25em 0.125em -0.125em rgba(0, 0, 0, 0.15), 0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.5), 0 0 0 0 rgba(255, 255, 255, 1); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); transition: all var(--anim--hover-time) var(--anim--hover-ease); }
-.google-btn-new:hover, .google-btn-new:focus-visible { transform: scale(0.975); box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05), inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.8), 0 0.15em 0.05em -0.1em rgba(0, 0, 0, 0.2), 0 0 0.05em 0.1em inset rgba(255, 255, 255, 0.8); }
-.google-btn-new span { display: flex; align-items: center; gap: 10px; position: relative; font-family: var(--font-sans); font-size: .95rem; font-weight: 600; color: var(--text); padding: 14px 32px; transition: all var(--anim--hover-time) var(--anim--hover-ease); }
-.google-btn-new span::after { content: ""; display: block; position: absolute; width: calc(100% - var(--border-width)); height: calc(100% - var(--border-width)); top: calc(0% + var(--border-width) / 2); left: calc(0% + var(--border-width) / 2); box-sizing: border-box; border-radius: 999vw; overflow: clip; background: linear-gradient(var(--angle-2), rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 40% 50%, rgba(255, 255, 255, 0) 55%); z-index: 3; mix-blend-mode: overlay; pointer-events: none; background-size: 200% 200%; background-position: 0% 50%; background-repeat: no-repeat; transition: background-position calc(var(--anim--hover-time) * 1.25) var(--anim--hover-ease), --angle-2 calc(var(--anim--hover-time) * 1.25) var(--anim--hover-ease); }
-.google-btn-new:hover span::after { background-position: 25% 50%; }
-.google-btn-new:active span::after { background-position: 50% 15%; --angle-2: -15deg; }
-.google-btn-new::after { content: ""; position: absolute; z-index: 1; inset: 0; border-radius: 999vw; width: calc(100% + var(--border-width)); height: calc(100% + var(--border-width)); top: calc(0% - var(--border-width) / 2); left: calc(0% - var(--border-width) / 2); padding: var(--border-width); box-sizing: border-box; background: conic-gradient(from var(--angle-1) at 50% 50%, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0) 5% 40%, rgba(0, 0, 0, 0.15) 50%, rgba(0, 0, 0, 0) 60% 95%, rgba(0, 0, 0, 0.15)), linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)); mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude; -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; transition: all var(--anim--hover-time) var(--anim--hover-ease), --angle-1 500ms ease; }
-.google-btn-new:hover::after { --angle-1: -125deg; }
-.google-btn-new:active::after { --angle-1: -75deg; }
-.button-wrap:has(.google-btn-new:hover) .button-shadow::after { top: calc(var(--shadow-cuttoff-fix) - 0.875em); opacity: 1; }
-.button-wrap:has(.google-btn-new:active) { transform: rotate3d(1, 0, 0, 15deg); }
 
 .login-error { margin-top: 16px; font-size: .8rem; color: #991b1b; min-height: 1em; text-align: center; }
 .made-by-login { position: fixed; bottom: 20px; font-size: .72rem; color: var(--text-3); font-family: var(--font-mono); }
@@ -267,7 +438,6 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   .section-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .section-tab { padding: 12px 14px 11px; font-size: .82rem; }
   
-  /* Make sure resources stay a single row even on small screens */
   .resource-cards {
     flex-wrap: nowrap;
     mask-image: linear-gradient(to right, black 85%, transparent 100%);
@@ -283,8 +453,8 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   <div class="login-sub">Your personal medical study companion</div>
   
   <div class="button-wrap">
-    <button class="google-btn-new" onclick="signInWithGoogle()">
-      <span>
+    <button class="nb-btn" onclick="signInWithGoogle()" style="padding: 14px 32px; font-weight: 600;">
+      <span style="display: flex; gap: 10px; align-items: center;">
         <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
         Continue with Google
       </span>
@@ -386,7 +556,6 @@ const SECTIONS = {
 
 let currentSection = 'Surgery';
 let currentUid     = null;
-// Cache of all quiz docs so we don't re-fetch on tab switch
 let allQuizDocs    = null;
 
 auth.onAuthStateChanged(async user => {
@@ -400,7 +569,6 @@ auth.onAuthStateChanged(async user => {
       if (snap.exists) document.getElementById('adminLink').style.display = 'inline-flex';
     } catch(e) {}
     currentUid = user.uid;
-    // Read section from URL hash
     const hash = window.location.hash.replace('#','');
     if (SECTIONS[hash]) {
       currentSection = hash;
@@ -423,21 +591,17 @@ function switchSection(section, btn) {
   currentSection = section;
   window.location.hash = section;
 
-  // Update tab styles
   document.querySelectorAll('.section-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 
-  // Re-render resources
   renderResources(section);
-
-  // Clear quiz cards (keep skeleton-like re-render)
   clearQuizCards();
   if (allQuizDocs) {
     renderSectionGrid(allQuizDocs, currentUid);
   }
 }
 
-// ── Load quizzes from Firestore (once) ────────────────────────────────────────
+// ── Load quizzes ────────────────────────────────────────
 async function loadQuizzes(uid) {
   try {
     const snap = await db.collection('quizzes').get();
@@ -453,20 +617,23 @@ async function loadQuizzes(uid) {
 function renderResources(section) {
   const cards = SECTIONS[section].resources;
   document.getElementById('resourceCards').innerHTML = cards.map(c => `
-    <a class="resource-card" href="${c.href}" target="_blank">
-      <div class="resource-icon">${c.icon}</div>
-      <div class="resource-info">
-        <div class="resource-name">${c.name}</div>
-        <div class="resource-desc">${c.desc}</div>
-      </div>
-    </a>
+    <div class="button-wrap">
+      <a class="nb-btn resource-card" href="${c.href}" target="_blank">
+        <span>
+          <span class="resource-icon">${c.icon}</span>
+          <span class="resource-info">
+            <span class="resource-name">${c.name}</span>
+            <span class="resource-desc">${c.desc}</span>
+          </span>
+        </span>
+      </a>
+      <div class="button-shadow"></div>
+    </div>
   `).join('');
 }
 
 function clearQuizCards() {
-  // Remove all week-cards but leave the resources panel
   document.querySelectorAll('#grid .week-card, #grid .empty').forEach(el => el.remove());
-  // Re-add a skeleton
   const skel = document.createElement('div');
   skel.className = 'skel-card'; skel.id = 'skeleton';
   skel.innerHTML = `<div class="skel skel-bar" style="width:40px;margin-bottom:16px;"></div>
@@ -477,13 +644,11 @@ function clearQuizCards() {
 }
 
 function renderSectionGrid(docs, uid) {
-  // Filter by section; quizzes with no section field fall into Surgery (backwards compat)
   const filtered = docs.filter(d => {
     const s = (d.section || 'Surgery');
     return s.toLowerCase() === currentSection.toLowerCase();
   });
 
-  // Remove skeleton and any stale empty message
   const skel = document.getElementById('skeleton');
   if (skel) skel.remove();
   document.querySelectorAll('#grid .empty').forEach(el => el.remove());
@@ -496,7 +661,6 @@ function renderSectionGrid(docs, uid) {
     return;
   }
 
-  // Group: week → topic → [{id, name, questionCount}]
   const groups = {};
   filtered.forEach(d => {
     const w = (d.week  || 'Unknown').toUpperCase();
@@ -531,11 +695,18 @@ function renderGrid(groups) {
       versions.forEach(q => {
         const safe = q.id.replace(/__/g, '_');
         pills += `<div class="quiz-pill" data-quiz-id="${q.id}">
-          <a href="/quiz?id=${q.id}" class="pill-link">
-            <span class="pill-name">${q.name}</span>
-            <span class="pill-count">${q.questionCount}q</span>
-          </a>
-          <div class="progress-wrap" id="prog_${safe}">
+          
+          <div class="button-wrap">
+            <a href="/quiz?id=${q.id}" class="nb-btn">
+              <span>
+                <span class="pill-name">${q.name}</span>
+                <span class="pill-count">${q.questionCount}q</span>
+              </span>
+            </a>
+            <div class="button-shadow"></div>
+          </div>
+
+          <div class="progress-wrap" id="prog_${safe}" style="margin-top: 6px;">
             <div class="prog-bar">
               <div class="seg seg-correct" id="seg_c_${safe}"></div>
               <div class="seg seg-wrong"   id="seg_w_${safe}"></div>
@@ -558,7 +729,6 @@ function renderGrid(groups) {
     grid.appendChild(card);
   });
   
-  // Re-render KaTeX after building the grid
   if (window.renderMathInElement) {
     renderMathInElement(document.getElementById('grid'), {
       delimiters: [
