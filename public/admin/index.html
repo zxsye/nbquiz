@@ -30,6 +30,8 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .screen { display: none; }
 .screen.active { display: flex; }
 .centered-screen { min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+.loading-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; margin-bottom: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .logo { font-family: var(--font-serif); font-size: 2.2rem; font-weight: 600; margin-bottom: 4px; text-align: center; }
 .logo span { color: var(--accent); }
 .logo-tag { font-family: var(--font-mono); font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); margin-bottom: 40px; }
@@ -144,8 +146,14 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 </head>
 <body>
 
+<!-- Loading (default) -->
+<div class="screen centered-screen active" id="sLoading">
+  <div class="loading-spinner"></div>
+  <div class="logo-tag" style="margin-bottom:0;">Loading admin portal…</div>
+</div>
+
 <!-- Login -->
-<div class="screen centered-screen active" id="sLogin">
+<div class="screen centered-screen" id="sLogin">
   <div class="logo">NB <span>Quiz</span></div>
   <div class="logo-tag">Admin Portal</div>
   <button class="google-btn" onclick="signInGoogle()">
@@ -395,6 +403,7 @@ function doSignOut() { auth.signOut(); }
 
 auth.onAuthStateChanged(async user => {
   if (!user) { show('sLogin'); return; }
+  show('sLoading');
   const snap = await db.collection('admins').doc(user.email).get().catch(() => null);
   if (!snap?.exists) {
     document.getElementById('deniedMsg').textContent =

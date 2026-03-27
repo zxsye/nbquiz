@@ -227,6 +227,11 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .skel-pill { height: 36px; border-radius: var(--radius); flex: 1; min-width: 120px; max-width: 180px; }
 
 /* ── Login overlay ── */
+#bootScreen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1100; padding: 24px; gap: 14px; }
+#bootScreen.hidden { display: none; }
+.boot-spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.boot-label { font-family: var(--font-mono); font-size: .8rem; color: var(--text-3); }
 #loginScreen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
 #loginScreen.hidden { display: none; }
 .login-logo { font-family: var(--font-serif); font-size: 2.4rem; font-weight: 600; color: var(--text); margin-bottom: 6px; text-align: center; }
@@ -253,7 +258,12 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 </head>
 <body>
 
-<div id="loginScreen">
+<div id="bootScreen">
+  <div class="boot-spinner"></div>
+  <div class="boot-label">Loading quizzes…</div>
+</div>
+
+<div id="loginScreen" class="hidden">
   <div class="login-logo">NB <span>Quiz</span></div>
   <div class="login-sub">Your personal medical study companion</div>
   <button class="google-btn" onclick="signInWithGoogle()">
@@ -358,6 +368,7 @@ let currentUid     = null;
 let allQuizDocs    = null;
 
 auth.onAuthStateChanged(async user => {
+  const boot = document.getElementById('bootScreen');
   if (user) {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('userInfo').textContent = user.email;
@@ -376,12 +387,17 @@ auth.onAuthStateChanged(async user => {
         btn.classList.toggle('active', btn.dataset.section === currentSection);
       });
     }
-    await loadQuizzes(user.uid);
+    try {
+      await loadQuizzes(user.uid);
+    } finally {
+      if (boot) boot.classList.add('hidden');
+    }
   } else {
     document.getElementById('loginScreen').classList.remove('hidden');
     document.getElementById('userInfo').style.display = 'none';
     document.getElementById('signoutBtn').style.display = 'none';
     document.getElementById('adminLink').style.display = 'none';
+    if (boot) boot.classList.add('hidden');
   }
 });
 
