@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NB Quiz — Notes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f5f0;
+  --surface: #ffffff;
+  --surface-2: #f0ede6;
+  --border: #e2ddd5;
+  --text: #1a1714;
+  --text-2: #5a534a;
+  --text-3: #9a8f83;
+  --accent: #2563a8;
+  --accent-light: #dbeafe;
+  --mark: #b45309;
+  --mark-bg: #fef3c7;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.06);
+  --font-serif: 'Crimson Pro', Georgia, serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* Login overlay */
+#loginScreen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+}
+#loginScreen.hidden { display: none; }
+.login-logo {
+  font-family: var(--font-serif);
+  font-size: 2.4rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+  text-align: center;
+}
+.login-logo span { color: var(--accent); }
+.login-sub {
+  font-size: .85rem;
+  color: var(--text-3);
+  margin-bottom: 40px;
+  text-align: center;
+}
+.google-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 28px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  font-family: var(--font-sans);
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
+.google-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+.login-error { margin-top: 16px; font-size: .8rem; color: #991b1b; min-height: 1em; text-align: center; }
+
+/* Header */
+.page-header {
+  max-width: 1300px;
+  margin: 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 32px 24px 20px;
+  border-bottom: 1.5px solid var(--border);
+}
+.logo {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.logo span { color: var(--accent); }
+.header-right { display: flex; gap: 16px; align-items: center; }
+.back-link {
+  text-decoration: none;
+  color: var(--accent);
+  font-size: .8rem;
+  font-family: var(--font-mono);
+  border: 1px solid var(--accent);
+  border-radius: 99px;
+  padding: 4px 12px;
+}
+.user-info { font-size: .75rem; color: var(--text-3); font-family: var(--font-mono); }
+.signout-btn {
+  font-size: .72rem;
+  color: var(--text-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+.signout-btn:hover { color: var(--accent); }
+
+/* Main app layout */
+.layout {
+  max-width: 1300px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  padding: 20px 24px 40px;
+}
+.panel {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+/* Sidebar */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel-head {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: .7rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.composer {
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.label {
+  font-size: .7rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  margin-bottom: 6px;
+  display: block;
+}
+.input, .textarea {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-family: var(--font-sans);
+  color: var(--text);
+  outline: none;
+}
+.input:focus, .textarea:focus { border-color: var(--accent); }
+.textarea {
+  min-height: 180px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: .8rem;
+  line-height: 1.5;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.btn {
+  border-radius: 99px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: .78rem;
+  padding: 7px 12px;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  font-weight: 600;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.btn-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover { background: #1d4f8a; color: #fff; }
+.status {
+  margin-top: 10px;
+  min-height: 1em;
+  font-size: .75rem;
+  color: var(--text-3);
+}
+.note-list { overflow-y: auto; max-height: 52vh; }
+.note-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  padding: 12px 14px;
+  cursor: pointer;
+}
+.note-item:hover { background: var(--accent-light); }
+.note-item.active { background: #eef6ff; }
+.note-title {
+  font-size: .86rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.note-meta {
+  margin-top: 2px;
+  font-size: .67rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+.empty-list {
+  padding: 18px 14px;
+  color: var(--text-3);
+  font-size: .84rem;
+}
+
+/* Reader */
+.reader {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 70vh;
+}
+.reader-top {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.reader-title {
+  font-family: var(--font-serif);
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+.chip {
+  font-size: .68rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  padding: 4px 10px;
+}
+.toggle-wrap {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: .75rem;
+  color: var(--text-2);
+}
+.reader-body {
+  padding: 16px;
+  overflow: auto;
+}
+.empty-reader {
+  padding: 50px 20px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: .95rem;
+}
+
+/* Tiles */
+.tile {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.tile.marked {
+  border-color: #f59e0b;
+  background: #fffbeb;
+}
+.tile-head {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 11px;
+}
+.tile-level {
+  font-size: .63rem;
+  font-family: var(--font-mono);
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.tile-title {
+  font-weight: 600;
+  font-size: .9rem;
+  color: var(--text);
+}
+.mark-btn {
+  margin-left: auto;
+  border: 1px solid var(--border);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: .68rem;
+  font-family: var(--font-mono);
+  padding: 4px 10px;
+}
+.mark-btn.marked {
+  border-color: #d97706;
+  color: var(--mark);
+  background: var(--mark-bg);
+}
+.tile-content { padding: 10px 12px; }
+.tile-content:empty { display: none; }
+.tile-content > :first-child { margin-top: 0; }
+.tile-content > :last-child { margin-bottom: 0; }
+.tile-content p, .tile-content ul, .tile-content ol, .tile-content pre, .tile-content blockquote {
+  margin: 0 0 .7em;
+  line-height: 1.5;
+  font-size: .88rem;
+}
+.tile-content code {
+  background: #f4f1ea;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 4px;
+  font-size: .82em;
+}
+.tile-content pre code {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.tile-content pre {
+  background: #f4f1ea;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  overflow-x: auto;
+}
+.tile-content a { color: var(--accent); }
+.tile-children {
+  padding: 0 10px 10px 14px;
+  border-left: 4px solid #ece8df;
+  margin-left: 10px;
+}
+.doc-content {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 12px;
+  margin-bottom: 14px;
+}
+.doc-content h1, .doc-content h2, .doc-content h3, .doc-content h4, .doc-content h5, .doc-content h6 {
+  margin-bottom: .6em;
+}
+.doc-content p, .doc-content ul, .doc-content ol, .doc-content pre, .doc-content blockquote {
+  margin: 0 0 .7em;
+}
+
+@media (max-width: 1000px) {
+  .layout { grid-template-columns: 1fr; }
+  .note-list { max-height: 240px; }
+}
+</style>
+</head>
+<body>
+<div id="loginScreen">
+  <div class="login-logo">NB <span>Quiz</span></div>
+  <div class="login-sub">Notes app — import markdown and mark hierarchical tiles</div>
+  <button class="google-btn" onclick="signInWithGoogle()">
+    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+    Continue with Google
+  </button>
+  <div class="login-error" id="loginError"></div>
+</div>
+
+<header class="page-header">
+  <div class="logo">NB <span>Notes</span></div>
+  <div class="header-right">
+    <a class="back-link" href="/">← Back to Quiz</a>
+    <div class="user-info" id="userInfo"></div>
+    <button class="signout-btn" onclick="signOut()">sign out</button>
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="panel sidebar">
+    <div class="panel-head">Create or Import Note</div>
+    <div class="composer">
+      <label class="label" for="noteTitle">Title</label>
+      <input class="input" id="noteTitle" placeholder="e.g. Endocrine summary">
+      <label class="label" style="margin-top:10px;" for="noteMarkdown">Markdown</label>
+      <textarea class="textarea" id="noteMarkdown" placeholder="# Topic&#10;## Subtopic&#10;Content..."></textarea>
+      <div class="row">
+        <button class="btn btn-primary" onclick="createNote()">Create note</button>
+        <button class="btn" onclick="triggerFileImport()">Import .md file</button>
+        <button class="btn" onclick="saveCurrentNote()">Save changes</button>
+        <button class="btn" onclick="deleteCurrentNote()">Delete note</button>
+      </div>
+      <input type="file" id="fileInput" accept=".md,.markdown,.txt" style="display:none;" onchange="handleFileImport(event)">
+      <div class="status" id="composerStatus"></div>
+    </div>
+    <div class="panel-head">Your Notes</div>
+    <div class="note-list" id="noteList"></div>
+  </aside>
+
+  <section class="panel reader">
+    <div class="reader-top">
+      <div class="reader-title" id="readerTitle">No note selected</div>
+      <div class="chip" id="tileCountChip">0 tiles</div>
+      <div class="chip" id="markedCountChip">0 marked</div>
+      <label class="toggle-wrap">
+        <input type="checkbox" id="markedOnlyToggle" onchange="toggleMarkedOnly()">
+        Show marked tiles only
+      </label>
+    </div>
+    <div class="reader-body" id="readerBody">
+      <div class="empty-reader">Create or import a markdown note to start.</div>
+    </div>
+  </section>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey:            'AIzaSyCNnvrEli5lzU3sUFvttTsQPIYQXYK1_WE',
+  authDomain:        'nbquiz-6faf9.firebaseapp.com',
+  projectId:         'nbquiz-6faf9',
+  storageBucket:     'nbquiz-6faf9.firebasestorage.app',
+  messagingSenderId: '913114740758',
+  appId:             '1:913114740758:web:a856bb9c8eedf3cd629d37',
+});
+const auth = firebase.auth();
+const db = firebase.firestore();
+const provider = new firebase.auth.GoogleAuthProvider();
+
+let currentUid = null;
+let notes = [];
+let currentNoteId = null;
+let markedOnly = false;
+let renderedTree = null;
+let renderedMarkedCount = 0;
+let suppressComposerWrite = false;
+
+function signInWithGoogle() {
+  document.getElementById('loginError').textContent = '';
+  auth.signInWithPopup(provider).catch(() => {
+    document.getElementById('loginError').textContent = 'Sign-in failed. Please try again.';
+  });
+}
+function signOut() { auth.signOut(); }
+function notesCollection() {
+  return db.collection('quizSessions').doc(currentUid).collection('notesDocuments');
+}
+
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('userInfo').textContent = '';
+    currentUid = null;
+    notes = [];
+    currentNoteId = null;
+    renderNotesList();
+    renderReader();
+    return;
+  }
+  currentUid = user.uid;
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('userInfo').textContent = user.email;
+  await loadNotes();
+});
+
+async function loadNotes() {
+  try {
+    const snap = await notesCollection().orderBy('updatedAt', 'desc').get();
+    notes = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    if (currentNoteId && !notes.some(n => n.id === currentNoteId)) {
+      currentNoteId = null;
+    }
+    if (!currentNoteId && notes.length) currentNoteId = notes[0].id;
+    renderNotesList();
+    syncComposerToCurrent();
+    renderReader();
+  } catch (err) {
+    setComposerStatus('Error loading notes: ' + err.message, true);
+  }
+}
+
+function renderNotesList() {
+  const list = document.getElementById('noteList');
+  if (!notes.length) {
+    list.innerHTML = '<div class="empty-list">No notes yet.</div>';
+    return;
+  }
+  list.innerHTML = notes.map(note => {
+    const active = note.id === currentNoteId ? 'active' : '';
+    return `<button class="note-item ${active}" onclick="selectNote('${escAttr(note.id)}')">
+      <div class="note-title">${escHtml(note.title || 'Untitled note')}</div>
+      <div class="note-meta">${formatDate(note.updatedAt)} · ${countHeadings(note.markdown || '')} headings</div>
+    </button>`;
+  }).join('');
+}
+
+function selectNote(noteId) {
+  currentNoteId = noteId;
+  renderNotesList();
+  syncComposerToCurrent();
+  renderReader();
+}
+
+function getCurrentNote() {
+  return notes.find(n => n.id === currentNoteId) || null;
+}
+
+function syncComposerToCurrent() {
+  if (suppressComposerWrite) return;
+  const note = getCurrentNote();
+  if (!note) return;
+  document.getElementById('noteTitle').value = note.title || '';
+  document.getElementById('noteMarkdown').value = note.markdown || '';
+}
+
+function setComposerStatus(msg, isErr = false) {
+  const el = document.getElementById('composerStatus');
+  el.textContent = msg || '';
+  el.style.color = isErr ? '#991b1b' : 'var(--text-3)';
+}
+
+async function createNote() {
+  const titleInput = document.getElementById('noteTitle').value.trim();
+  const markdown = document.getElementById('noteMarkdown').value;
+  if (!markdown.trim()) {
+    setComposerStatus('Markdown is empty.', true);
+    return;
+  }
+  const title = titleInput || deriveTitleFromMarkdown(markdown);
+  setComposerStatus('Creating note...');
+  try {
+    const ref = await notesCollection().add({
+      title,
+      markdown,
+      markedHeadingIds: [],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    setComposerStatus('Created.');
+    await loadNotes();
+    currentNoteId = ref.id;
+    renderNotesList();
+    renderReader();
+  } catch (err) {
+    setComposerStatus('Create failed: ' + err.message, true);
+  }
+}
+
+async function saveCurrentNote() {
+  const note = getCurrentNote();
+  if (!note) {
+    setComposerStatus('Select a note first.', true);
+    return;
+  }
+  const titleInput = document.getElementById('noteTitle').value.trim();
+  const markdown = document.getElementById('noteMarkdown').value;
+  if (!markdown.trim()) {
+    setComposerStatus('Markdown is empty.', true);
+    return;
+  }
+  const title = titleInput || deriveTitleFromMarkdown(markdown);
+  const parsed = parseMarkdownHierarchy(markdown);
+  const validIds = new Set(flattenNodes(parsed.root.children).map(n => n.id));
+  const oldMarked = Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : [];
+  const filteredMarked = oldMarked.filter(id => validIds.has(id));
+
+  setComposerStatus('Saving changes...');
+  try {
+    await notesCollection().doc(note.id).update({
+      title,
+      markdown,
+      markedHeadingIds: filteredMarked,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    setComposerStatus('Saved.');
+    const localNote = notes.find(n => n.id === note.id);
+    if (localNote) {
+      localNote.title = title;
+      localNote.markdown = markdown;
+      localNote.markedHeadingIds = filteredMarked;
+      localNote.updatedAt = { toDate: () => new Date() };
+    }
+    renderNotesList();
+    renderReader();
+  } catch (err) {
+    setComposerStatus('Save failed: ' + err.message, true);
+  }
+}
+
+async function deleteCurrentNote() {
+  const note = getCurrentNote();
+  if (!note) {
+    setComposerStatus('Select a note first.', true);
+    return;
+  }
+  const ok = window.confirm(`Delete "${note.title || 'Untitled note'}"?`);
+  if (!ok) return;
+  setComposerStatus('Deleting note...');
+  try {
+    await notesCollection().doc(note.id).delete();
+    notes = notes.filter(n => n.id !== note.id);
+    currentNoteId = notes.length ? notes[0].id : null;
+    setComposerStatus('Deleted.');
+    renderNotesList();
+    syncComposerToCurrent();
+    renderReader();
+  } catch (err) {
+    setComposerStatus('Delete failed: ' + err.message, true);
+  }
+}
+
+function triggerFileImport() {
+  document.getElementById('fileInput').click();
+}
+
+async function handleFileImport(event) {
+  const file = event.target.files && event.target.files[0];
+  event.target.value = '';
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const inferredTitle = file.name.replace(/\.[^.]+$/, '');
+    document.getElementById('noteTitle').value = inferredTitle;
+    document.getElementById('noteMarkdown').value = text;
+    setComposerStatus('Imported file into editor. Click "Create note".');
+  } catch (err) {
+    setComposerStatus('Import failed: ' + err.message, true);
+  }
+}
+
+function toggleMarkedOnly() {
+  markedOnly = document.getElementById('markedOnlyToggle').checked;
+  renderReader();
+}
+
+function renderReader() {
+  const readerBody = document.getElementById('readerBody');
+  const readerTitle = document.getElementById('readerTitle');
+  const tileChip = document.getElementById('tileCountChip');
+  const markedChip = document.getElementById('markedCountChip');
+
+  const note = getCurrentNote();
+  if (!note) {
+    readerTitle.textContent = 'No note selected';
+    tileChip.textContent = '0 tiles';
+    markedChip.textContent = '0 marked';
+    readerBody.innerHTML = '<div class="empty-reader">Create or import a markdown note to start.</div>';
+    return;
+  }
+
+  const markdown = note.markdown || '';
+  const parseResult = parseMarkdownHierarchy(markdown);
+  renderedTree = parseResult.root;
+  const allNodes = flattenNodes(renderedTree.children);
+  const markedSet = new Set(Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : []);
+  renderedMarkedCount = allNodes.filter(n => markedSet.has(n.id)).length;
+
+  readerTitle.textContent = note.title || 'Untitled note';
+  tileChip.textContent = `${allNodes.length} tiles`;
+  markedChip.textContent = `${renderedMarkedCount} marked`;
+
+  if (!allNodes.length) {
+    const html = markdownToHtml(markdown);
+    readerBody.innerHTML = html
+      ? `<div class="doc-content">${html}</div>`
+      : '<div class="empty-reader">This note has no headings yet. Add markdown headings like #, ##, ### to create tiles.</div>';
+    return;
+  }
+
+  const displayRoot = markedOnly ? pruneTreeToMarked(renderedTree, markedSet) : cloneTree(renderedTree);
+  const visibleNodes = flattenNodes(displayRoot.children);
+  if (markedOnly && !visibleNodes.length) {
+    readerBody.innerHTML = '<div class="empty-reader">No marked headings yet. Mark tiles to build your filtered document view.</div>';
+    return;
+  }
+
+  let html = '';
+  const rootContent = (displayRoot.contentLines || []).join('\n').trim();
+  if (rootContent && !markedOnly) {
+    html += `<div class="doc-content">${markdownToHtml(rootContent)}</div>`;
+  }
+  html += displayRoot.children.map(node => renderTile(node, markedSet)).join('');
+  readerBody.innerHTML = html;
+}
+
+function renderTile(node, markedSet) {
+  const titleHtml = markdownToInlineHtml(node.title);
+  const contentMd = (node.contentLines || []).join('\n').trim();
+  const contentHtml = contentMd ? `<div class="tile-content">${markdownToHtml(contentMd)}</div>` : '';
+  const isMarked = markedSet.has(node.id);
+  const markBtnClass = isMarked ? 'mark-btn marked' : 'mark-btn';
+  const tileClass = isMarked ? 'tile marked' : 'tile';
+
+  return `<article class="${tileClass}">
+    <div class="tile-head">
+      <span class="tile-level">H${node.level}</span>
+      <div class="tile-title">${titleHtml}</div>
+      <button class="${markBtnClass}" onclick="toggleMark('${escAttr(node.id)}')">${isMarked ? 'Marked' : 'Mark'}</button>
+    </div>
+    ${contentHtml}
+    ${node.children.length ? `<div class="tile-children">${node.children.map(child => renderTile(child, markedSet)).join('')}</div>` : ''}
+  </article>`;
+}
+
+async function toggleMark(nodeId) {
+  const note = getCurrentNote();
+  if (!note) return;
+  const set = new Set(Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : []);
+  if (set.has(nodeId)) set.delete(nodeId); else set.add(nodeId);
+  const markedHeadingIds = Array.from(set);
+  note.markedHeadingIds = markedHeadingIds;
+  renderReader();
+  try {
+    await notesCollection().doc(note.id).update({
+      markedHeadingIds,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    setComposerStatus('Mark update failed: ' + err.message, true);
+  }
+}
+
+function parseMarkdownHierarchy(markdown) {
+  const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n');
+  const root = { id: 'root', level: 0, title: '', contentLines: [], children: [], childSlugCounts: {} };
+  const stack = [root];
+  let inFence = false;
+
+  for (const line of lines) {
+    if (/^(```|~~~)/.test(line.trim())) {
+      inFence = !inFence;
+      stack[stack.length - 1].contentLines.push(line);
+      continue;
+    }
+    if (!inFence) {
+      const match = line.match(/^(#{1,6})\s+(.+?)\s*#*\s*$/);
+      if (match) {
+        const level = match[1].length;
+        const rawTitle = match[2].trim();
+        while (stack.length > 1 && stack[stack.length - 1].level >= level) stack.pop();
+        const parent = stack[stack.length - 1];
+        const slug = slugify(rawTitle) || 'section';
+        const count = (parent.childSlugCounts[slug] || 0) + 1;
+        parent.childSlugCounts[slug] = count;
+        const id = parent.id === 'root' ? `${slug}-${count}` : `${parent.id}/${slug}-${count}`;
+        const node = {
+          id,
+          level,
+          title: rawTitle,
+          contentLines: [],
+          children: [],
+          childSlugCounts: {},
+        };
+        parent.children.push(node);
+        stack.push(node);
+        continue;
+      }
+    }
+    stack[stack.length - 1].contentLines.push(line);
+  }
+  return { root };
+}
+
+function pruneTreeToMarked(root, markedSet) {
+  const cloneRoot = {
+    id: root.id,
+    level: root.level,
+    title: root.title,
+    contentLines: root.contentLines ? [...root.contentLines] : [],
+    children: [],
+  };
+  cloneRoot.children = root.children.map(child => pruneNode(child, markedSet)).filter(Boolean);
+  return cloneRoot;
+}
+
+function pruneNode(node, markedSet) {
+  const children = node.children.map(child => pruneNode(child, markedSet)).filter(Boolean);
+  const include = markedSet.has(node.id) || children.length > 0;
+  if (!include) return null;
+  return {
+    id: node.id,
+    level: node.level,
+    title: node.title,
+    contentLines: [...(node.contentLines || [])],
+    children,
+  };
+}
+
+function cloneTree(node) {
+  return {
+    id: node.id,
+    level: node.level,
+    title: node.title,
+    contentLines: [...(node.contentLines || [])],
+    children: (node.children || []).map(cloneTree),
+  };
+}
+
+function flattenNodes(nodes) {
+  const list = [];
+  for (const node of nodes) {
+    list.push(node);
+    if (node.children && node.children.length) {
+      list.push(...flattenNodes(node.children));
+    }
+  }
+  return list;
+}
+
+function slugify(text) {
+  return String(text || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function markdownToHtml(md) {
+  if (!String(md || '').trim()) return '';
+  return DOMPurify.sanitize(marked.parse(md, { breaks: true, gfm: true, headerIds: false, mangle: false }));
+}
+
+function markdownToInlineHtml(md) {
+  if (!String(md || '').trim()) return '';
+  return DOMPurify.sanitize(marked.parseInline(md, { gfm: true, headerIds: false, mangle: false }));
+}
+
+function deriveTitleFromMarkdown(markdown) {
+  const lines = String(markdown || '').split(/\r?\n/);
+  for (const line of lines) {
+    const heading = line.match(/^#{1,6}\s+(.+?)\s*#*\s*$/);
+    if (heading && heading[1]) return heading[1].trim();
+  }
+  for (const line of lines) {
+    if (line.trim()) return line.trim().slice(0, 60);
+  }
+  return 'Untitled note';
+}
+
+function countHeadings(markdown) {
+  return String(markdown || '').split(/\r?\n/).filter(line => /^#{1,6}\s+/.test(line)).length;
+}
+
+function formatDate(ts) {
+  if (!ts || typeof ts.toDate !== 'function') return 'just now';
+  const d = ts.toDate();
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return 'just now';
+  return d.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+function escAttr(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+</script>
+</body>
+</html>
