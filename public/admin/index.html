@@ -153,7 +153,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 </div>
 
 <!-- Login -->
-<div class="screen centered-screen" id="sLogin">
+<div class="screen centered-screen" id="sLogin" hidden>
   <div class="logo">NB <span>Quiz</span></div>
   <div class="logo-tag">Admin Portal</div>
   <button class="google-btn" onclick="signInGoogle()">
@@ -164,7 +164,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 </div>
 
 <!-- Denied -->
-<div class="screen centered-screen" id="sDenied">
+<div class="screen centered-screen" id="sDenied" hidden>
   <div style="font-size:3rem;margin-bottom:16px;">🚫</div>
   <div style="font-family:var(--font-serif);font-size:1.5rem;font-weight:600;margin-bottom:8px;">Access denied</div>
   <div style="font-size:.85rem;color:var(--text-2);margin-bottom:28px;text-align:center;" id="deniedMsg"></div>
@@ -172,7 +172,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 </div>
 
 <!-- Admin -->
-<div class="screen admin-layout" id="sAdmin">
+<div class="screen admin-layout" id="sAdmin" hidden>
   <header class="admin-header">
     <div class="header-left">
       <a href="/" class="header-logo">NB <span>Quiz</span></a>
@@ -390,9 +390,13 @@ let extractedQuestions = null;
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 function show(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.screen').forEach(s => {
+    const isTarget = s.id === id;
+    s.classList.toggle('active', isTarget);
+    s.hidden = !isTarget;
+  });
 }
+show('sLoading');
 function signInGoogle() {
   document.getElementById('loginErr').textContent = '';
   auth.signInWithPopup(provider).catch(() => {
