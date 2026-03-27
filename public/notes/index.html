@@ -696,7 +696,7 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
   .sidebar-toggle { display: none; }
   .drawer-backdrop { display: none !important; }
   body.outline-in-sidebar .layout,
-  .layout { grid-template-columns: 1fr; }
+  body:not(.outline-in-sidebar) .layout { grid-template-columns: 1fr; }
   .layout > .sidebar {
     position: static;
     top: auto;
@@ -719,7 +719,7 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
 @media (max-width: 1000px) {
   .sidebar-toggle { display: flex; }
   body.outline-in-sidebar .layout,
-  .layout { grid-template-columns: 1fr; padding-left: 12px; padding-right: 12px; }
+  body:not(.outline-in-sidebar) .layout { grid-template-columns: 1fr; padding-left: 12px; padding-right: 12px; }
   .layout > .sidebar {
     position: fixed;
     top: 0;
