@@ -29,6 +29,18 @@
   })"></script>
 
 <style>
+/* New Button Animations */
+@property --angle-1 {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: -75deg;
+}
+@property --angle-2 {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: -45deg;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
   --bg:           #f7f5f0;
@@ -47,6 +59,9 @@
   --font-serif:   'Crimson Pro', Georgia, serif;
   --font-sans:    'DM Sans', system-ui, sans-serif;
   --font-mono:    'DM Mono', monospace;
+  
+  --anim--hover-time: 400ms;
+  --anim--hover-ease: cubic-bezier(0.25, 1, 0.5, 1);
 }
 body { font-family: var(--font-sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 48px 24px 80px; }
 
@@ -195,8 +210,31 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .topic-name { font-size: .95rem; font-weight: 500; color: var(--text); min-width: 100px; padding-top: 10px; }
 .pill-group { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; }
 .quiz-pill { display: flex; flex-direction: column; gap: 5px; min-width: 130px; max-width: 200px; flex: 1; }
-.pill-link { display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; border: 1.5px solid var(--border); border-radius: var(--radius); text-decoration: none; background: var(--bg); transition: border-color .15s, background .15s; }
-.pill-link:hover { border-color: var(--accent); background: var(--accent-light); }
+
+/* ── Optimized Glassmorphic Link ── */
+.pill-link { 
+  display: flex; align-items: center; justify-content: space-between; 
+  padding: 7px 12px; border-radius: var(--radius); text-decoration: none; 
+  
+  /* Static version of the new glass styling */
+  background: linear-gradient(-75deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.5));
+  box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.03),
+              inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.8),
+              0 0.15em 0.1em -0.1em rgba(0, 0, 0, 0.08),
+              0 0 0 1px var(--border); /* Replaces complex mask outline */
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: all var(--anim--hover-time) var(--anim--hover-ease);
+}
+.pill-link:hover { 
+  transform: scale(0.975);
+  background: linear-gradient(-75deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.7));
+  box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05),
+              inset 0 -0.125em 0.125em rgba(255, 255, 255, 1),
+              0 0.15em 0.05em -0.1em rgba(0, 0, 0, 0.15),
+              0 0 0 1px var(--accent);
+}
+
 .pill-name  { font-family: var(--font-mono); font-size: .8rem; font-weight: 500; color: var(--accent); }
 .pill-count { font-size: .68rem; color: var(--text-3); font-family: var(--font-mono); }
 
@@ -226,14 +264,102 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .skel-bar  { height: 10px; margin-bottom: 8px; }
 .skel-pill { height: 36px; border-radius: var(--radius); flex: 1; min-width: 120px; max-width: 180px; }
 
-/* ── Login overlay ── */
+/* ── Login overlay & Hero Button ── */
 #loginScreen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
 #loginScreen.hidden { display: none; }
 .login-logo { font-family: var(--font-serif); font-size: 2.4rem; font-weight: 600; color: var(--text); margin-bottom: 6px; text-align: center; }
 .login-logo span { color: var(--accent); }
 .login-sub  { font-size: .85rem; color: var(--text-3); margin-bottom: 48px; text-align: center; }
-.google-btn { display: flex; align-items: center; gap: 10px; padding: 13px 28px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 99px; font-family: var(--font-sans); font-size: .9rem; font-weight: 600; color: var(--text); cursor: pointer; transition: border-color .15s, background .15s; }
-.google-btn:hover { border-color: var(--accent); background: var(--accent-light); }
+
+/* Full Glass Hero Button Implementation */
+.button-wrap {
+  position: relative;
+  z-index: 2;
+  border-radius: 999vw;
+  background: transparent;
+  pointer-events: none;
+  transition: all var(--anim--hover-time) var(--anim--hover-ease);
+}
+.button-shadow {
+  --shadow-cuttoff-fix: 2em;
+  position: absolute;
+  width: calc(100% + var(--shadow-cuttoff-fix));
+  height: calc(100% + var(--shadow-cuttoff-fix));
+  top: calc(0% - var(--shadow-cuttoff-fix) / 2);
+  left: calc(0% - var(--shadow-cuttoff-fix) / 2);
+  filter: blur(10px);
+  overflow: visible;
+  pointer-events: none;
+}
+.button-shadow::after {
+  content: ""; position: absolute; z-index: 0; inset: 0;
+  border-radius: 999vw;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.05));
+  width: calc(100% - var(--shadow-cuttoff-fix) - 0.25em);
+  height: calc(100% - var(--shadow-cuttoff-fix) - 0.25em);
+  top: calc(var(--shadow-cuttoff-fix) - 0.5em);
+  left: calc(var(--shadow-cuttoff-fix) - 0.875em);
+  padding: 0.125em; box-sizing: border-box;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  transition: all var(--anim--hover-time) var(--anim--hover-ease);
+}
+
+.google-btn-new {
+  --border-width: 2px;
+  all: unset; cursor: pointer; position: relative; pointer-events: auto; z-index: 3;
+  background: linear-gradient(-75deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.6));
+  border-radius: 999vw;
+  box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05),
+    inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.8),
+    0 0.25em 0.125em -0.125em rgba(0, 0, 0, 0.15),
+    0 0 0.1em 0.25em inset rgba(255, 255, 255, 0.5),
+    0 0 0 0 rgba(255, 255, 255, 1);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  transition: all var(--anim--hover-time) var(--anim--hover-ease);
+}
+.google-btn-new:hover, .google-btn-new:focus-visible {
+  transform: scale(0.975);
+  box-shadow: inset 0 0.125em 0.125em rgba(0, 0, 0, 0.05),
+    inset 0 -0.125em 0.125em rgba(255, 255, 255, 0.8),
+    0 0.15em 0.05em -0.1em rgba(0, 0, 0, 0.2),
+    0 0 0.05em 0.1em inset rgba(255, 255, 255, 0.8);
+}
+.google-btn-new span {
+  display: flex; align-items: center; gap: 10px; position: relative;
+  font-family: var(--font-sans); font-size: .95rem; font-weight: 600; color: var(--text);
+  padding: 14px 32px; transition: all var(--anim--hover-time) var(--anim--hover-ease);
+}
+.google-btn-new span::after {
+  content: ""; display: block; position: absolute;
+  width: calc(100% - var(--border-width)); height: calc(100% - var(--border-width));
+  top: calc(0% + var(--border-width) / 2); left: calc(0% + var(--border-width) / 2);
+  box-sizing: border-box; border-radius: 999vw; overflow: clip;
+  background: linear-gradient(var(--angle-2), rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 40% 50%, rgba(255, 255, 255, 0) 55%);
+  z-index: 3; mix-blend-mode: overlay; pointer-events: none;
+  background-size: 200% 200%; background-position: 0% 50%; background-repeat: no-repeat;
+  transition: background-position calc(var(--anim--hover-time) * 1.25) var(--anim--hover-ease), --angle-2 calc(var(--anim--hover-time) * 1.25) var(--anim--hover-ease);
+}
+.google-btn-new:hover span::after { background-position: 25% 50%; }
+.google-btn-new:active span::after { background-position: 50% 15%; --angle-2: -15deg; }
+.google-btn-new::after {
+  content: ""; position: absolute; z-index: 1; inset: 0;
+  border-radius: 999vw;
+  width: calc(100% + var(--border-width)); height: calc(100% + var(--border-width));
+  top: calc(0% - var(--border-width) / 2); left: calc(0% - var(--border-width) / 2);
+  padding: var(--border-width); box-sizing: border-box;
+  background: conic-gradient(from var(--angle-1) at 50% 50%, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0) 5% 40%, rgba(0, 0, 0, 0.15) 50%, rgba(0, 0, 0, 0) 60% 95%, rgba(0, 0, 0, 0.15)), linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8));
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); mask-composite: exclude;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  transition: all var(--anim--hover-time) var(--anim--hover-ease), --angle-1 500ms ease;
+}
+.google-btn-new:hover::after { --angle-1: -125deg; }
+.google-btn-new:active::after { --angle-1: -75deg; }
+.button-wrap:has(.google-btn-new:hover) .button-shadow::after { top: calc(var(--shadow-cuttoff-fix) - 0.875em); opacity: 1; }
+.button-wrap:has(.google-btn-new:active) { transform: rotate3d(1, 0, 0, 15deg); }
+
 .login-error { margin-top: 16px; font-size: .8rem; color: #991b1b; min-height: 1em; text-align: center; }
 .made-by-login { position: fixed; bottom: 20px; font-size: .72rem; color: var(--text-3); font-family: var(--font-mono); }
 
@@ -256,10 +382,17 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 <div id="loginScreen">
   <div class="login-logo">NB <span>Quiz</span></div>
   <div class="login-sub">Your personal medical study companion</div>
-  <button class="google-btn" onclick="signInWithGoogle()">
-    <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
-    Continue with Google
-  </button>
+  
+  <div class="button-wrap">
+    <button class="google-btn-new" onclick="signInWithGoogle()">
+      <span>
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </span>
+    </button>
+    <div class="button-shadow"></div>
+  </div>
+
   <div class="login-error" id="loginError"></div>
   <div class="made-by-login">made by Zi Lin</div>
 </div>
