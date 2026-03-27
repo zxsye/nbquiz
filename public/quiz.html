@@ -81,7 +81,9 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   justify-content: center;
   z-index: 10;
   transition: transform var(--transition);
+  scrollbar-width: none; /* Firefox */
 }
+
 .sidebar-toggle:hover {
   background: var(--accent-light);
   border-color: var(--accent);
@@ -121,6 +123,10 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   align-items: center;
   padding: 0 12px;
 }
+.collapsed-q-list::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+}
+
 .collapsed-q-item {
   width: 42px;
   height: 42px;
