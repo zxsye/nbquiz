@@ -280,6 +280,76 @@ body {
   font-size: .75rem;
   color: var(--text-2);
 }
+.reader-main {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 0;
+  flex: 1;
+}
+.outline {
+  border-right: 1px solid var(--border);
+  background: #fcfbf8;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.outline-head {
+  padding: 11px 12px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: .67rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+.outline-body {
+  overflow: auto;
+  padding: 8px;
+}
+.outline-empty {
+  color: var(--text-3);
+  font-size: .78rem;
+  padding: 10px 8px;
+}
+.outline-item {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 8px;
+  padding: 6px 8px;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 3px;
+}
+.outline-item:hover {
+  border-color: var(--border);
+  background: var(--surface);
+}
+.outline-item-level {
+  flex-shrink: 0;
+  font-size: .6rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+.outline-item-title {
+  font-size: .78rem;
+  line-height: 1.3;
+}
+.outline-item.ancestor {
+  color: var(--text-3);
+}
+.outline-item.ancestor .outline-item-level {
+  color: #b7aea2;
+}
+.outline-item.marked {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: var(--mark);
+}
 .reader-body {
   padding: 16px;
   overflow: auto;
@@ -302,6 +372,20 @@ body {
 .tile.marked {
   border-color: #f59e0b;
   background: #fffbeb;
+}
+.tile.tile-context-only .tile-head {
+  background: #f7f4ee;
+}
+.tile.tile-context-only .tile-title,
+.tile.tile-context-only .tile-level {
+  color: var(--text-3);
+}
+.tile-flash {
+  animation: tileFlash 1.2s ease;
+}
+@keyframes tileFlash {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, .55); }
+  100% { box-shadow: 0 0 0 14px rgba(245, 158, 11, 0); }
 }
 .tile-head {
   border-bottom: 1px solid var(--border);
@@ -391,6 +475,8 @@ body {
 @media (max-width: 1000px) {
   .layout { grid-template-columns: 1fr; }
   .note-list { max-height: 240px; }
+  .reader-main { grid-template-columns: 1fr; }
+  .outline { border-right: none; border-bottom: 1px solid var(--border); max-height: 220px; }
 }
 </style>
 </head>
@@ -445,8 +531,16 @@ body {
         Show marked tiles only
       </label>
     </div>
-    <div class="reader-body" id="readerBody">
-      <div class="empty-reader">Create or import a markdown note to start.</div>
+    <div class="reader-main">
+      <aside class="outline">
+        <div class="outline-head">Heading outline</div>
+        <div class="outline-body" id="outlineBody">
+          <div class="outline-empty">No headings to show.</div>
+        </div>
+      </aside>
+      <div class="reader-body" id="readerBody">
+        <div class="empty-reader">Create or import a markdown note to start.</div>
+      </div>
     </div>
   </section>
 </main>
@@ -677,6 +771,7 @@ function toggleMarkedOnly() {
 
 function renderReader() {
   const readerBody = document.getElementById('readerBody');
+  const outlineBody = document.getElementById('outlineBody');
   const readerTitle = document.getElementById('readerTitle');
   const tileChip = document.getElementById('tileCountChip');
   const markedChip = document.getElementById('markedCountChip');
@@ -687,6 +782,7 @@ function renderReader() {
     tileChip.textContent = '0 tiles';
     markedChip.textContent = '0 marked';
     readerBody.innerHTML = '<div class="empty-reader">Create or import a markdown note to start.</div>';
+    outlineBody.innerHTML = '<div class="outline-empty">No headings to show.</div>';
     return;
   }
 
@@ -706,6 +802,7 @@ function renderReader() {
     readerBody.innerHTML = html
       ? `<div class="doc-content">${html}</div>`
       : '<div class="empty-reader">This note has no headings yet. Add markdown headings like #, ##, ### to create tiles.</div>';
+    outlineBody.innerHTML = '<div class="outline-empty">This note has no headings yet.</div>';
     return;
   }
 
@@ -713,34 +810,99 @@ function renderReader() {
   const visibleNodes = flattenNodes(displayRoot.children);
   if (markedOnly && !visibleNodes.length) {
     readerBody.innerHTML = '<div class="empty-reader">No marked headings yet. Mark tiles to build your filtered document view.</div>';
+    outlineBody.innerHTML = '<div class="outline-empty">No marked headings yet.</div>';
     return;
   }
+
+  renderOutline(displayRoot, markedSet, markedOnly);
 
   let html = '';
   const rootContent = (displayRoot.contentLines || []).join('\n').trim();
   if (rootContent && !markedOnly) {
     html += `<div class="doc-content">${markdownToHtml(rootContent)}</div>`;
   }
-  html += displayRoot.children.map(node => renderTile(node, markedSet)).join('');
+  html += displayRoot.children.map(node => renderTile(node, markedSet, markedOnly)).join('');
   readerBody.innerHTML = html;
 }
 
-function renderTile(node, markedSet) {
+function renderOutline(root, markedSet, isMarkedOnly) {
+  const outlineBody = document.getElementById('outlineBody');
+  if (!root.children || !root.children.length) {
+    outlineBody.innerHTML = '<div class="outline-empty">No headings to show.</div>';
+    return;
+  }
+
+  const nearestMarkedMap = isMarkedOnly ? computeNearestMarkedMap(root, markedSet) : new Map();
+  outlineBody.innerHTML = root.children.map(node => renderOutlineNode(node, 1, markedSet, isMarkedOnly, nearestMarkedMap)).join('');
+}
+
+function renderOutlineNode(node, depth, markedSet, isMarkedOnly, nearestMarkedMap) {
+  const isDirectMarked = markedSet.has(node.id);
+  const isAncestorOnly = isMarkedOnly && !isDirectMarked;
+  const targetNodeId = isAncestorOnly ? (nearestMarkedMap.get(node.id) || node.id) : node.id;
+  const titleHtml = markdownToInlineHtml(node.title);
+  const classes = [
+    'outline-item',
+    isDirectMarked ? 'marked' : '',
+    isAncestorOnly ? 'ancestor' : '',
+  ].filter(Boolean).join(' ');
+  const padding = 8 + Math.max(0, depth - 1) * 14;
+
+  return `<div>
+    <button class="${classes}" style="padding-left:${padding}px;" onclick="jumpToTile('${escAttr(targetNodeId)}')">
+      <span class="outline-item-level">H${node.level}</span>
+      <span class="outline-item-title">${titleHtml}</span>
+    </button>
+    ${node.children.map(child => renderOutlineNode(child, depth + 1, markedSet, isMarkedOnly, nearestMarkedMap)).join('')}
+  </div>`;
+}
+
+function computeNearestMarkedMap(root, markedSet) {
+  const map = new Map();
+  function walk(node) {
+    let best = markedSet.has(node.id) ? { id: node.id, distance: 0 } : null;
+    for (const child of node.children) {
+      const childBest = walk(child);
+      if (!childBest) continue;
+      const candidate = { id: childBest.id, distance: childBest.distance + 1 };
+      if (!best || candidate.distance < best.distance) best = candidate;
+    }
+    map.set(node.id, best ? best.id : null);
+    return best;
+  }
+  for (const child of root.children || []) walk(child);
+  return map;
+}
+
+function jumpToTile(nodeId) {
+  const tile = document.getElementById(domTileId(nodeId));
+  if (!tile) return;
+  tile.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  tile.classList.add('tile-flash');
+  window.setTimeout(() => tile.classList.remove('tile-flash'), 1200);
+}
+
+function domTileId(nodeId) {
+  return 'tile_' + encodeURIComponent(String(nodeId || '')).replace(/%/g, '_');
+}
+
+function renderTile(node, markedSet, isMarkedOnly) {
   const titleHtml = markdownToInlineHtml(node.title);
   const contentMd = (node.contentLines || []).join('\n').trim();
   const contentHtml = contentMd ? `<div class="tile-content">${markdownToHtml(contentMd)}</div>` : '';
   const isMarked = markedSet.has(node.id);
   const markBtnClass = isMarked ? 'mark-btn marked' : 'mark-btn';
   const tileClass = isMarked ? 'tile marked' : 'tile';
+  const contextualAncestorClass = isMarkedOnly && !isMarked ? ' tile-context-only' : '';
 
-  return `<article class="${tileClass}">
+  return `<article class="${tileClass}${contextualAncestorClass}" id="${domTileId(node.id)}">
     <div class="tile-head">
       <span class="tile-level">H${node.level}</span>
       <div class="tile-title">${titleHtml}</div>
       <button class="${markBtnClass}" onclick="toggleMark('${escAttr(node.id)}')">${isMarked ? 'Marked' : 'Mark'}</button>
     </div>
     ${contentHtml}
-    ${node.children.length ? `<div class="tile-children">${node.children.map(child => renderTile(child, markedSet)).join('')}</div>` : ''}
+    ${node.children.length ? `<div class="tile-children">${node.children.map(child => renderTile(child, markedSet, isMarkedOnly)).join('')}</div>` : ''}
   </article>`;
 }
 
