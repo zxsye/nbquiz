@@ -408,36 +408,29 @@ body.outline-in-sidebar .sidebar .note-list {
   background: #fffbeb;
 }
 .tile.mark-sweep {
-  animation: markSweep .85s cubic-bezier(.22,.61,.36,1) forwards;
-  background: linear-gradient(225deg, #fffbeb 0%, #fffbeb 100%);
-  background-size: 220% 220%;
-  will-change: background, border-color, box-shadow, transform;
+  position: relative;
+  animation: markLift .75s cubic-bezier(.22,.61,.36,1) both;
+  will-change: transform;
 }
-@keyframes markSweep {
-  0% {
-    background: linear-gradient(225deg, #fef3c7 0%, var(--surface) 36%, var(--surface) 100%);
-    border-color: var(--border);
-    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
-    transform: translateY(0);
-  }
-  35% {
-    background: linear-gradient(225deg, #fef3c7 0%, #fef3c7 42%, var(--surface) 72%, var(--surface) 100%);
-    border-color: #f59e0b;
-    box-shadow: 0 8px 22px -14px rgba(245, 158, 11, .45);
-    transform: translateY(-1px);
-  }
-  70% {
-    background: linear-gradient(225deg, #fffbeb 0%, #fef3c7 55%, #fef3c7 86%, var(--surface) 100%);
-    border-color: #f59e0b;
-    box-shadow: 0 10px 24px -16px rgba(245, 158, 11, .35);
-    transform: translateY(0);
-  }
-  100% {
-    background: #fffbeb;
-    border-color: #f59e0b;
-    box-shadow: 0 2px 8px -6px rgba(245, 158, 11, .3);
-    transform: translateY(0);
-  }
+.tile.mark-sweep::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, rgba(254, 243, 199, 0) 0%, rgba(254, 243, 199, .95) 35%, rgba(255, 251, 235, 0) 70%);
+  transform: translate3d(-120%, 0, 0);
+  animation: markSheen .6s cubic-bezier(.22,.61,.36,1) both;
+  will-change: transform, opacity;
+}
+@keyframes markLift {
+  0% { transform: translate3d(0, 0, 0); }
+  40% { transform: translate3d(0, -1px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+@keyframes markSheen {
+  0% { transform: translate3d(-120%, 0, 0); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate3d(120%, 0, 0); opacity: 0; }
 }
 .tile.tile-context-only .tile-head {
   background: #f7f4ee;
@@ -485,7 +478,7 @@ body.outline-in-sidebar .sidebar .note-list {
   font-size: .68rem;
   font-family: var(--font-mono);
   padding: 4px 10px;
-  transition: all .2s ease;
+  transition: transform .2s ease, background .2s ease, color .2s ease, border-color .2s ease, box-shadow .2s ease;
   position: relative;
   overflow: hidden;
 }
@@ -511,14 +504,18 @@ body.outline-in-sidebar .sidebar .note-list {
   position: absolute;
   bottom: 0;
   left: 0;
+  right: 0;
   height: 3px;
   background: linear-gradient(90deg, #f59e0b, #dc2626);
+  transform-origin: left center;
+  transform: scaleX(0);
   animation: unmarkFill .8s linear forwards;
   border-radius: 0 0 99px 99px;
+  will-change: transform;
 }
 @keyframes unmarkFill {
-  0% { width: 0%; }
-  100% { width: 100%; }
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
 }
 .tile-content { padding: 10px 12px; margin-top: 2px; }
 .tile-content:empty { display: none; }
@@ -1297,7 +1294,7 @@ async function doMark(nodeId) {
   const tile = document.getElementById(domTileId(nodeId));
   if (tile) {
     tile.classList.add('mark-sweep');
-    setTimeout(() => tile.classList.remove('mark-sweep'), 650);
+    setTimeout(() => tile.classList.remove('mark-sweep'), 750);
   }
   try {
     await notesCollection().doc(note.id).update({
