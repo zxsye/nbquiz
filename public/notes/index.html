@@ -83,13 +83,15 @@ body {
 
 /* Header */
 .page-header {
-  max-width: 1300px;
+  max-width: 1400px;
   margin: 0 auto;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  padding: 32px 24px 20px;
+  padding: 24px 24px 18px;
   border-bottom: 1.5px solid var(--border);
+  gap: 16px;
+  flex-wrap: wrap;
 }
 .logo {
   font-family: var(--font-serif);
@@ -144,6 +146,10 @@ body {
   position: sticky;
   top: 20px;
   max-height: calc(100vh - 40px);
+}
+body.outline-in-sidebar .sidebar .note-list {
+  max-height: 30vh;
+  flex: none;
 }
 .panel-head {
   padding: 14px 16px;
@@ -546,6 +552,88 @@ body {
   margin: 0 0 .7em;
 }
 
+/* iOS-style toggle switch */
+.ios-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .75rem;
+  color: var(--text-2);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  user-select: none;
+}
+.ios-toggle-wrap input[type="checkbox"] {
+  display: none;
+}
+.ios-switch {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: #c7c0b8;
+  border-radius: 99px;
+  transition: background .25s ease;
+  flex-shrink: 0;
+}
+.ios-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,.22);
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+}
+.ios-toggle-wrap input:checked + .ios-switch {
+  background: var(--accent);
+}
+.ios-toggle-wrap input:checked + .ios-switch::after {
+  transform: translateX(16px);
+}
+
+/* Sidebar outline section (shown when outline-in-sidebar mode) */
+.sidebar-outline-section {
+  display: none;
+  flex-direction: column;
+  border-top: 1px solid var(--border);
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+.sidebar-outline-section .outline-body {
+  overflow-y: auto;
+  padding: 8px;
+  flex: 1;
+}
+
+/* Reader outline strip (shown on mobile when NOT in sidebar mode) */
+.reader-outline-strip {
+  display: none;
+  border-bottom: 1px solid var(--border);
+  background: #fcfbf8;
+}
+.reader-outline-strip .outline-head {
+  border-radius: 0;
+}
+.reader-outline-strip .outline-body {
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+/* outline-in-sidebar mode */
+body.outline-in-sidebar .outline-panel { display: none !important; }
+body.outline-in-sidebar .layout { grid-template-columns: 300px 1fr; }
+body.outline-in-sidebar .sidebar-outline-section { display: flex; }
+
+/* non-sidebar mode on mobile: show reader strip */
+@media (max-width: 1000px) {
+  body:not(.outline-in-sidebar) .reader-outline-strip { display: block; }
+}
+
 /* Mobile sidebar toggle button — hidden on desktop */
 .sidebar-toggle {
   display: none;
@@ -580,8 +668,8 @@ body {
 }
 
 @media (max-width: 1200px) {
-  .layout { grid-template-columns: 280px 1fr; }
-  .outline-panel { display: none; }
+  body:not(.outline-in-sidebar) .layout { grid-template-columns: 280px 1fr; }
+  body:not(.outline-in-sidebar) .outline-panel { display: none; }
 }
 
 @media (max-width: 1000px) {
@@ -604,7 +692,7 @@ body {
   .layout > .sidebar.drawer-open {
     transform: translateX(0);
   }
-  .outline-panel { display: none; }
+  body:not(.outline-in-sidebar) .outline-panel { display: none; }
 }
 </style>
 </head>
@@ -622,6 +710,11 @@ body {
 <header class="page-header">
   <div class="logo">NB <span>Notes</span></div>
   <div class="header-right">
+    <label class="ios-toggle-wrap" title="Move heading outline into the sidebar">
+      <input type="checkbox" id="outlineInSidebarToggle" onchange="toggleOutlineInSidebar()">
+      <span class="ios-switch"></span>
+      <span>Outline in sidebar</span>
+    </label>
     <a class="back-link" href="/">← Back to Quiz</a>
     <div class="user-info" id="userInfo"></div>
     <button class="signout-btn" onclick="signOut()">sign out</button>
@@ -647,6 +740,12 @@ body {
     </div>
     <div class="panel-head">Your Notes</div>
     <div class="note-list" id="noteList"></div>
+    <div class="sidebar-outline-section" id="sidebarOutlineSection">
+      <div class="outline-head">Heading outline</div>
+      <div class="outline-body" id="sidebarOutlineBody">
+        <div class="outline-empty">No headings to show.</div>
+      </div>
+    </div>
   </aside>
 
   <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeSidebar()"></div>
@@ -659,6 +758,12 @@ body {
   </aside>
 
   <section class="panel reader">
+    <div class="reader-outline-strip" id="readerOutlineStrip">
+      <div class="outline-head">Heading outline</div>
+      <div class="outline-body" id="readerOutlineBody">
+        <div class="outline-empty">No headings to show.</div>
+      </div>
+    </div>
     <div class="reader-top">
       <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -699,9 +804,28 @@ let currentUid = null;
 let notes = [];
 let currentNoteId = null;
 let markedOnly = false;
+let outlineInSidebar = localStorage.getItem('outlineInSidebar') === 'true';
 let renderedTree = null;
 let renderedMarkedCount = 0;
 let suppressComposerWrite = false;
+
+function applyOutlineInSidebar() {
+  document.getElementById('outlineInSidebarToggle').checked = outlineInSidebar;
+  if (outlineInSidebar) {
+    document.body.classList.add('outline-in-sidebar');
+  } else {
+    document.body.classList.remove('outline-in-sidebar');
+  }
+}
+
+function toggleOutlineInSidebar() {
+  outlineInSidebar = document.getElementById('outlineInSidebarToggle').checked;
+  localStorage.setItem('outlineInSidebar', outlineInSidebar);
+  applyOutlineInSidebar();
+  renderReader();
+}
+
+applyOutlineInSidebar();
 
 function signInWithGoogle() {
   document.getElementById('loginError').textContent = '';
@@ -904,7 +1028,6 @@ function toggleMarkedOnly() {
 
 function renderReader() {
   const readerBody = document.getElementById('readerBody');
-  const outlineBody = document.getElementById('outlineBody');
   const readerTitle = document.getElementById('readerTitle');
   const tileChip = document.getElementById('tileCountChip');
   const markedChip = document.getElementById('markedCountChip');
@@ -915,7 +1038,11 @@ function renderReader() {
     tileChip.textContent = '0 tiles';
     markedChip.textContent = '0 marked';
     readerBody.innerHTML = '<div class="empty-reader">Create or import a markdown note to start.</div>';
-    outlineBody.innerHTML = '<div class="outline-empty">No headings to show.</div>';
+    const emptyOutline = '<div class="outline-empty">No headings to show.</div>';
+    ['outlineBody', 'sidebarOutlineBody', 'readerOutlineBody'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = emptyOutline;
+    });
     return;
   }
 
@@ -930,12 +1057,19 @@ function renderReader() {
   tileChip.textContent = `${allNodes.length} tiles`;
   markedChip.textContent = `${renderedMarkedCount} marked`;
 
+  const setAllOutlines = (html) => {
+    ['outlineBody', 'sidebarOutlineBody', 'readerOutlineBody'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    });
+  };
+
   if (!allNodes.length) {
     const html = markdownToHtml(markdown);
     readerBody.innerHTML = html
       ? `<div class="doc-content">${html}</div>`
       : '<div class="empty-reader">This note has no headings yet. Add markdown headings like #, ##, ### to create tiles.</div>';
-    outlineBody.innerHTML = '<div class="outline-empty">This note has no headings yet.</div>';
+    setAllOutlines('<div class="outline-empty">This note has no headings yet.</div>');
     return;
   }
 
@@ -943,7 +1077,7 @@ function renderReader() {
   const visibleNodes = flattenNodes(displayRoot.children);
   if (markedOnly && !visibleNodes.length) {
     readerBody.innerHTML = '<div class="empty-reader">No marked headings yet. Mark tiles to build your filtered document view.</div>';
-    outlineBody.innerHTML = '<div class="outline-empty">No marked headings yet.</div>';
+    setAllOutlines('<div class="outline-empty">No marked headings yet.</div>');
     return;
   }
 
@@ -959,14 +1093,20 @@ function renderReader() {
 }
 
 function renderOutline(root, markedSet, isMarkedOnly) {
-  const outlineBody = document.getElementById('outlineBody');
+  const containers = [
+    document.getElementById('outlineBody'),
+    document.getElementById('sidebarOutlineBody'),
+    document.getElementById('readerOutlineBody'),
+  ];
   if (!root.children || !root.children.length) {
-    outlineBody.innerHTML = '<div class="outline-empty">No headings to show.</div>';
+    const empty = '<div class="outline-empty">No headings to show.</div>';
+    containers.forEach(c => { if (c) c.innerHTML = empty; });
     return;
   }
 
   const nearestMarkedMap = isMarkedOnly ? computeNearestMarkedMap(root, markedSet) : new Map();
-  outlineBody.innerHTML = root.children.map(node => renderOutlineNode(node, 1, markedSet, isMarkedOnly, nearestMarkedMap)).join('');
+  const html = root.children.map(node => renderOutlineNode(node, 1, markedSet, isMarkedOnly, nearestMarkedMap)).join('');
+  containers.forEach(c => { if (c) c.innerHTML = html; });
 }
 
 function renderOutlineNode(node, depth, markedSet, isMarkedOnly, nearestMarkedMap) {
@@ -1008,6 +1148,7 @@ function computeNearestMarkedMap(root, markedSet) {
 }
 
 function jumpToTile(nodeId) {
+  if (window.innerWidth <= 1000) closeSidebar();
   const tile = document.getElementById(domTileId(nodeId));
   if (!tile) return;
   tile.scrollIntoView({ behavior: 'smooth', block: 'start' });
