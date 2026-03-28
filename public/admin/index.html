@@ -126,10 +126,38 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .quiz-row    { display: flex; align-items: center; padding: 11px 14px; background: var(--surface); border-top: 1px solid var(--border); gap: 10px; }
 .quiz-row-name { font-size: .88rem; font-weight: 500; color: var(--text); font-family: var(--font-mono); flex: 1; }
 .quiz-row-meta { font-size: .7rem; color: var(--text-3); margin-top: 2px; }
+.quiz-row-ai   { font-size: .68rem; color: var(--text-2); margin-top: 5px; line-height: 1.35; font-family: var(--font-mono); }
+.quiz-row-ai .ai-pill-count { color: var(--accent); font-weight: 600; }
+.quiz-row-ai.missing { color: var(--text-3); }
 .quiz-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .empty { text-align: center; padding: 48px; color: var(--text-3); font-size: .9rem; }
 .edit-icon-btn { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 3px 7px; cursor: pointer; font-size: .72rem; color: var(--text-3); transition: all var(--transition); display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); }
 .edit-icon-btn:hover { background: var(--surface); border-color: var(--border); color: var(--accent); }
+
+/* Topic generation (Manage) — rainbow rim while running; stays inside pill to avoid topic-block overflow clip */
+@property --topic-gen-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes topic-gen-angle-rotate {
+  to { --topic-gen-angle: 360deg; }
+}
+.btn.btn-topic-gen.btn-topics-generating {
+  --topic-gen-angle: 0deg;
+  border-color: transparent !important;
+  color: var(--text-2);
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    conic-gradient(from var(--topic-gen-angle), #c62828, #f9a825, #2e7d32, #1565c0, #6a1b9a, #c62828) border-box;
+  border-width: 2px;
+  border-style: solid;
+  animation: topic-gen-angle-rotate 1.1s linear infinite;
+}
+.btn.btn-topic-gen.btn-topics-generating:disabled {
+  opacity: 1;
+  cursor: wait;
+}
 
 /* Modals */
 .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
@@ -283,31 +311,20 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
         <button class="section-tab"        data-s="Medicine" onclick="switchManageSection('Medicine', this)">💊 Medicine</button>
       </div>
 
+      <div class="form-group" style="margin-bottom:18px;">
+        <label class="form-label" for="selTopicProviderManage">Topic-tag API</label>
+        <select class="sel" id="selTopicProviderManage" style="width:100%;max-width:360px;">
+          <option value="openai">OpenAI — gpt-4o-mini</option>
+          <option value="gemini">Google Gemini — gemini-2.5-flash</option>
+        </select>
+        <div style="font-size:.75rem;color:var(--text-3);margin-top:6px;line-height:1.45;">Used when you click <strong style="font-weight:600;color:var(--text-2);">Topics</strong> on a quiz. Each provider needs its Cloud Function secret (<span style="font-family:var(--font-mono);">OPENAI_API_KEY</span> or <span style="font-family:var(--font-mono);">GEMINI_API_KEY</span>).</div>
+      </div>
+
       <div class="status" id="manageStatus"></div>
       <div id="quizList"><div class="empty">Loading…</div></div>
     </div>
   </div>
   <div class="credit">made by Zi Lin</div>
-</div>
-
-<!-- Generate topic tags (choose API) -->
-<div class="modal-bg" id="topicGenBg">
-  <div class="modal">
-    <div class="modal-title">Generate topic pills</div>
-    <div class="modal-body">Choose which API to use for this quiz. Each provider needs its own Cloud Function secret (<code style="font-family:var(--font-mono);font-size:.78em;">OPENAI_API_KEY</code> or <code style="font-family:var(--font-mono);font-size:.78em;">GEMINI_API_KEY</code>).</div>
-    <div class="modal-fg" style="margin-bottom:14px;">
-      <label class="form-label" for="topicGenProvider">API</label>
-      <select class="sel" id="topicGenProvider" style="width:100%;">
-        <option value="openai">OpenAI — gpt-4o-mini</option>
-        <option value="gemini">Google Gemini — gemini-2.5-flash</option>
-      </select>
-    </div>
-    <div class="status" id="topicGenStatus" style="margin-top:0;margin-bottom:12px;"></div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" type="button" onclick="closeTopicGenModal()">Cancel</button>
-      <button class="btn btn-primary" type="button" id="topicGenOK" onclick="executeTopicGen()">Generate</button>
-    </div>
-  </div>
 </div>
 
 <!-- Confirm delete modal -->
@@ -408,7 +425,8 @@ firebase.initializeApp({
 });
 const auth = firebase.auth();
 const db   = firebase.firestore();
-const functions = firebase.functions();
+/** Must match `region` in functions/index.js (Gen2 callables are regional). Region is set on the app instance, not `firebase.functions(region)`. */
+const functions = firebase.app().functions('us-central1');
 const provider = new firebase.auth.GoogleAuthProvider();
 
 // ── State ──────────────────────────────────────────────────────────────────────
@@ -416,7 +434,6 @@ let allMeta     = []; // { id, section, week, topic, name, questionCount }
 let newVals     = { week: '', topic: '' };
 let editNewVals = { week: '', topic: '' };
 let pendingDel  = null;
-let pendingTopicGenQuizId = null;
 let renameTarget = null;
 let pendingEdit  = null;
 let currentManageSection = 'Surgery';
@@ -715,7 +732,7 @@ function switchManageSection(section, btn) {
   currentManageSection = section;
   document.querySelectorAll('.section-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  renderManageList();
+  void renderManageList();
 }
 
 async function loadManage() {
@@ -724,13 +741,89 @@ async function loadManage() {
   container.innerHTML = '<div class="empty">Loading…</div>';
   try {
     await loadAllMeta();
-    renderManageList();
+    await renderManageList();
   } catch(err) {
     container.innerHTML = `<div class="empty">Error: ${err.message}</div>`;
   }
 }
 
-function renderManageList() {
+/** Load AI topic-tag metadata for manage list (pill count, last gen time, model). */
+async function fetchTopicTagsMetaByQuizId(quizIds) {
+  const meta = {};
+  await Promise.all(
+    quizIds.map(async (id) => {
+      try {
+        const snap = await db.collection('quizzes').doc(id).collection('data').doc('topicTags').get();
+        if (!snap.exists) {
+          meta[id] = null;
+          return;
+        }
+        const d = snap.data();
+        const arr = d.pills;
+        const pillCount = Array.isArray(arr) ? arr.length : 0;
+        let genDate = null;
+        const ga = d.generatedAt;
+        if (ga && typeof ga.toDate === 'function') genDate = ga.toDate();
+        meta[id] = {
+          pillCount,
+          genDate,
+          model: d.model,
+          provider: d.provider,
+        };
+      } catch (e) {
+        console.error('topicTags read', id, e);
+        meta[id] = null;
+      }
+    })
+  );
+  return meta;
+}
+
+function shortTopicModelName(model, provider) {
+  if (model && typeof model === 'string') {
+    const s = model.trim();
+    const slash = s.lastIndexOf('/');
+    return slash >= 0 ? s.slice(slash + 1) : s;
+  }
+  if (provider === 'gemini') return 'gemini-2.5-flash';
+  if (provider === 'openai') return 'gpt-4o-mini';
+  return '—';
+}
+
+function formatTimeAgo(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+  const sec = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+  if (sec < 45) return 'just now';
+  const m = Math.floor(sec / 60);
+  if (m < 60) return m <= 1 ? '1 min ago' : `${m} min ago`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return h === 1 ? '1 h ago' : `${h} h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 14) return d === 1 ? '1 day ago' : `${d} days ago`;
+  const w = Math.floor(d / 7);
+  if (w < 9) return w === 1 ? '1 week ago' : `${w} weeks ago`;
+  const mo = Math.floor(d / 30);
+  return mo <= 1 ? '~1 month ago' : `${mo} mo ago`;
+}
+
+function formatAiPillsLine(id, topicMeta) {
+  if (!topicMeta || !topicMeta.pillCount) {
+    return `<div class="quiz-row-ai missing" data-quiz-ai="${escAttr(id)}">AI pills: none yet</div>`;
+  }
+  const modelRaw = shortTopicModelName(topicMeta.model, topicMeta.provider);
+  const modelHtml = escHtml(modelRaw);
+  const when = formatTimeAgo(topicMeta.genDate);
+  const whenHtml = when ? escHtml(when) : escHtml('time unknown');
+  const titleBits = [];
+  if (topicMeta.genDate instanceof Date && !Number.isNaN(topicMeta.genDate.getTime())) {
+    titleBits.push(topicMeta.genDate.toISOString());
+  }
+  titleBits.push(modelRaw);
+  const titleAttr = titleBits.length ? ` title="${escAttr(titleBits.join(' · '))}"` : '';
+  return `<div class="quiz-row-ai"${titleAttr} data-quiz-ai="${escAttr(id)}"><span class="ai-pill-count">${topicMeta.pillCount}</span> AI pill${topicMeta.pillCount === 1 ? '' : 's'} · ${whenHtml} · ${modelHtml}</div>`;
+}
+
+async function renderManageList() {
   const container = document.getElementById('quizList');
   // Filter to current section, fallback Surgery for legacy docs without section field
   const filtered = allMeta.filter(q => (q.section || 'Surgery') === currentManageSection);
@@ -739,6 +832,8 @@ function renderManageList() {
     container.innerHTML = `<div class="empty">No ${currentManageSection} quizzes yet.</div>`;
     return;
   }
+
+  const topicMetaById = await fetchTopicTagsMetaByQuizId(filtered.map(q => q.id));
 
   // Group by week → topic
   const groups = {};
@@ -770,6 +865,7 @@ function renderManageList() {
         groups[week][topic]
           .sort((a, b) => a.name.localeCompare(b.name))
           .forEach(({ id, name, questionCount }) => {
+            const aiLine = formatAiPillsLine(id, topicMetaById[id]);
             html += `<div class="quiz-row">
               <div style="flex:1;">
                 <div class="quiz-row-name">${escHtml(name)}</div>
@@ -778,9 +874,10 @@ function renderManageList() {
                   <a href="../quiz.html?id=${encodeURIComponent(id)}" target="_blank" style="color:var(--accent);">preview ↗</a>
                   · <span style="font-family:var(--font-mono);font-size:.65rem;color:var(--text-3);">${id}</span>
                 </div>
+                ${aiLine}
               </div>
               <div class="quiz-row-actions">
-                <button class="btn btn-ghost btn-sm" onclick="openTopicGenModal('${escAttr(id)}')">🏷 Topics</button>
+                <button type="button" class="btn btn-ghost btn-sm btn-topic-gen" onclick="runTopicGenForQuiz(this,'${escAttr(id)}')">🏷 Topics</button>
                 <button class="btn btn-warn btn-sm" onclick="openEditModal('${escAttr(id)}','${escAttr(currentManageSection)}','${escAttr(week)}','${escAttr(topic)}','${escAttr(name)}')">✏ Edit</button>
                 <button class="btn btn-danger btn-sm" onclick="confirmDel('${escAttr(id)}','${escAttr(name)}')">Delete</button>
               </div>
@@ -803,37 +900,26 @@ function confirmDel(quizId, name) {
   document.getElementById('confirmBg').classList.add('open');
 }
 function closeModal() { document.getElementById('confirmBg').classList.remove('open'); pendingDel = null; }
-function openTopicGenModal(quizId) {
-  pendingTopicGenQuizId = quizId;
-  const uploadSel = document.getElementById('selTopicProviderUpload');
-  const modalSel = document.getElementById('topicGenProvider');
-  if (uploadSel && modalSel) modalSel.value = uploadSel.value;
-  hideStatus('topicGenStatus');
-  document.getElementById('topicGenOK').disabled = false;
-  document.getElementById('topicGenBg').classList.add('open');
-}
 
-function closeTopicGenModal() {
-  document.getElementById('topicGenBg').classList.remove('open');
-  pendingTopicGenQuizId = null;
-}
-
-async function executeTopicGen() {
-  const quizId = pendingTopicGenQuizId;
-  if (!quizId) return;
-  const provider = document.getElementById('topicGenProvider').value;
-  const okBtn = document.getElementById('topicGenOK');
-  okBtn.disabled = true;
-  setStatus('topicGenStatus', 'inf', 'Generating…');
+async function runTopicGenForQuiz(btn, quizId) {
+  if (!quizId || btn.classList.contains('btn-topics-generating')) return;
+  const provider = document.getElementById('selTopicProviderManage').value;
+  document.querySelectorAll('.btn-topic-gen').forEach(b => { b.disabled = true; });
+  btn.classList.add('btn-topics-generating');
+  setStatus('manageStatus', 'inf', 'Generating topic tags…');
   try {
     await generateTopicTagsForQuiz(quizId, provider);
-    setStatus('topicGenStatus', 'ok', '✅ Topic tags updated.');
-    setStatus('manageStatus', 'ok', '✅ Topic tags updated.');
-    closeTopicGenModal();
+    const topicSnap = await db.collection('quizzes').doc(quizId).collection('data').doc('topicTags').get();
+    const arr = topicSnap.exists && topicSnap.data().pills;
+    const pillN = Array.isArray(arr) ? arr.length : 0;
+    setStatus('manageStatus', 'ok', `✅ Generated ${pillN} topic tag${pillN === 1 ? '' : 's'}.`);
+    await renderManageList();
   } catch (e) {
-    setStatus('topicGenStatus', 'err', `❌ ${formatFunctionsError(e)}`);
+    setStatus('manageStatus', 'err', `❌ ${formatFunctionsError(e)}`);
+  } finally {
+    btn.classList.remove('btn-topics-generating');
+    document.querySelectorAll('.btn-topic-gen').forEach(b => { b.disabled = false; });
   }
-  okBtn.disabled = false;
 }
 
 async function executeDel() {
@@ -845,7 +931,7 @@ async function executeDel() {
     await db.collection('quizzes').doc(quizId).delete();
     allMeta = allMeta.filter(m => m.id !== quizId);
     setStatus('manageStatus', 'ok', '✅ Deleted.');
-    renderManageList();
+    void renderManageList();
   } catch(err) {
     setStatus('manageStatus', 'err', `❌ Delete failed: ${err.message}`);
   }
@@ -908,7 +994,7 @@ async function executeRename() {
     });
 
     setStatus('renameStatus', 'ok', `✅ Renamed ${affected.length} quiz(zes). No user data affected.`);
-    setTimeout(() => { closeRenameModal(); renderManageList(); }, 1200);
+    setTimeout(() => { closeRenameModal(); void renderManageList(); }, 1200);
   } catch(err) {
     setStatus('renameStatus', 'err', `❌ Failed: ${err.message}`);
     document.getElementById('renameOK').disabled = false;
@@ -1025,7 +1111,7 @@ async function saveEditQuiz() {
     if (m) { m.section = newSection; m.week = newWeek; m.topic = newTopic; m.name = newName; }
 
     setStatus('editStatus', 'ok', '✅ Saved. No user progress was affected.');
-    setTimeout(() => { closeEditModal(); renderManageList(); }, 1200);
+    setTimeout(() => { closeEditModal(); void renderManageList(); }, 1200);
   } catch(err) {
     setStatus('editStatus', 'err', `❌ Failed: ${err.message}`);
     document.getElementById('editSaveBtn').disabled = false;
@@ -1038,7 +1124,12 @@ function switchTab(tab) {
     document.getElementById(`tabBtn${cap(t)}`).classList.toggle('active', t === tab);
     document.getElementById(`panel${cap(t)}`).classList.toggle('active', t === tab);
   });
-  if (tab === 'manage') loadManage();
+  if (tab === 'manage') {
+    const up = document.getElementById('selTopicProviderUpload');
+    const mg = document.getElementById('selTopicProviderManage');
+    if (up && mg) mg.value = up.value;
+    loadManage();
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

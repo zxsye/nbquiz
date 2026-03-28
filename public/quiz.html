@@ -390,7 +390,7 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
 .topic-modal-overlay.hidden { display: none; }
 .topic-modal {
   background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg); max-width: 420px; width: 100%; padding: 24px 26px;
+  box-shadow: var(--shadow-lg); max-width: 460px; width: 100%; padding: 24px 26px;
   font-family: var(--font-sans);
 }
 .topic-modal h2 { font-family: var(--font-serif); font-size: 1.25rem; margin-bottom: 8px; color: var(--text); }
@@ -399,6 +399,23 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
 .topic-modal-field label { display: block; font-size: .78rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
 .topic-modal-field label.inline { display: flex; align-items: center; gap: 10px; text-transform: none; font-weight: 500; font-size: .9rem; color: var(--text); cursor: pointer; }
 .topic-modal-field input[type="radio"] { accent-color: var(--accent); }
+.topic-modal-source-block { margin-bottom: 14px; }
+.topic-modal-source-block:last-of-type { margin-bottom: 0; }
+.topic-modal-subhead {
+  font-size: .72rem; font-weight: 600; color: var(--text-3); text-transform: uppercase;
+  letter-spacing: .06em; margin-bottom: 8px;
+}
+.topic-modal-pill-preview {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; max-height: 120px;
+  overflow-y: auto; padding: 2px 0;
+}
+.topic-modal-chip {
+  font-family: var(--font-sans); font-size: .68rem; font-weight: 500;
+  padding: 4px 9px; border-radius: 99px; border: 1.5px solid var(--border);
+  background: var(--surface-2); color: var(--text-2); max-width: 100%;
+  text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
+}
+.topic-modal-chip.more { border-style: dashed; color: var(--text-3); }
 .topic-modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
 .topic-pills-wrap { margin-bottom: 16px; display: none; flex-direction: column; gap: 10px; }
 .topic-pills-wrap.visible { display: flex; }
@@ -478,11 +495,18 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
       <label class="inline"><input type="radio" name="topicShow" id="topicShowN" value="no" /> No</label>
     </div>
     <div class="topic-modal-field" id="topicAlgoField">
-      <label>Algorithm for tags</label>
-      <label class="inline" id="topicAlgoStoredWrap" style="display:none;"><input type="radio" name="topicAlgo" value="stored" /> AI topics (curated)</label>
-      <label class="inline"><input type="radio" name="topicAlgo" value="tfidf" checked /> Weighted TF–IDF (words + phrases)</label>
-      <label class="inline"><input type="radio" name="topicAlgo" value="rake" /> RAKE-style phrases</label>
-      <label class="inline"><input type="radio" name="topicAlgo" value="search" /> MiniSearch (index + TF–IDF tags)</label>
+      <label>Tag source</label>
+      <div id="topicModalAiBlock" class="topic-modal-source-block" style="display:none;">
+        <div class="topic-modal-subhead">AI topics (saved in admin)</div>
+        <div id="topicModalAiPreview" class="topic-modal-pill-preview" aria-label="AI topic tags"></div>
+        <label class="inline"><input type="radio" name="topicAlgo" id="topicAlgoStored" value="stored" /> Use these AI topics in the sidebar</label>
+      </div>
+      <div class="topic-modal-source-block">
+        <div class="topic-modal-subhead">Local tags (on your device)</div>
+        <label class="inline"><input type="radio" name="topicAlgo" value="tfidf" checked /> Weighted TF–IDF (words + phrases)</label>
+        <label class="inline"><input type="radio" name="topicAlgo" value="rake" /> RAKE-style phrases</label>
+        <label class="inline"><input type="radio" name="topicAlgo" value="search" /> MiniSearch (index + TF–IDF tags)</label>
+      </div>
     </div>
     <div class="topic-modal-actions">
       <button type="button" class="btn btn-ghost" id="topicModalCancel">Cancel</button>
@@ -682,7 +706,8 @@ const TOPIC_W_CORRECT_OPT = 2.5;
 const TOPIC_W_CORRECT_RAT = 2;
 const TOPIC_W_DISTRACTOR = 0.5;
 const TOPIC_W_HINT = 0.8;
-const TOPIC_TOP_K = 40;
+/** Max topic chips shown (matches Cloud Functions AI cap; TF-IDF/RAKE/search use the same limit). */
+const TOPIC_MAX_PILLS = 8;
 const TOPIC_LS_KEY = 'nbquiz_topic_prefs';
 
 let topicPrefs = { showTopics: false, algorithm: 'tfidf' };
@@ -812,7 +837,7 @@ function topicBuildTfIdfPills() {
     scored.push({ term, score: s, indices });
   }
   scored.sort((a, b) => b.score - a.score);
-  const top = scored.slice(0, TOPIC_TOP_K);
+  const top = scored.slice(0, TOPIC_MAX_PILLS);
   const map = new Map();
   top.forEach(({ term, indices }) => map.set(term, indices));
   return { pills: top.map(t => t.term), map };
@@ -863,7 +888,7 @@ function topicBuildRakePills() {
   }
   const scored = [...agg.entries()].map(([term, o]) => ({ term, score: o.score, indices: o.indices }));
   scored.sort((a, b) => b.score - a.score);
-  const top = scored.slice(0, TOPIC_TOP_K);
+  const top = scored.slice(0, TOPIC_MAX_PILLS);
   const map = new Map();
   top.forEach(({ term, indices }) => map.set(term, indices));
   return { pills: top.map(t => t.term), map };
@@ -952,7 +977,7 @@ function topicBuildMiniSearchPills() {
     scored.push({ term, score: s, indices });
   }
   scored.sort((a, b) => b.score - a.score);
-  const top = scored.slice(0, TOPIC_TOP_K);
+  const top = scored.slice(0, TOPIC_MAX_PILLS);
   const map = new Map();
   top.forEach(({ term, indices }) => map.set(term, indices));
   return { pills: top.map(t => t.term), map };
@@ -978,32 +1003,92 @@ function topicSavePrefs(prefs) {
   } catch {}
 }
 
+function topicCanonLabel(s) {
+  return String(s || '').replace(/\./g, '·');
+}
+
+/** @returns {{ pills: string[], map: Map<string, Set<number>> }} */
+function topicBuildFromStored(doc) {
+  const rawMap = doc.pillsMap && typeof doc.pillsMap === 'object' && !Array.isArray(doc.pillsMap) ? doc.pillsMap : {};
+  const n = QUESTIONS.length;
+
+  function indicesForLabel(label) {
+    const L = String(label);
+    const tries = [L, L.replace(/·/g, '.'), L.replace(/\./g, '·')];
+    for (const t of tries) {
+      const arr = rawMap[t];
+      if (Array.isArray(arr)) return arr;
+    }
+    const want = topicCanonLabel(L);
+    for (const k of Object.keys(rawMap)) {
+      if (topicCanonLabel(k) === want && Array.isArray(rawMap[k])) return rawMap[k];
+    }
+    return null;
+  }
+
+  const fromPills = Array.isArray(doc.pills) ? doc.pills.map(String).filter(Boolean) : [];
+  const ordered = fromPills.slice();
+  for (const k of Object.keys(rawMap)) {
+    const ck = topicCanonLabel(k);
+    if (!ordered.some((p) => topicCanonLabel(p) === ck)) ordered.push(topicCanonLabel(k));
+  }
+
+  const pillsOut = [];
+  const map = new Map();
+  const seenCanon = new Set();
+
+  for (const label of ordered) {
+    const canon = topicCanonLabel(label);
+    if (seenCanon.has(canon)) continue;
+    const arr = indicesForLabel(label);
+    if (!Array.isArray(arr)) continue;
+    const set = new Set();
+    for (const i of arr) {
+      const x = typeof i === 'number' ? i : parseInt(i, 10);
+      if (Number.isFinite(x) && x >= 0 && x < n) set.add(x);
+    }
+    if (!set.size) continue;
+    seenCanon.add(canon);
+    const display = fromPills.find((p) => topicCanonLabel(p) === canon) || canon;
+    pillsOut.push(display);
+    map.set(display, set);
+  }
+  const capped = pillsOut.slice(0, TOPIC_MAX_PILLS);
+  const mapCapped = new Map();
+  for (const label of capped) mapCapped.set(label, map.get(label));
+  return { pills: capped, map: mapCapped };
+}
+
 function topicAiTagsAvailable() {
-  return !!(topicTagsDoc && Array.isArray(topicTagsDoc.pills) && topicTagsDoc.pills.length);
+  if (!topicTagsDoc || !QUESTIONS || !QUESTIONS.length) return false;
+  return topicBuildFromStored(topicTagsDoc).pills.length > 0;
+}
+
+function topicFillModalAiPreview() {
+  const el = document.getElementById('topicModalAiPreview');
+  if (!el) return;
+  el.innerHTML = '';
+  if (!topicAiTagsAvailable()) return;
+  const { pills } = topicBuildFromStored(topicTagsDoc);
+  const maxShow = TOPIC_MAX_PILLS;
+  pills.slice(0, maxShow).forEach((label) => {
+    const span = document.createElement('span');
+    span.className = 'topic-modal-chip';
+    span.textContent = label;
+    el.appendChild(span);
+  });
+  if (pills.length > maxShow) {
+    const more = document.createElement('span');
+    more.className = 'topic-modal-chip more';
+    more.textContent = `+${pills.length - maxShow} more`;
+    el.appendChild(more);
+  }
 }
 
 function topicEffectiveAlgorithm() {
   let a = topicPrefs.algorithm;
   if (a === 'stored' && !topicAiTagsAvailable()) a = 'tfidf';
   return a;
-}
-
-function topicBuildFromStored(doc) {
-  const pills = doc.pills || [];
-  const rawMap = doc.pillsMap || {};
-  const map = new Map();
-  for (const label of pills) {
-    const arr = rawMap[label];
-    if (!Array.isArray(arr)) continue;
-    const set = new Set();
-    arr.forEach((i) => {
-      const n = typeof i === 'number' ? i : parseInt(i, 10);
-      if (Number.isFinite(n) && n >= 0 && n < QUESTIONS.length) set.add(n);
-    });
-    if (set.size) map.set(label, set);
-  }
-  const filteredPills = pills.filter((l) => map.has(l));
-  return { pills: filteredPills, map };
 }
 
 function topicBuildModel() {
@@ -1136,9 +1221,10 @@ function topicOpenModal(isSettings, onDone) {
   const showY = document.getElementById('topicShowY');
   const showN = document.getElementById('topicShowN');
   const algoField = document.getElementById('topicAlgoField');
-  const storedWrap = document.getElementById('topicAlgoStoredWrap');
+  const aiBlock = document.getElementById('topicModalAiBlock');
   const aiAvail = topicAiTagsAvailable();
-  if (storedWrap) storedWrap.style.display = aiAvail ? '' : 'none';
+  if (aiBlock) aiBlock.style.display = aiAvail ? 'block' : 'none';
+  topicFillModalAiPreview();
 
   if (isSettings && topicPrefs) {
     if (topicPrefs.showTopics) { showY.checked = true; showN.checked = false; }

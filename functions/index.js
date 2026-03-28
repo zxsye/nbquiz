@@ -1,5 +1,6 @@
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
+const logger = require('firebase-functions/logger');
 const admin = require('firebase-admin');
 
 const openaiApiKey = defineSecret('OPENAI_API_KEY');
@@ -9,7 +10,9 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-const TOPIC_MAX_PILLS = 40;
+const TOPIC_MAX_PILLS = 8;
+/** Soft average questions per subquiz pill (used only in LLM prompt hints). */
+const TARGET_AVG_QUESTIONS_PER_PILL = 5;
 const OPENAI_MODEL = 'gpt-4o-mini';
 const GEMINI_MODEL = 'gemini-2.5-flash';
 
@@ -30,6 +33,27 @@ function callableError(msg) {
 
 function rethrowIfHttpsError(e) {
   if (e instanceof HttpsError) throw e;
+}
+
+/**
+ * Firebase callable runtime only forwards HttpsError to clients; any other throw becomes
+ * functions/internal. Use this at export boundaries so real errors surface as failed-precondition.
+ */
+function wrapCallableHandler(fn) {
+  return async (request) => {
+    try {
+      return await fn(request);
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      logger.error('Topic tags callable (non-HttpsError)', e);
+      const msg =
+        e instanceof Error ? e.message || e.name || String(e) : String(e);
+      throw new HttpsError(
+        'failed-precondition',
+        msg.slice(0, 2000) || 'Unknown server error'
+      );
+    }
+  };
 }
 
 function stripHtml(s) {
@@ -102,6 +126,62 @@ function normalizePills(parsed, numQuestions) {
     }
   }
 
+  return { pills, pillsMap };
+}
+
+/** Hard cap after normalize (defense in depth; must stay aligned with TOPIC_MAX_PILLS). */
+function capPillsMap(pills, pillsMap, max) {
+  if (!Array.isArray(pills) || pills.length <= max) return { pills, pillsMap };
+  const capped = pills.slice(0, max);
+  const out = {};
+  for (const p of capped) {
+    if (pillsMap[p] != null) out[p] = pillsMap[p];
+  }
+  return { pills: capped, pillsMap: out };
+}
+
+/**
+ * Every question index must appear in at least one pill. Orphans (e.g. after cap) merge into the largest pill.
+ * Mutates pillsMap; pills array unchanged.
+ */
+function ensureFullCoverage(pills, pillsMap, numQuestions) {
+  if (!numQuestions || numQuestions < 1) return { pills, pillsMap };
+  const covered = new Set();
+  for (const p of pills) {
+    const arr = pillsMap[p];
+    if (!Array.isArray(arr)) continue;
+    for (const x of arr) {
+      const i = typeof x === 'number' ? x : parseInt(x, 10);
+      if (Number.isFinite(i) && i >= 0 && i < numQuestions) covered.add(i);
+    }
+  }
+  const missing = [];
+  for (let i = 0; i < numQuestions; i++) {
+    if (!covered.has(i)) missing.push(i);
+  }
+  if (!missing.length) return { pills, pillsMap };
+
+  if (!pills.length) {
+    const label = 'Quiz Topics';
+    return {
+      pills: [label],
+      pillsMap: { [label]: missing.sort((a, b) => a - b) },
+    };
+  }
+
+  let bestLabel = pills[0];
+  let bestSize = (pillsMap[bestLabel] && pillsMap[bestLabel].length) || 0;
+  for (let k = 1; k < pills.length; k++) {
+    const p = pills[k];
+    const sz = (pillsMap[p] && pillsMap[p].length) || 0;
+    if (sz > bestSize) {
+      bestSize = sz;
+      bestLabel = p;
+    }
+  }
+  const set = new Set(pillsMap[bestLabel] || []);
+  missing.forEach((i) => set.add(i));
+  pillsMap[bestLabel] = [...set].sort((a, b) => a - b);
   return { pills, pillsMap };
 }
 
@@ -218,19 +298,32 @@ async function generateTopicTagsCore(request, provider) {
 
     const compact = compactQuestions(questions);
     const payload = JSON.stringify(compact);
+    const n = questions.length;
+    let targetPillCount = Math.round(n / TARGET_AVG_QUESTIONS_PER_PILL);
+    targetPillCount = Math.max(1, Math.min(TOPIC_MAX_PILLS, targetPillCount));
+    if (n >= 16 && targetPillCount < 4) targetPillCount = 4;
+    if (targetPillCount > n) targetPillCount = n;
+    const approxPerPillLo = Math.max(1, Math.floor(n / targetPillCount));
+    const approxPerPillHi = Math.max(approxPerPillLo, Math.ceil(n / targetPillCount));
 
-    const userPrompt = `You label medical quiz questions with clinical topic tags (diseases, syndromes, anatomy, key themes).
+    const userPrompt = `You partition a medical quiz into subquizzes using topic "pills". Each pill is a filterable subquiz: the learner selects one pill to study that slice of questions.
 
-For EACH tag below, the tag must be a short human-readable label (2–6 words max, Title Case). Tags must name specific medical topics (e.g. "Acute Appendicitis", "Diabetic Ketoacidosis"), NOT generic words like "patient" or "management".
+This quiz has ${n} questions (indexes 0 through ${n - 1}).
 
-Respond with a JSON object (only JSON, no markdown) with this exact shape:
+Each pill must have a short human-readable label (2–6 words, Title Case) naming a specific clinical theme (e.g. "Acute Appendicitis", "Diabetic Ketoacidosis"). Avoid useless labels that are only generic words like "patient" or "management".
+
+COVERAGE (required): Every question index from 0 to ${n - 1} MUST appear in exactly one pill's "indices" array (a partition). Assign each question to exactly one subquiz unless a question truly spans two themes—only then may an index appear in two pills.
+
+BALANCE: Aim for about ${targetPillCount} pills for this quiz size—roughly ${approxPerPillLo}–${approxPerPillHi} questions per pill on average. When ${n} is large enough, avoid a result where most pills contain only 1–2 questions; merge clinically related questions under broader theme labels instead. A few small pills are acceptable; do not fragment everything into pairs.
+
+The "pills" array MUST contain at most ${TOPIC_MAX_PILLS} objects.
+
+Respond with JSON only (no markdown) with this exact shape:
 {"pills":[{"label":"string","indices":[0,1]}]}
 
 Rules:
 - "indices" are 0-based indexes into the question list (field "i" in the input).
-- Each question index should appear in at least one pill if possible; merge similar questions under one tag.
-- Produce at most ${TOPIC_MAX_PILLS} pills; prefer broader clinical tags over duplicates.
-- Omit tags that would only match one generic word.
+- Together, the pills must cover every index 0..${n - 1} exactly once (partition), except for rare intentional overlap as noted above.
 
 Question list (JSON):
 ${payload}`;
@@ -273,8 +366,9 @@ ${payload}`;
       console.error('JSON parse error', e);
       throw callableError(`Model returned invalid JSON: ${e.message || e}`);
     }
-
-    const { pills, pillsMap } = normalizePills(parsed, questions.length);
+    let { pills, pillsMap } = normalizePills(parsed, questions.length);
+    ({ pills, pillsMap } = capPillsMap(pills, pillsMap, TOPIC_MAX_PILLS));
+    ({ pills, pillsMap } = ensureFullCoverage(pills, pillsMap, questions.length));
     if (!pills.length) {
       throw callableError('Model returned no usable tags (empty or invalid indices).');
     }
@@ -295,20 +389,20 @@ ${payload}`;
       throw callableError(`Saving tags failed: ${e.message || e}`);
     }
 
-    return { ok: true, pillCount: pillsSafe.length };
+    return { ok: true, pillCount: pillsSafe.length | 0 };
   } catch (e) {
     rethrowIfHttpsError(e);
-    console.error('generateTopicTagsCore', e);
+    logger.error('generateTopicTagsCore', e);
     throw callableError(e.message || String(e));
   }
 }
 
 exports.generateTopicTagsOpenAI = onCall(
   { ...CALL_OPTS, secrets: [openaiApiKey] },
-  async (request) => generateTopicTagsCore(request, 'openai')
+  wrapCallableHandler(async (request) => generateTopicTagsCore(request, 'openai'))
 );
 
 exports.generateTopicTagsGemini = onCall(
   { ...CALL_OPTS, secrets: [geminiApiKey] },
-  async (request) => generateTopicTagsCore(request, 'gemini')
+  wrapCallableHandler(async (request) => generateTopicTagsCore(request, 'gemini'))
 );
