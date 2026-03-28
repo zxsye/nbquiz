@@ -864,6 +864,64 @@ function wrapLatex(text) {
   return out;
 }
 
+// ── Wrap braced _{…} / ^{…} (+ trailing alnums) in $…$ for KaTeX ─────────────
+function wrapSubSupBraced(text) {
+  if (!text) return text;
+  let out = '', i = 0;
+  while (i < text.length) {
+    if (text[i] === '$') {
+      const dbl = text[i+1] === '$', delim = dbl ? '$$' : '$';
+      const end = text.indexOf(delim, i + delim.length);
+      if (end !== -1) { out += text.slice(i, end + delim.length); i = end + delim.length; continue; }
+    }
+    if (text[i] === '\\' && (text[i+1] === '(' || text[i+1] === '[')) {
+      const close = text[i+1] === '(' ? '\\)' : '\\]';
+      const end = text.indexOf(close, i + 2);
+      if (end !== -1) { out += text.slice(i, end + 2); i = end + 2; continue; }
+    }
+    // Scan plain text for next _{ / ^{ (must not emit prefix char-by-char or it duplicates the wrap)
+    let j = i;
+    while (j < text.length) {
+      if (text[j] === '$') break;
+      if (text[j] === '\\' && (text[j+1] === '(' || text[j+1] === '[')) break;
+      if ((text[j] === '_' || text[j] === '^') && text[j + 1] === '{') break;
+      j++;
+    }
+    if (j < text.length && (text[j] === '_' || text[j] === '^') && text[j + 1] === '{') {
+      let start = j;
+      while (start > 0 && /[A-Za-z0-9]/.test(text[start - 1])) start--;
+      let k = j + 2, d = 1;
+      while (k < text.length && d) {
+        if (text[k] === '{') d++;
+        else if (text[k] === '}') d--;
+        k++;
+      }
+      if (d !== 0) {
+        out += text.slice(i, j + 1);
+        i = j + 1;
+        continue;
+      }
+      let end = k;
+      while (end < text.length && /[A-Za-z0-9]/.test(text[end])) end++;
+      out += text.slice(i, start) + '$' + text.slice(start, end) + '$';
+      i = end;
+      continue;
+    }
+    if (j < text.length) {
+      out += text.slice(i, j);
+      i = j;
+      continue;
+    }
+    out += text.slice(i);
+    break;
+  }
+  return out;
+}
+
+function formatQuizHtml(text) {
+  return wrapSubSupBraced(wrapLatex(text));
+}
+
 
 function buildBreadcrumb() {
   if (!QUIZ_META) return '';
@@ -939,7 +997,7 @@ function renderQuestion(idx) {
   _tag.textContent = _bc || `Part ${q.part || 1}`;
   _tag.title       = _bc;           // hover tooltip on desktop
   _tag.classList.remove('expanded'); // collapse on every new question
-  document.getElementById('stem').innerHTML = wrapLatex(q.stem);
+  document.getElementById('stem').innerHTML = formatQuizHtml(q.stem);
 
   const flagBtn = document.getElementById('flagBtn');
   flagBtn.innerHTML         = flagged[idx] ? '🚩<span class="btn-label"> Unflag</span>' : '⚑<span class="btn-label"> Flag</span>';
@@ -960,7 +1018,7 @@ function renderQuestion(idx) {
   const hb = document.getElementById('hintBody');
   if (q.hint) {
     hw.style.display = 'block';
-    hb.innerHTML = wrapLatex(q.hint);
+    hb.innerHTML = formatQuizHtml(q.hint);
     hb.classList.remove('open');
   } else {
     hw.style.display = 'none';
@@ -973,11 +1031,11 @@ function renderQuestion(idx) {
     btn.className      = 'option';
     btn.dataset.letter = letter;
     btn.onclick        = () => selectOption(letter);
-    const rat = wrapLatex(q.rationales?.[letter] || '');
+    const rat = formatQuizHtml(q.rationales?.[letter] || '');
     btn.innerHTML = `
       <div class="opt-letter">${letter}</div>
       <div class="opt-body">
-        <div class="opt-text">${wrapLatex(q.options[letter])}</div>
+        <div class="opt-text">${formatQuizHtml(q.options[letter])}</div>
         ${rat ? `<div class="opt-rationale" id="rat-${letter}">${rat}</div>` : ''}
       </div>
       <div class="opt-eliminate" id="elim-${letter}" onclick="event.stopPropagation();toggleEliminate('${letter}')" title="Eliminate option">✕</div>
