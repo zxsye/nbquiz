@@ -28,6 +28,18 @@ button, input, select, textarea { font-family: inherit; }
   --font-serif: 'Crimson Pro', Georgia, serif;
   --font-sans: 'DM Sans', 'Helvetica Neue', Helvetica, sans-serif;
   --font-mono: 'DM Mono', monospace;
+  --tile-accent-h1: #1e40af;
+  --tile-accent-h2: #7c3aed;
+  --tile-accent-h3: #0d9488;
+  --tile-accent-h4: #b45309;
+  --tile-accent-h5: #be185d;
+  --tile-accent-h6: #4b5563;
+  --tile-head-h1: #eff6ff;
+  --tile-head-h2: #f5f3ff;
+  --tile-head-h3: #f0fdfa;
+  --tile-head-h4: #fffbeb;
+  --tile-head-h5: #fdf2f8;
+  --tile-head-h6: #f3f4f6;
 }
 body {
   font-family: var(--font-sans);
@@ -240,6 +252,11 @@ body.outline-in-sidebar .sidebar .note-list {
   outline: none;
 }
 .input:focus, .textarea:focus { border-color: var(--accent); }
+.input:read-only, .textarea:read-only {
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: default;
+}
 .textarea {
   min-height: 180px;
   resize: vertical;
@@ -271,6 +288,7 @@ body.outline-in-sidebar .sidebar .note-list {
   color: #fff;
 }
 .btn-primary:hover { background: #1d4f8a; color: #fff; }
+.btn.is-hidden { display: none !important; }
 .status {
   margin-top: 10px;
   min-height: 1em;
@@ -278,14 +296,75 @@ body.outline-in-sidebar .sidebar .note-list {
   color: var(--text-3);
 }
 .note-list { overflow-y: auto; flex: 1; }
-.note-item {
-  display: block;
+.note-list-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  font-size: .75rem;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  font-family: var(--font-sans);
+}
+.note-list-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.note-bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: .72rem;
+  border-bottom: 1px solid var(--border);
+  background: #faf8f4;
+}
+.note-bulk-bar .bulk-move-input {
+  flex: 1;
+  min-width: 120px;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: .75rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+}
+.note-bulk-bar.hidden { display: none; }
+.note-item-row {
+  display: flex;
+  align-items: stretch;
   width: 100%;
-  text-align: left;
-  border: none;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
-  padding: 12px 14px;
+}
+.note-item-row:hover { background: var(--accent-light); }
+.note-item-row:hover .note-item { background: transparent; }
+.note-check-label {
+  display: flex;
+  align-items: center;
+  padding: 0 8px 0 10px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.note-check-label input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+}
+.note-item {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  text-align: left;
+  border: none;
+  border-bottom: none;
+  background: transparent;
+  padding: 12px 14px 12px 6px;
   cursor: pointer;
   font-family: var(--font-sans);
 }
@@ -838,9 +917,44 @@ body.outline-in-sidebar .sidebar .note-list {
 .tile-content th { background: var(--surface-2); font-weight: 600; }
 .tile-content a { color: var(--accent); }
 .tile-children {
-  padding: 8px 10px 10px 22px;
-  border-left: 4px solid #ece8df;
-  margin-left: 14px;
+  padding: 6px 6px 8px 10px;
+  border-left: 3px solid var(--border);
+  margin-left: 6px;
+}
+.tile-children-under-h1 { border-left-color: var(--tile-accent-h1); }
+.tile-children-under-h2 { border-left-color: var(--tile-accent-h2); }
+.tile-children-under-h3 { border-left-color: var(--tile-accent-h3); }
+.tile-children-under-h4 { border-left-color: var(--tile-accent-h4); }
+.tile-children-under-h5 { border-left-color: var(--tile-accent-h5); }
+.tile-children-under-h6 { border-left-color: var(--tile-accent-h6); }
+.tile-h1 { border-left: 3px solid var(--tile-accent-h1); }
+.tile-h2 { border-left: 3px solid var(--tile-accent-h2); }
+.tile-h3 { border-left: 3px solid var(--tile-accent-h3); }
+.tile-h4 { border-left: 3px solid var(--tile-accent-h4); }
+.tile-h5 { border-left: 3px solid var(--tile-accent-h5); }
+.tile-h6 { border-left: 3px solid var(--tile-accent-h6); }
+.tile-h1 .tile-head { background: var(--tile-head-h1); }
+.tile-h2 .tile-head { background: var(--tile-head-h2); }
+.tile-h3 .tile-head { background: var(--tile-head-h3); }
+.tile-h4 .tile-head { background: var(--tile-head-h4); }
+.tile-h5 .tile-head { background: var(--tile-head-h5); }
+.tile-h6 .tile-head { background: var(--tile-head-h6); }
+.tile-h1 .tile-level { border-color: rgba(30, 64, 175, 0.45); color: var(--tile-accent-h1); }
+.tile-h2 .tile-level { border-color: rgba(124, 58, 237, 0.45); color: var(--tile-accent-h2); }
+.tile-h3 .tile-level { border-color: rgba(13, 148, 136, 0.45); color: var(--tile-accent-h3); }
+.tile-h4 .tile-level { border-color: rgba(180, 83, 9, 0.45); color: var(--tile-accent-h4); }
+.tile-h5 .tile-level { border-color: rgba(190, 24, 93, 0.45); color: var(--tile-accent-h5); }
+.tile-h6 .tile-level { border-color: rgba(75, 85, 99, 0.45); color: var(--tile-accent-h6); }
+.tile.marked.tile-h1,
+.tile.marked.tile-h2,
+.tile.marked.tile-h3,
+.tile.marked.tile-h4,
+.tile.marked.tile-h5,
+.tile.marked.tile-h6 {
+  border-left-color: #f59e0b;
+}
+.tile.marked .tile-head {
+  background: #fffbeb;
 }
 .doc-content {
   border: 1.5px solid var(--border);
@@ -1222,23 +1336,37 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
   <aside class="panel sidebar">
     <button type="button" class="panel-head collapsible-panel-head" id="composerSectionToggle" aria-expanded="true" onclick="toggleComposerSection()">
       <span class="collapsible-chevron" aria-hidden="true">▾</span>
-      Create or Import Note
+      Note editor
     </button>
     <div class="composer" id="composerSectionBody">
       <label class="label" for="noteTitle">Title</label>
-      <input class="input" id="noteTitle" placeholder="e.g. Endocrine summary">
+      <input class="input" id="noteTitle" placeholder="e.g. Endocrine summary — use / for folders" autocomplete="off">
       <label class="label" style="margin-top:10px;" for="noteMarkdown">Markdown</label>
       <textarea class="textarea" id="noteMarkdown" placeholder="# Topic&#10;## Subtopic&#10;Content..."></textarea>
-      <div class="row">
-        <button class="btn btn-primary" onclick="createNote()">Create note</button>
-        <button class="btn" onclick="triggerFileImport()">Import .md file(s)</button>
-        <button class="btn" onclick="saveCurrentNote()">Save changes</button>
-        <button class="btn" onclick="deleteCurrentNote()">Delete note</button>
+      <div class="row composer-actions-row">
+        <button type="button" class="btn btn-primary" id="btnSaveNote" onclick="saveNote()">Save</button>
+        <button type="button" class="btn" id="btnNewNote" onclick="startNewNote()">New note</button>
+        <button type="button" class="btn" id="btnEditNote" onclick="startComposerEdit()">Edit</button>
+        <button type="button" class="btn" id="btnCancelEdit" onclick="cancelComposerEdit()">Cancel</button>
+        <button type="button" class="btn" id="btnDiscardDraft" onclick="discardDraft()">Discard draft</button>
+        <button type="button" class="btn" id="btnDeleteNote" onclick="deleteCurrentNote()">Delete note</button>
+        <button type="button" class="btn" onclick="triggerFileImport()">Import .md file(s)</button>
       </div>
       <input type="file" id="fileInput" accept=".md,.markdown,.txt" multiple style="display:none;" onchange="handleFileImport(event)">
       <div class="status" id="composerStatus"></div>
     </div>
     <div class="panel-head">Your Notes</div>
+    <div class="note-list-toolbar">
+      <label><input type="checkbox" id="noteBulkModeToggle" onchange="onBulkModeChange()"> Select multiple</label>
+    </div>
+    <div class="note-bulk-bar hidden" id="noteBulkBar">
+      <span id="noteBulkCount">0 selected</span>
+      <button type="button" class="btn" onclick="bulkSelectAllNotes()">Select all</button>
+      <button type="button" class="btn" onclick="bulkClearNoteSelection()">Clear</button>
+      <input type="text" class="bulk-move-input" id="bulkMoveFolderInput" placeholder="Folder path (empty = root)" autocomplete="off" title="Parent folder; each note keeps its title segment">
+      <button type="button" class="btn" onclick="bulkMoveSelectedNotes()">Move to folder</button>
+      <button type="button" class="btn" onclick="bulkDeleteSelectedNotes()">Delete selected</button>
+    </div>
     <div class="note-list" id="noteList"></div>
     <div class="sidebar-outline-section" id="sidebarOutlineSection">
       <div class="outline-head">Heading outline</div>
@@ -1363,6 +1491,11 @@ let bulkImportEscapeHandler = null;
 let readerTileSearchQuery = null;
 /** If true with readerTileSearchQuery, reader aggregates matches across all notes; if false, only current note. */
 let readerTileSearchAllNotes = false;
+let isDraftNote = false;
+let composerEditMode = false;
+let bulkSelectMode = false;
+const selectedNoteIds = new Set();
+let draftRenderRaf = null;
 
 function applyComposerCollapsed() {
   const btn = document.getElementById('composerSectionToggle');
@@ -1404,6 +1537,13 @@ function toggleOutlineInSidebar() {
 applyOutlineInSidebar();
 applyComposerCollapsed();
 applyTileSearchScopeFromStorage();
+applyComposerUIMode();
+(function wireComposerInputs() {
+  const t = document.getElementById('noteTitle');
+  const m = document.getElementById('noteMarkdown');
+  if (t) t.addEventListener('input', onComposerInput);
+  if (m) m.addEventListener('input', onComposerInput);
+})();
 document.addEventListener('mousedown', onTileSearchDocMouseDown, true);
 
 function signInWithGoogle() {
@@ -1424,8 +1564,15 @@ auth.onAuthStateChanged(async user => {
     currentUid = null;
     notes = [];
     currentNoteId = null;
+    isDraftNote = false;
+    composerEditMode = false;
+    bulkSelectMode = false;
+    selectedNoteIds.clear();
+    const bulkT = document.getElementById('noteBulkModeToggle');
+    if (bulkT) bulkT.checked = false;
     renderNotesList();
     renderReader();
+    applyComposerUIMode();
     return;
   }
   currentUid = user.uid;
@@ -1441,9 +1588,12 @@ async function loadNotes() {
     if (currentNoteId && !notes.some(n => n.id === currentNoteId)) {
       currentNoteId = null;
     }
-    if (!currentNoteId && notes.length) currentNoteId = notes[0].id;
+    if (!currentNoteId && notes.length && !isDraftNote) {
+      currentNoteId = notes[0].id;
+    }
     renderNotesList();
     syncComposerToCurrent();
+    applyComposerUIMode();
     renderReader();
   } catch (err) {
     setComposerStatus('Error loading notes: ' + err.message, true);
@@ -1477,6 +1627,7 @@ function buildNotesFolderTree(notesList) {
 
 function renderNotesTreeHtml(tree, depth, pathPrefix) {
   const padLeft = 14 + depth * 12;
+  const showChecks = bulkSelectMode;
   const folderNames = [...tree.folders.keys()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
   const sortedNotes = [...tree.entries].sort((a, b) =>
     a.displayTitle.localeCompare(b.displayTitle, undefined, { sensitivity: 'base', numeric: true })
@@ -1498,92 +1649,378 @@ function renderNotesTreeHtml(tree, depth, pathPrefix) {
     html += '</div>';
   }
   for (const { note, displayTitle } of sortedNotes) {
-    const active = note.id === currentNoteId ? 'active' : '';
+    const active = note.id === currentNoteId && !isDraftNote ? 'active' : '';
     const fullTitle = note.title || 'Untitled note';
     const metaTitle = displayTitle !== fullTitle ? escHtml(fullTitle) + ' · ' : '';
-    html += `<button type="button" class="note-item ${active}" style="padding-left:${padLeft}px" onclick="selectNote('${escAttr(note.id)}')">
+    const checked = selectedNoteIds.has(note.id) ? 'checked' : '';
+    const row = showChecks
+      ? `<div class="note-item-row">
+      <label class="note-check-label" onclick="event.stopPropagation()">
+        <input type="checkbox" ${checked} aria-label="Select ${escAttr(displayTitle)}" onchange="toggleNoteSelected('${escAttr(note.id)}')">
+      </label>
+      <button type="button" class="note-item ${active}" style="padding-left:${padLeft}px" onclick="selectNote('${escAttr(note.id)}')">
+        <div class="note-title">${escHtml(displayTitle)}</div>
+        <div class="note-meta">${metaTitle}${formatDate(note.updatedAt)} · ${countHeadings(note.markdown || '')} headings</div>
+      </button>
+    </div>`
+      : `<button type="button" class="note-item ${active}" style="padding-left:${padLeft}px" onclick="selectNote('${escAttr(note.id)}')">
       <div class="note-title">${escHtml(displayTitle)}</div>
       <div class="note-meta">${metaTitle}${formatDate(note.updatedAt)} · ${countHeadings(note.markdown || '')} headings</div>
     </button>`;
+    html += row;
   }
   return html;
 }
 
+function updateNoteBulkBar() {
+  const bar = document.getElementById('noteBulkBar');
+  const countEl = document.getElementById('noteBulkCount');
+  if (!bar || !countEl) return;
+  const n = selectedNoteIds.size;
+  countEl.textContent = n === 1 ? '1 note selected' : `${n} notes selected`;
+  const show = bulkSelectMode || n > 0;
+  bar.classList.toggle('hidden', !show);
+}
+
+function onBulkModeChange() {
+  const t = document.getElementById('noteBulkModeToggle');
+  bulkSelectMode = !!(t && t.checked);
+  if (!bulkSelectMode) selectedNoteIds.clear();
+  renderNotesList();
+  updateNoteBulkBar();
+}
+
+function toggleNoteSelected(noteId) {
+  if (selectedNoteIds.has(noteId)) selectedNoteIds.delete(noteId);
+  else selectedNoteIds.add(noteId);
+  updateNoteBulkBar();
+}
+
+function bulkSelectAllNotes() {
+  notes.forEach(n => selectedNoteIds.add(n.id));
+  renderNotesList();
+  updateNoteBulkBar();
+}
+
+function bulkClearNoteSelection() {
+  selectedNoteIds.clear();
+  renderNotesList();
+  updateNoteBulkBar();
+}
+
+async function bulkMoveSelectedNotes() {
+  const ids = [...selectedNoteIds];
+  if (!ids.length) {
+    setComposerStatus('No notes selected.', true);
+    return;
+  }
+  if (!currentUid) {
+    setComposerStatus('Sign in to move notes.', true);
+    return;
+  }
+  const parent = normalizeNoteTitlePath(document.getElementById('bulkMoveFolderInput').value.trim());
+  setComposerStatus('Moving notes...');
+  try {
+    const CHUNK = 400;
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const slice = ids.slice(i, i + CHUNK);
+      const batch = db.batch();
+      for (const id of slice) {
+        const note = notes.find(n => n.id === id);
+        if (!note) continue;
+        const parts = splitNoteTitlePath(note.title);
+        const base = parts.length ? parts[parts.length - 1] : 'Untitled note';
+        const newTitle = parent ? normalizeNoteTitlePath(`${parent}/${base}`) : base;
+        batch.update(notesCollection().doc(id), {
+          title: newTitle,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        note.title = newTitle;
+        note.updatedAt = { toDate: () => new Date() };
+      }
+      await batch.commit();
+    }
+    setComposerStatus(`Moved ${ids.length} note${ids.length === 1 ? '' : 's'}.`);
+    selectedNoteIds.clear();
+    renderNotesList();
+    syncComposerToCurrent();
+    renderReader();
+    updateNoteBulkBar();
+  } catch (err) {
+    setComposerStatus('Move failed: ' + err.message, true);
+    await loadNotes();
+  }
+}
+
+async function bulkDeleteSelectedNotes() {
+  const ids = [...selectedNoteIds];
+  if (!ids.length) {
+    setComposerStatus('No notes selected.', true);
+    return;
+  }
+  if (!window.confirm(`Delete ${ids.length} note${ids.length === 1 ? '' : 's'}? This cannot be undone.`)) return;
+  if (!currentUid) {
+    setComposerStatus('Sign in to delete notes.', true);
+    return;
+  }
+  setComposerStatus('Deleting...');
+  try {
+    const CHUNK = 400;
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const slice = ids.slice(i, i + CHUNK);
+      const batch = db.batch();
+      for (const id of slice) {
+        batch.delete(notesCollection().doc(id));
+      }
+      await batch.commit();
+    }
+    notes = notes.filter(n => !ids.includes(n.id));
+    selectedNoteIds.clear();
+    if (currentNoteId && ids.includes(currentNoteId)) {
+      currentNoteId = notes.length ? notes[0].id : null;
+      if (!currentNoteId) isDraftNote = false;
+    }
+    setComposerStatus('Deleted.');
+    renderNotesList();
+    syncComposerToCurrent();
+    applyComposerUIMode();
+    renderReader();
+    updateNoteBulkBar();
+  } catch (err) {
+    setComposerStatus('Delete failed: ' + err.message, true);
+    await loadNotes();
+  }
+}
+
 function renderNotesList() {
   const list = document.getElementById('noteList');
-  if (!notes.length) {
-    list.innerHTML = '<div class="empty-list">No notes yet.</div>';
+  updateNoteBulkBar();
+  if (!notes.length && !isDraftNote) {
+    list.innerHTML = '<div class="empty-list">No notes yet. Use New note or Import.</div>';
+    return;
+  }
+  if (!notes.length && isDraftNote) {
+    list.innerHTML = '<div class="empty-list">No saved notes yet. Save your draft to list it here.</div>';
     return;
   }
   const tree = buildNotesFolderTree(notes);
   list.innerHTML = renderNotesTreeHtml(tree, 0, '');
 }
 
+function isDraftDirty() {
+  const t = document.getElementById('noteTitle').value.trim();
+  const m = document.getElementById('noteMarkdown').value.trim();
+  return t.length > 0 || m.length > 0;
+}
+
+function isSavedEditDirty() {
+  const n = getPersistedNote();
+  if (!n || !composerEditMode) return false;
+  return (
+    document.getElementById('noteTitle').value !== (n.title || '') ||
+    document.getElementById('noteMarkdown').value !== (n.markdown || '')
+  );
+}
+
 function selectNote(noteId) {
+  if (composerEditMode && isSavedEditDirty()) {
+    if (!window.confirm('Discard unsaved edits and open this note?')) return;
+  }
+  if (isDraftNote && isDraftDirty()) {
+    if (!window.confirm('Discard unsaved draft and open this note?')) return;
+  }
+  isDraftNote = false;
+  composerEditMode = false;
   currentNoteId = noteId;
   readerTileSearchQuery = null;
   readerTileSearchAllNotes = false;
   renderNotesList();
   syncComposerToCurrent();
+  applyComposerUIMode();
   renderReader();
   if (window.innerWidth <= 1000) closeSidebar();
 }
 
-function getCurrentNote() {
+function getPersistedNote() {
   return notes.find(n => n.id === currentNoteId) || null;
+}
+
+function getCurrentNote() {
+  if (isDraftNote) {
+    const titleEl = document.getElementById('noteTitle');
+    const mdEl = document.getElementById('noteMarkdown');
+    const title = titleEl ? titleEl.value : '';
+    const markdown = mdEl ? mdEl.value : '';
+    const parsed = parseMarkdownHierarchy(markdown);
+    const markedHeadingIds = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
+    return { id: null, title, markdown, markedHeadingIds, isDraft: true };
+  }
+  return getPersistedNote();
 }
 
 function syncComposerToCurrent() {
   if (suppressComposerWrite) return;
-  const note = getCurrentNote();
-  if (!note) return;
-  document.getElementById('noteTitle').value = note.title || '';
-  document.getElementById('noteMarkdown').value = note.markdown || '';
+  if (isDraftNote) return;
+  const note = getPersistedNote();
+  const titleEl = document.getElementById('noteTitle');
+  const mdEl = document.getElementById('noteMarkdown');
+  if (!note) {
+    titleEl.value = '';
+    mdEl.value = '';
+    return;
+  }
+  titleEl.value = note.title || '';
+  mdEl.value = note.markdown || '';
 }
 
-function setComposerStatus(msg, isErr = false) {
-  const el = document.getElementById('composerStatus');
-  el.textContent = msg || '';
-  el.style.color = isErr ? '#991b1b' : 'var(--text-3)';
+function applyComposerUIMode() {
+  const titleEl = document.getElementById('noteTitle');
+  const mdEl = document.getElementById('noteMarkdown');
+  const btnSave = document.getElementById('btnSaveNote');
+  const btnNew = document.getElementById('btnNewNote');
+  const btnEdit = document.getElementById('btnEditNote');
+  const btnCancel = document.getElementById('btnCancelEdit');
+  const btnDiscard = document.getElementById('btnDiscardDraft');
+  const btnDel = document.getElementById('btnDeleteNote');
+  if (!titleEl || !mdEl || !btnSave) return;
+
+  const show = (el, on) => {
+    if (!el) return;
+    el.classList.toggle('is-hidden', !on);
+  };
+
+  if (isDraftNote) {
+    titleEl.readOnly = false;
+    mdEl.readOnly = false;
+    btnSave.textContent = 'Save note';
+    show(btnSave, true);
+    show(btnNew, true);
+    show(btnEdit, false);
+    show(btnCancel, false);
+    show(btnDiscard, true);
+    show(btnDel, false);
+    return;
+  }
+
+  const persisted = getPersistedNote();
+  if (!persisted) {
+    titleEl.readOnly = true;
+    mdEl.readOnly = true;
+    btnSave.textContent = 'Save';
+    show(btnSave, false);
+    show(btnNew, true);
+    show(btnEdit, false);
+    show(btnCancel, false);
+    show(btnDiscard, false);
+    show(btnDel, false);
+    return;
+  }
+
+  if (composerEditMode) {
+    titleEl.readOnly = false;
+    mdEl.readOnly = false;
+    btnSave.textContent = 'Save changes';
+    show(btnSave, true);
+    show(btnNew, true);
+    show(btnEdit, false);
+    show(btnCancel, true);
+    show(btnDiscard, false);
+    show(btnDel, true);
+  } else {
+    titleEl.readOnly = true;
+    mdEl.readOnly = true;
+    btnSave.textContent = 'Save';
+    show(btnSave, false);
+    show(btnNew, true);
+    show(btnEdit, true);
+    show(btnCancel, false);
+    show(btnDiscard, false);
+    show(btnDel, false);
+  }
 }
 
-async function createNoteDocument(title, markdown) {
-  const parsed = parseMarkdownHierarchy(markdown);
-  const markedHeadingIds = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
-  return notesCollection().add({
-    title,
-    markdown,
-    markedHeadingIds,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+function startNewNote() {
+  if (isDraftNote) {
+    if (isDraftDirty() && !window.confirm('Replace the current draft with a new empty note?')) return;
+  } else if (composerEditMode && isSavedEditDirty()) {
+    if (!window.confirm('Discard unsaved edits and start a new note?')) return;
+  }
+  isDraftNote = true;
+  composerEditMode = false;
+  currentNoteId = null;
+  readerTileSearchQuery = null;
+  readerTileSearchAllNotes = false;
+  document.getElementById('noteTitle').value = '';
+  document.getElementById('noteMarkdown').value = '';
+  applyComposerUIMode();
+  renderNotesList();
+  renderReader();
+  setComposerStatus('New draft — edit below, then Save note.');
+}
+
+function discardDraft() {
+  if (!isDraftNote) return;
+  if (isDraftDirty() && !window.confirm('Discard this draft?')) return;
+  isDraftNote = false;
+  currentNoteId = notes.length ? notes[0].id : null;
+  syncComposerToCurrent();
+  applyComposerUIMode();
+  renderNotesList();
+  renderReader();
+  setComposerStatus('');
+}
+
+function startComposerEdit() {
+  if (!getPersistedNote()) return;
+  composerEditMode = true;
+  applyComposerUIMode();
+}
+
+function cancelComposerEdit() {
+  composerEditMode = false;
+  syncComposerToCurrent();
+  applyComposerUIMode();
+}
+
+function onComposerInput() {
+  if (!isDraftNote) return;
+  if (draftRenderRaf) cancelAnimationFrame(draftRenderRaf);
+  draftRenderRaf = requestAnimationFrame(() => {
+    draftRenderRaf = null;
+    renderReader();
   });
 }
 
-async function createNote() {
-  const titleInput = document.getElementById('noteTitle').value.trim();
-  const markdown = document.getElementById('noteMarkdown').value;
-  if (!markdown.trim()) {
-    setComposerStatus('Markdown is empty.', true);
+async function saveNote() {
+  if (isDraftNote) {
+    const titleInput = document.getElementById('noteTitle').value.trim();
+    const markdown = document.getElementById('noteMarkdown').value;
+    if (!markdown.trim()) {
+      setComposerStatus('Markdown is empty.', true);
+      return;
+    }
+    const title = titleInput || deriveTitleFromMarkdown(markdown);
+    setComposerStatus('Saving new note...');
+    try {
+      const ref = await createNoteDocument(title, markdown);
+      isDraftNote = false;
+      composerEditMode = false;
+      setComposerStatus('Saved.');
+      await loadNotes();
+      currentNoteId = ref.id;
+      renderNotesList();
+      syncComposerToCurrent();
+      applyComposerUIMode();
+      renderReader();
+    } catch (err) {
+      setComposerStatus('Save failed: ' + err.message, true);
+    }
     return;
   }
-  const title = titleInput || deriveTitleFromMarkdown(markdown);
-  setComposerStatus('Creating note...');
-  try {
-    const ref = await createNoteDocument(title, markdown);
-    setComposerStatus('Created.');
-    await loadNotes();
-    currentNoteId = ref.id;
-    renderNotesList();
-    renderReader();
-  } catch (err) {
-    setComposerStatus('Create failed: ' + err.message, true);
-  }
-}
 
-async function saveCurrentNote() {
-  const note = getCurrentNote();
+  const note = getPersistedNote();
   if (!note) {
-    setComposerStatus('Select a note first.', true);
+    setComposerStatus('Select a saved note or start a new draft.', true);
     return;
   }
   const titleInput = document.getElementById('noteTitle').value.trim();
@@ -1604,6 +2041,7 @@ async function saveCurrentNote() {
       markedHeadingIds: filteredMarked,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
+    composerEditMode = false;
     setComposerStatus('Saved.');
     const localNote = notes.find(n => n.id === note.id);
     if (localNote) {
@@ -1612,6 +2050,7 @@ async function saveCurrentNote() {
       localNote.markedHeadingIds = filteredMarked;
       localNote.updatedAt = { toDate: () => new Date() };
     }
+    applyComposerUIMode();
     renderNotesList();
     renderReader();
   } catch (err) {
@@ -1619,10 +2058,28 @@ async function saveCurrentNote() {
   }
 }
 
+function setComposerStatus(msg, isErr = false) {
+  const el = document.getElementById('composerStatus');
+  el.textContent = msg || '';
+  el.style.color = isErr ? '#991b1b' : 'var(--text-3)';
+}
+
+async function createNoteDocument(title, markdown) {
+  const parsed = parseMarkdownHierarchy(markdown);
+  const markedHeadingIds = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
+  return notesCollection().add({
+    title,
+    markdown,
+    markedHeadingIds,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
 async function deleteCurrentNote() {
-  const note = getCurrentNote();
+  const note = getPersistedNote();
   if (!note) {
-    setComposerStatus('Select a note first.', true);
+    setComposerStatus('Select a saved note to delete.', true);
     return;
   }
   const ok = window.confirm(`Delete "${note.title || 'Untitled note'}"?`);
@@ -1631,10 +2088,13 @@ async function deleteCurrentNote() {
   try {
     await notesCollection().doc(note.id).delete();
     notes = notes.filter(n => n.id !== note.id);
+    composerEditMode = false;
     currentNoteId = notes.length ? notes[0].id : null;
+    if (!currentNoteId) isDraftNote = false;
     setComposerStatus('Deleted.');
     renderNotesList();
     syncComposerToCurrent();
+    applyComposerUIMode();
     renderReader();
   } catch (err) {
     setComposerStatus('Delete failed: ' + err.message, true);
@@ -1758,10 +2218,16 @@ function bulkImportOpenSingleInEditor() {
   const useFolder = document.getElementById('bulkImportUseFolder').checked;
   let folderSeg = normalizeNoteTitlePath(document.getElementById('bulkImportFolderName').value.trim());
   const fullTitle = useFolder && folderSeg ? normalizeNoteTitlePath(`${folderSeg}/${titlePart}`) : titlePart;
+  closeBulkImportModal();
+  isDraftNote = true;
+  composerEditMode = false;
+  currentNoteId = null;
   document.getElementById('noteTitle').value = fullTitle;
   document.getElementById('noteMarkdown').value = row.markdown;
-  closeBulkImportModal();
-  setComposerStatus('Review in editor, then click Create note.');
+  applyComposerUIMode();
+  renderNotesList();
+  renderReader();
+  setComposerStatus('Review below, then Save note.');
 }
 
 function bulkImportUseFilenameTitle(rowId) {
@@ -1875,12 +2341,15 @@ async function confirmBulkImport() {
   progressEl.classList.add('hidden');
   confirmBtn.disabled = false;
   closeBulkImportModal();
+  isDraftNote = false;
+  composerEditMode = false;
   await loadNotes();
   if (firstNewId) {
     currentNoteId = firstNewId;
   }
   renderNotesList();
   syncComposerToCurrent();
+  applyComposerUIMode();
   renderReader();
   let msg = `Imported ${ok} note${ok === 1 ? '' : 's'}.`;
   if (skipped) msg += ` Skipped ${skipped} empty.`;
@@ -2239,7 +2708,8 @@ function renderReader() {
   for (const legacyId of legacyMarked) markedSet.add(legacyId);
   renderedMarkedCount = allNodes.filter(n => markedSet.has(n.id)).length;
 
-  readerTitle.textContent = note.title || 'Untitled note';
+  readerTitle.textContent =
+    note.isDraft && !String(note.title || '').trim() ? 'New draft (unsaved)' : (note.title || 'Untitled note');
   tileChip.textContent = `${allNodes.length} tiles`;
   markedChip.textContent = `${renderedMarkedCount} marked`;
 
@@ -2444,7 +2914,8 @@ function renderTile(node, markedSet, isMarkedOnly, isSearchFiltered, searchMatch
   const isMarked = markedSet.has(node.id);
   const isSearchMatch = isSearchFiltered && searchMatchSet.has(node.id);
   const markBtnClass = isMarked ? 'mark-btn marked' : 'mark-btn';
-  const tileClass = isMarked ? 'tile marked' : 'tile';
+  const hTier = Math.min(6, Math.max(1, Number(node.level) || 1));
+  const tileClass = `${isMarked ? 'tile marked' : 'tile'} tile-h${hTier}`;
   const isContextOnly =
     (isMarkedOnly && !isMarked && !isSearchFiltered) ||
     (isSearchFiltered && !isSearchMatch);
@@ -2455,6 +2926,10 @@ function renderTile(node, markedSet, isMarkedOnly, isSearchFiltered, searchMatch
       : 'null';
   const markBtn = `<button class="${markBtnClass}" onmousedown="startUnmark(event, '${escAttr(node.id)}', ${scopeNoteJs})" onmouseup="cancelUnmark('${escAttr(node.id)}', ${scopeNoteJs})" onmouseleave="cancelUnmark('${escAttr(node.id)}', ${scopeNoteJs})" ontouchstart="startUnmark(event, '${escAttr(node.id)}', ${scopeNoteJs})" ontouchend="cancelUnmark('${escAttr(node.id)}', ${scopeNoteJs})">${isMarked ? 'Marked' : 'Mark'}</button>`;
 
+  const childrenHtml = node.children.length
+    ? `<div class="tile-children tile-children-under-h${hTier}">${node.children.map(child => renderTile(child, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, tileScopeNoteId, searchHighlightQ)).join('')}</div>`
+    : '';
+
   return `<article class="${tileClass}${contextualAncestorClass}" id="${domTileId(node.id, tileScopeNoteId)}">
     <div class="tile-head">
       <span class="tile-level">H${node.level}</span>
@@ -2462,7 +2937,7 @@ function renderTile(node, markedSet, isMarkedOnly, isSearchFiltered, searchMatch
       ${markBtn}
     </div>
     ${contentHtml}
-    ${node.children.length ? `<div class="tile-children">${node.children.map(child => renderTile(child, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, tileScopeNoteId, searchHighlightQ)).join('')}</div>` : ''}
+    ${childrenHtml}
   </article>`;
 }
 
@@ -2518,20 +2993,21 @@ async function doMark(nodeId, scopeNoteId) {
   if (!note) return;
   const updatedMarkdown = updateHeadingMarkInMarkdown(note.markdown || '', nodeId, true);
   if (!updatedMarkdown) return;
-  note.markdown = updatedMarkdown;
-  if (note.id === currentNoteId) {
+  if (note.id) note.markdown = updatedMarkdown;
+  if (isDraftNote || note.id === currentNoteId) {
     const markdownEl = document.getElementById('noteMarkdown');
     if (markdownEl) markdownEl.value = updatedMarkdown;
   }
   const parsed = parseMarkdownHierarchy(updatedMarkdown);
   const markedHeadingIds = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
-  note.markedHeadingIds = markedHeadingIds;
+  if (note.id) note.markedHeadingIds = markedHeadingIds;
   renderReader();
   const tile = document.getElementById(domTileId(nodeId, scopeNoteId || undefined));
   if (tile) {
     tile.classList.add('mark-sweep');
     setTimeout(() => tile.classList.remove('mark-sweep'), 750);
   }
+  if (!note.id) return;
   try {
     await notesCollection().doc(note.id).update({
       markdown: updatedMarkdown,
@@ -2548,15 +3024,16 @@ async function doUnmark(nodeId, scopeNoteId) {
   if (!note) return;
   const updatedMarkdown = updateHeadingMarkInMarkdown(note.markdown || '', nodeId, false);
   if (!updatedMarkdown) return;
-  note.markdown = updatedMarkdown;
-  if (note.id === currentNoteId) {
+  if (note.id) note.markdown = updatedMarkdown;
+  if (isDraftNote || note.id === currentNoteId) {
     const markdownEl = document.getElementById('noteMarkdown');
     if (markdownEl) markdownEl.value = updatedMarkdown;
   }
   const parsed = parseMarkdownHierarchy(updatedMarkdown);
   const markedHeadingIds = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
-  note.markedHeadingIds = markedHeadingIds;
+  if (note.id) note.markedHeadingIds = markedHeadingIds;
   renderReader();
+  if (!note.id) return;
   try {
     await notesCollection().doc(note.id).update({
       markdown: updatedMarkdown,
