@@ -252,6 +252,17 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
         </div>
       </div>
 
+      <label class="form-group" style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:10px;">
+        <input type="checkbox" id="chkGenTopics" checked style="width:18px;height:18px;" />
+        <span style="font-size:.88rem;color:var(--text-2);">After save, generate AI topic tags (pick API below)</span>
+      </label>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label" for="selTopicProviderUpload">Topic-tag API</label>
+        <select class="sel" id="selTopicProviderUpload" style="width:100%;max-width:360px;">
+          <option value="openai">OpenAI — gpt-4o-mini</option>
+          <option value="gemini">Google Gemini — gemini-2.5-flash</option>
+        </select>
+      </div>
       <button class="btn btn-primary" id="uploadBtn" onclick="doUpload()" disabled>Save to Firestore →</button>
       <div class="status" id="uploadStatus"></div>
     </div>
@@ -277,6 +288,26 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
     </div>
   </div>
   <div class="credit">made by Zi Lin</div>
+</div>
+
+<!-- Generate topic tags (choose API) -->
+<div class="modal-bg" id="topicGenBg">
+  <div class="modal">
+    <div class="modal-title">Generate topic pills</div>
+    <div class="modal-body">Choose which API to use for this quiz. Each provider needs its own Cloud Function secret (<code style="font-family:var(--font-mono);font-size:.78em;">OPENAI_API_KEY</code> or <code style="font-family:var(--font-mono);font-size:.78em;">GEMINI_API_KEY</code>).</div>
+    <div class="modal-fg" style="margin-bottom:14px;">
+      <label class="form-label" for="topicGenProvider">API</label>
+      <select class="sel" id="topicGenProvider" style="width:100%;">
+        <option value="openai">OpenAI — gpt-4o-mini</option>
+        <option value="gemini">Google Gemini — gemini-2.5-flash</option>
+      </select>
+    </div>
+    <div class="status" id="topicGenStatus" style="margin-top:0;margin-bottom:12px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" type="button" onclick="closeTopicGenModal()">Cancel</button>
+      <button class="btn btn-primary" type="button" id="topicGenOK" onclick="executeTopicGen()">Generate</button>
+    </div>
+  </div>
 </div>
 
 <!-- Confirm delete modal -->
@@ -365,6 +396,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script>
 firebase.initializeApp({
   apiKey:            'AIzaSyCNnvrEli5lzU3sUFvttTsQPIYQXYK1_WE',
@@ -376,6 +408,7 @@ firebase.initializeApp({
 });
 const auth = firebase.auth();
 const db   = firebase.firestore();
+const functions = firebase.functions();
 const provider = new firebase.auth.GoogleAuthProvider();
 
 // ── State ──────────────────────────────────────────────────────────────────────
@@ -383,6 +416,7 @@ let allMeta     = []; // { id, section, week, topic, name, questionCount }
 let newVals     = { week: '', topic: '' };
 let editNewVals = { week: '', topic: '' };
 let pendingDel  = null;
+let pendingTopicGenQuizId = null;
 let renameTarget = null;
 let pendingEdit  = null;
 let currentManageSection = 'Surgery';
@@ -595,6 +629,12 @@ function extractFromFlatArray(arr) {
     return { stem: cleanMath(q.question || q.stem || ''), options, correct, rationales, hint: cleanMath(q.hint || ''), part: q.part || 1 };
   });
 }
+async function generateTopicTagsForQuiz(quizId, provider) {
+  const name = provider === 'gemini' ? 'generateTopicTagsGemini' : 'generateTopicTagsOpenAI';
+  const fn = functions.httpsCallable(name, { timeout: 300000 });
+  return fn({ quizId });
+}
+
 async function extractFile(file) {
   const text = await file.text();
   const name = file.name.toLowerCase();
@@ -636,8 +676,20 @@ async function doUpload() {
     // Write questions subcollection
     await quizRef.collection('data').doc('questions').set({ questions: extractedQuestions });
 
+    let topicMsg = '';
+    if (document.getElementById('chkGenTopics').checked) {
+      const provider = document.getElementById('selTopicProviderUpload').value;
+      setStatus('uploadStatus', 'inf', `Generating AI topic tags for "${title}"…`);
+      try {
+        await generateTopicTagsForQuiz(quizRef.id, provider);
+        topicMsg = ' · AI topic tags generated.';
+      } catch (te) {
+        topicMsg = ` · Topic tags failed: ${formatFunctionsError(te)}`;
+      }
+    }
+
     setStatus('uploadStatus', 'ok',
-      `✅ Saved "${title}" (${extractedQuestions.length} questions) — ID: ${quizRef.id}`);
+      `✅ Saved "${title}" (${extractedQuestions.length} questions) — ID: ${quizRef.id}${topicMsg}`);
 
     // Update local cache
     allMeta.push({ id: quizRef.id, section, week, topic, name, questionCount: extractedQuestions.length });
@@ -728,6 +780,7 @@ function renderManageList() {
                 </div>
               </div>
               <div class="quiz-row-actions">
+                <button class="btn btn-ghost btn-sm" onclick="openTopicGenModal('${escAttr(id)}')">🏷 Topics</button>
                 <button class="btn btn-warn btn-sm" onclick="openEditModal('${escAttr(id)}','${escAttr(currentManageSection)}','${escAttr(week)}','${escAttr(topic)}','${escAttr(name)}')">✏ Edit</button>
                 <button class="btn btn-danger btn-sm" onclick="confirmDel('${escAttr(id)}','${escAttr(name)}')">Delete</button>
               </div>
@@ -750,10 +803,44 @@ function confirmDel(quizId, name) {
   document.getElementById('confirmBg').classList.add('open');
 }
 function closeModal() { document.getElementById('confirmBg').classList.remove('open'); pendingDel = null; }
+function openTopicGenModal(quizId) {
+  pendingTopicGenQuizId = quizId;
+  const uploadSel = document.getElementById('selTopicProviderUpload');
+  const modalSel = document.getElementById('topicGenProvider');
+  if (uploadSel && modalSel) modalSel.value = uploadSel.value;
+  hideStatus('topicGenStatus');
+  document.getElementById('topicGenOK').disabled = false;
+  document.getElementById('topicGenBg').classList.add('open');
+}
+
+function closeTopicGenModal() {
+  document.getElementById('topicGenBg').classList.remove('open');
+  pendingTopicGenQuizId = null;
+}
+
+async function executeTopicGen() {
+  const quizId = pendingTopicGenQuizId;
+  if (!quizId) return;
+  const provider = document.getElementById('topicGenProvider').value;
+  const okBtn = document.getElementById('topicGenOK');
+  okBtn.disabled = true;
+  setStatus('topicGenStatus', 'inf', 'Generating…');
+  try {
+    await generateTopicTagsForQuiz(quizId, provider);
+    setStatus('topicGenStatus', 'ok', '✅ Topic tags updated.');
+    setStatus('manageStatus', 'ok', '✅ Topic tags updated.');
+    closeTopicGenModal();
+  } catch (e) {
+    setStatus('topicGenStatus', 'err', `❌ ${formatFunctionsError(e)}`);
+  }
+  okBtn.disabled = false;
+}
+
 async function executeDel() {
   const quizId = pendingDel; closeModal();
   setStatus('manageStatus', 'inf', `Deleting…`);
   try {
+    await db.collection('quizzes').doc(quizId).collection('data').doc('topicTags').delete().catch(() => {});
     await db.collection('quizzes').doc(quizId).collection('data').doc('questions').delete();
     await db.collection('quizzes').doc(quizId).delete();
     allMeta = allMeta.filter(m => m.id !== quizId);
@@ -955,6 +1042,23 @@ function switchTab(tab) {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+/** Surfaces Firebase callable errors (including failed-precondition messages from Cloud Functions). */
+function formatFunctionsError(e) {
+  if (!e) return 'Unknown error';
+  console.error('Callable error (full):', e);
+  let m = e.message || String(e);
+  if (e.details != null) {
+    const d = typeof e.details === 'string' ? e.details : JSON.stringify(e.details);
+    if (d && !m.includes(d.slice(0, 80))) m += ' — ' + d;
+  }
+  if (e.customData != null) {
+    const c = typeof e.customData === 'string' ? e.customData : JSON.stringify(e.customData);
+    if (c && c !== '{}') m += ' — ' + c;
+  }
+  if (e.code && !m.includes(String(e.code))) m += ` (${e.code})`;
+  return m;
+}
+
 function weekSortKey(w) { const m = w.match(/(\d+)/); return m ? parseInt(m[1]) : 9999; }
 
 function setStatus(id, type, msg) {

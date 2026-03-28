@@ -471,7 +471,7 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
 <div id="topicModalOverlay" class="topic-modal-overlay hidden" aria-modal="true" role="dialog" aria-labelledby="topicModalTitle">
   <div class="topic-modal">
     <h2 id="topicModalTitle">Topic pills</h2>
-    <p>Show clickable topic tags in the sidebar to filter questions by keywords extracted from stems, options, and rationales. No data is sent to a server beyond this quiz’s text.</p>
+    <p id="topicModalBlurb">Show clickable topic tags in the sidebar. If this quiz has <strong>AI topics</strong> (generated in admin), you can use clinically meaningful labels. Otherwise tags are derived locally from stems, options, and rationales — no extra data is sent when you study.</p>
     <div class="topic-modal-field">
       <label>Show topic pills in the sidebar</label>
       <label class="inline"><input type="radio" name="topicShow" id="topicShowY" value="yes" checked /> Yes</label>
@@ -479,6 +479,7 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
     </div>
     <div class="topic-modal-field" id="topicAlgoField">
       <label>Algorithm for tags</label>
+      <label class="inline" id="topicAlgoStoredWrap" style="display:none;"><input type="radio" name="topicAlgo" value="stored" /> AI topics (curated)</label>
       <label class="inline"><input type="radio" name="topicAlgo" value="tfidf" checked /> Weighted TF–IDF (words + phrases)</label>
       <label class="inline"><input type="radio" name="topicAlgo" value="rake" /> RAKE-style phrases</label>
       <label class="inline"><input type="radio" name="topicAlgo" value="search" /> MiniSearch (index + TF–IDF tags)</label>
@@ -688,6 +689,8 @@ let topicPrefs = { showTopics: false, algorithm: 'tfidf' };
 let topicFilterActive = null;
 let topicPillData = { pills: [], map: new Map() };
 let topicMiniSearch = null;
+/** @type {null | { pills: string[], pillsMap: Record<string, number[]>, model?: string }} */
+let topicTagsDoc = null;
 let topicSearchHitIndices = null;
 let _topicPendingFinish = null;
 
@@ -975,11 +978,43 @@ function topicSavePrefs(prefs) {
   } catch {}
 }
 
+function topicAiTagsAvailable() {
+  return !!(topicTagsDoc && Array.isArray(topicTagsDoc.pills) && topicTagsDoc.pills.length);
+}
+
+function topicEffectiveAlgorithm() {
+  let a = topicPrefs.algorithm;
+  if (a === 'stored' && !topicAiTagsAvailable()) a = 'tfidf';
+  return a;
+}
+
+function topicBuildFromStored(doc) {
+  const pills = doc.pills || [];
+  const rawMap = doc.pillsMap || {};
+  const map = new Map();
+  for (const label of pills) {
+    const arr = rawMap[label];
+    if (!Array.isArray(arr)) continue;
+    const set = new Set();
+    arr.forEach((i) => {
+      const n = typeof i === 'number' ? i : parseInt(i, 10);
+      if (Number.isFinite(n) && n >= 0 && n < QUESTIONS.length) set.add(n);
+    });
+    if (set.size) map.set(label, set);
+  }
+  const filteredPills = pills.filter((l) => map.has(l));
+  return { pills: filteredPills, map };
+}
+
 function topicBuildModel() {
   topicMiniSearch = null;
+  const eff = topicEffectiveAlgorithm();
   let data;
-  if (topicPrefs.algorithm === 'rake') data = topicBuildRakePills();
-  else if (topicPrefs.algorithm === 'search') data = topicBuildMiniSearchPills();
+  if (eff === 'stored' && topicTagsDoc) {
+    data = topicBuildFromStored(topicTagsDoc);
+    if (!data.pills.length) data = topicBuildTfIdfPills();
+  } else if (eff === 'rake') data = topicBuildRakePills();
+  else if (eff === 'search') data = topicBuildMiniSearchPills();
   else data = topicBuildTfIdfPills();
   topicPillData = data;
 }
@@ -1001,9 +1036,13 @@ function topicRenderPills() {
     btn.onclick = () => topicOnPillClick(label);
     row.appendChild(btn);
   });
-  const algoLabel = topicPrefs.algorithm === 'rake' ? 'RAKE' : topicPrefs.algorithm === 'search' ? 'MiniSearch' : 'TF–IDF';
+  const eff = topicEffectiveAlgorithm();
+  const algoLabel =
+    eff === 'stored' ? 'AI topics' :
+    eff === 'rake' ? 'RAKE' :
+    eff === 'search' ? 'MiniSearch' : 'TF–IDF';
   meta.textContent = `${algoLabel} · ${topicPillData.pills.length} tags`;
-  const showSearch = topicPrefs.algorithm === 'search' && topicMiniSearch;
+  const showSearch = eff === 'search' && topicMiniSearch;
   if (searchWrap) searchWrap.style.display = showSearch ? 'block' : 'none';
   wrap.classList.add('visible');
 }
@@ -1097,11 +1136,23 @@ function topicOpenModal(isSettings, onDone) {
   const showY = document.getElementById('topicShowY');
   const showN = document.getElementById('topicShowN');
   const algoField = document.getElementById('topicAlgoField');
+  const storedWrap = document.getElementById('topicAlgoStoredWrap');
+  const aiAvail = topicAiTagsAvailable();
+  if (storedWrap) storedWrap.style.display = aiAvail ? '' : 'none';
+
   if (isSettings && topicPrefs) {
     if (topicPrefs.showTopics) { showY.checked = true; showN.checked = false; }
     else { showN.checked = true; showY.checked = false; }
+    let algo = topicPrefs.algorithm;
+    if (algo === 'stored' && !aiAvail) algo = 'tfidf';
     document.querySelectorAll('input[name="topicAlgo"]').forEach((r) => {
-      r.checked = r.value === topicPrefs.algorithm;
+      r.checked = r.value === algo;
+    });
+  } else if (!isSettings) {
+    showY.checked = true;
+    showN.checked = false;
+    document.querySelectorAll('input[name="topicAlgo"]').forEach((r) => {
+      r.checked = aiAvail ? r.value === 'stored' : r.value === 'tfidf';
     });
   }
   algoField.style.display = showY.checked ? 'block' : 'none';
@@ -1120,7 +1171,8 @@ function topicCloseModal() {
 function topicConfirmModal() {
   const show = document.getElementById('topicShowY').checked;
   const algoEl = document.querySelector('input[name="topicAlgo"]:checked');
-  const algorithm = algoEl ? algoEl.value : 'tfidf';
+  let algorithm = algoEl ? algoEl.value : 'tfidf';
+  if (algorithm === 'stored' && !topicAiTagsAvailable()) algorithm = 'tfidf';
   topicPrefs = { showTopics: show, algorithm };
   topicSavePrefs(topicPrefs);
   topicFilterActive = null;
@@ -1154,7 +1206,7 @@ function topicInitModalHandlers() {
   const sl = document.getElementById('topicSuggestList');
   if (ts && sl) {
     ts.addEventListener('input', () => {
-      if (!topicMiniSearch || topicPrefs.algorithm !== 'search') return;
+      if (!topicMiniSearch || topicEffectiveAlgorithm() !== 'search') return;
       const q = ts.value.trim();
       sl.innerHTML = '';
       if (!q || q.length < 2) {
@@ -1192,7 +1244,7 @@ function topicInitModalHandlers() {
 }
 
 function topicFilterFromSearch(query) {
-  if (!topicMiniSearch || !query.trim()) return;
+  if (topicEffectiveAlgorithm() !== 'search' || !topicMiniSearch || !query.trim()) return;
   let hits;
   try {
     hits = topicMiniSearch.search(query.trim(), { combineWith: 'AND', prefix: true, fuzzy: 0.15 });
@@ -1255,37 +1307,13 @@ function showUI(visible) {
 }
 
 // ── Load quiz ─────────────────────────────────────────────────────────────────
-function isLocalDevHost() {
-  const h = location.hostname;
-  return h === 'localhost' || h === '127.0.0.1' || h === '[::1]';
-}
-
-async function resolveQuizIdIfMissing() {
-  const params = new URLSearchParams(location.search);
-  let id = params.get('id') || '';
-  if (id) return id;
-  if (!isLocalDevHost()) return '';
-  try {
-    const snap = await db.collection('quizzes').get();
-    if (snap.empty) return '';
-    const sorted = snap.docs.slice().sort((a, b) => {
-      const ta = (a.data().title || a.id || '').toString();
-      const tb = (b.data().title || b.id || '').toString();
-      return ta.localeCompare(tb, undefined, { sensitivity: 'base' });
-    });
-    id = sorted[0].id;
-    const u = new URL(location.href);
-    u.searchParams.set('id', id);
-    history.replaceState(null, '', u.pathname + u.search + u.hash);
-    return id;
-  } catch {
-    return '';
-  }
-}
-
 async function loadQuiz() {
-  QUIZ_ID = await resolveQuizIdIfMissing();
-  if (!QUIZ_ID) { showError('No quiz ID in URL. Open the quiz list and pick a quiz, or add ?id=… to the URL.'); return; }
+  const params = new URLSearchParams(location.search);
+  QUIZ_ID = params.get('id') || '';
+  if (!QUIZ_ID) {
+    location.replace(new URL('index.html', location.href).href);
+    return;
+  }
 
   try {
     document.getElementById('loadingScreen').classList.remove('hidden');
@@ -1294,9 +1322,13 @@ async function loadQuiz() {
     const meta = metaSnap.data();
     QUIZ_META = meta;
     
-    const qSnap = await db.collection('quizzes').doc(QUIZ_ID)
-      .collection('data').doc('questions').get();
+    const [qSnap, topicSnap] = await Promise.all([
+      db.collection('quizzes').doc(QUIZ_ID).collection('data').doc('questions').get(),
+      db.collection('quizzes').doc(QUIZ_ID).collection('data').doc('topicTags').get(),
+    ]);
     if (!qSnap.exists) { showError('Questions not found for this quiz.'); return; }
+
+    topicTagsDoc = topicSnap.exists ? topicSnap.data() : null;
 
     QUESTIONS = qSnap.data().questions || [];
     if (!QUESTIONS.length) { showError('This quiz has no questions.'); return; }

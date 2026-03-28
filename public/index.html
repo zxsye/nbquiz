@@ -518,8 +518,9 @@ function renderGrid(groups) {
       let pills = '';
       versions.forEach(q => {
         const safe = q.id.replace(/__/g, '_');
-        pills += `<div class="quiz-pill" data-quiz-id="${q.id}">
-          <a href="quiz.html?id=${encodeURIComponent(q.id)}" class="pill-link">
+        const quizQs = new URLSearchParams({ id: q.id }).toString();
+        pills += `<div class="quiz-pill" data-quiz-id="${escHtml(q.id)}">
+          <a href="/quiz.html?${quizQs}" class="pill-link">
             <span class="pill-name">${q.name}</span>
             <span class="pill-count">${q.questionCount}q</span>
           </a>
