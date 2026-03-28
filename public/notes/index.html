@@ -1536,12 +1536,12 @@ function bulkImportFillFirstHeading() {
 }
 
 async function handleFileImport(event) {
-  const files = event.target.files;
+  const fileArray = Array.from(event.target.files || []);
   event.target.value = '';
-  if (!files || !files.length) return;
+  if (!fileArray.length) return;
   try {
     const rows = [];
-    for (const file of files) {
+    for (const file of fileArray) {
       const text = await file.text();
       const inferredTitle = file.name.replace(/\.[^.]+$/, '').trim() || 'Untitled';
       rows.push({
