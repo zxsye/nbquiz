@@ -50,31 +50,16 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .home-btn { display: inline-flex; align-items: center; font-size: .8rem; font-weight: 500; color: var(--text-3); text-decoration: none; margin-bottom: 16px; transition: color var(--transition); }
 .home-btn:hover { color: var(--accent); }
 .sidebar-header { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-.q-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 8px; margin-bottom: 24px; }
-/* Desktop: only the question grid scrolls — avoids a sidebar scrollbar when topic pills are expanded */
-@media (min-width: 1001px) {
-  #qGrid {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    align-content: start;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  #qGrid::-webkit-scrollbar {
-    display: none;
-  }
-}
+.q-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 8px; margin-bottom: 24px; align-content: start; }
 .q-grid-item { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1.5px solid var(--border); font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; cursor: pointer; position: relative; color: var(--text-2); background: var(--bg); transition: all 0.2s; }
 .q-grid-item:hover { border-color: var(--text-3); }
 .q-grid-item.active  { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); color: var(--accent); }
 .q-grid-item.correct { background: var(--correct-bg); border-color: var(--correct-ring); color: var(--correct); }
 .q-grid-item.wrong   { background: var(--wrong-bg);   border-color: var(--wrong-ring);   color: var(--wrong); }
 .q-grid-item.skipped { background: var(--surface-2); border-color: var(--text-3); color: var(--text-2); opacity: .8; }
-.flag-icon { position: absolute; top: -6px; right: -6px; font-size: 12px; background: #fff; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,.2); display: none; width: 16px; height: 16px; align-items: center; justify-content: center; }
+.flag-icon { position: absolute; top: -6px; right: -6px; font-size: 12px; background: #fff; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,.2); display: none; width: 16px; height: 16px; align-items: center; justify-content: center; z-index: 2; }
 .q-grid-item.flagged .flag-icon { display: flex; }
-.note-icon { position: absolute; top: -5px; left: -5px; font-size: 9px; background: var(--accent-light); border: 1px solid var(--accent); border-radius: 50%; display: none; width: 14px; height: 14px; align-items: center; justify-content: center; }
+.note-icon { position: absolute; top: -5px; left: -5px; font-size: 9px; background: var(--accent-light); border: 1px solid var(--accent); border-radius: 50%; display: none; width: 14px; height: 14px; align-items: center; justify-content: center; z-index: 2; }
 .q-grid-item.has-note .note-icon { display: flex; }
 
 /* --- Sidebar --- */
@@ -105,6 +90,8 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .sidebar.collapsed .sidebar-toggle {
   transform: rotate(180deg);
 }
+/* Middle scrolls; Copy / Finish stay at bottom of sidebar and do not scroll with it. */
+/* Horizontal padding so .note-icon / .flag-icon (negative inset on .q-grid-item) stay inside the scrollport; overflow-x:hidden would otherwise clip them like an invisible edge. */
 .sidebar-content {
   padding: 24px;
   display: flex;
@@ -113,18 +100,32 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   min-height: 0;
   overflow: hidden;
 }
+.sidebar-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-left: 8px;
+  padding-right: 8px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  display: none;
+}
 .sidebar-footer-actions {
-  margin-top: auto;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+  background: var(--surface);
 }
 @media (min-width: 1001px) {
-  .sidebar-content > .home-btn,
-  .sidebar-content > .sidebar-header,
-  .sidebar-content > .mode-btn,
-  .sidebar-content > .topic-sidebar-controls,
-  .sidebar-content > .topic-pills-wrap,
   .sidebar-content > .sidebar-footer-actions {
     flex-shrink: 0;
   }
@@ -134,13 +135,22 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 }
 
 /* Collapsed Sidebar */
+/*
+ * quiz.html — Collapsed sidebar scrollbars: when .sidebar has .collapsed, the question
+ * strip (.collapsed-q-list) may still scroll (wheel / touch) but scrollbars must not
+ * show — same approach as .sidebar-scroll above (scrollbar-width / webkit). If you
+ * change overflow or flex here, re-check both axes and update MASTER_NOTES.md at repo root.
+ */
 .sidebar-collapsed-content {
   display: none;
   padding: 16px 0;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   flex-direction: column;
   align-items: center;
   gap: 12px;
+  overflow-x: hidden;
+  overflow-y: hidden;
 }
 .sidebar.collapsed .sidebar-collapsed-content {
   display: flex;
@@ -149,10 +159,18 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   width: 100%;
   align-items: center;
   padding: 0 12px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.collapsed-q-list::-webkit-scrollbar {
+  display: none;
 }
 .collapsed-q-item {
   width: 42px;
@@ -398,6 +416,11 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
     display: none;
   }
   .sidebar-content {
+    flex: none;
+    min-height: unset;
+    overflow: visible;
+  }
+  .sidebar-scroll {
     flex: none;
     min-height: unset;
     overflow: visible;
@@ -793,36 +816,38 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
   </button>
   <div class="sidebar-content">
-    <a href="/" class="home-btn">← Home</a>
-    <div class="sidebar-header">
-      <span>Quiz Status</span>
-      <span style="font-size:.8rem;color:var(--text-3);font-family:var(--font-mono);" id="sidebarCount">0/—</span>
-    </div>
-    <button class="mode-btn" id="hideModeBtn" onclick="toggleHideMode()">
-      <span class="mode-btn-label">🙈 Hide options</span>
-      <span class="mode-btn-switch"></span>
-    </button>
-    <div class="topic-sidebar-controls">
-      <button type="button" class="mode-btn" id="topicPillsToggleBtn" aria-pressed="false" aria-label="Show topic pills in sidebar">
-        <span class="mode-btn-label">🏷 Topic pills</span>
+    <div class="sidebar-scroll">
+      <a href="/" class="home-btn">← Home</a>
+      <div class="sidebar-header">
+        <span>Quiz Status</span>
+        <span style="font-size:.8rem;color:var(--text-3);font-family:var(--font-mono);" id="sidebarCount">0/—</span>
+      </div>
+      <button class="mode-btn" id="hideModeBtn" onclick="toggleHideMode()">
+        <span class="mode-btn-label">🙈 Hide options</span>
         <span class="mode-btn-switch"></span>
       </button>
-      <button type="button" class="topic-gear-btn" id="topicSettingsBtn" aria-label="Topic settings" title="Topic settings">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
-    </div>
-    <div id="topicPillsWrap" class="topic-pills-wrap">
-      <div class="topic-pills-toolbar">
-        <div class="topic-search-wrap" id="topicSearchWrap">
-          <input type="search" id="topicSearchInput" placeholder="Search topics…" autocomplete="off" aria-label="Search topics" />
-          <div id="topicSuggestList" class="topic-suggest-list" role="listbox"></div>
-        </div>
-        <button type="button" class="btn btn-ghost" id="topicClearBtn" style="padding:6px 12px;font-size:.78rem;border:1.5px solid var(--border);">Clear filter</button>
+      <div class="topic-sidebar-controls">
+        <button type="button" class="mode-btn" id="topicPillsToggleBtn" aria-pressed="false" aria-label="Show topic pills in sidebar">
+          <span class="mode-btn-label">🏷 Topic pills</span>
+          <span class="mode-btn-switch"></span>
+        </button>
+        <button type="button" class="topic-gear-btn" id="topicSettingsBtn" aria-label="Topic settings" title="Topic settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
       </div>
-      <div class="topic-pills-row" id="topicPillsRow" aria-label="Topic filters"></div>
-      <div class="topic-pills-meta" id="topicPillsMeta"></div>
+      <div id="topicPillsWrap" class="topic-pills-wrap">
+        <div class="topic-pills-toolbar">
+          <div class="topic-search-wrap" id="topicSearchWrap">
+            <input type="search" id="topicSearchInput" placeholder="Search topics…" autocomplete="off" aria-label="Search topics" />
+            <div id="topicSuggestList" class="topic-suggest-list" role="listbox"></div>
+          </div>
+          <button type="button" class="btn btn-ghost" id="topicClearBtn" style="padding:6px 12px;font-size:.78rem;border:1.5px solid var(--border);">Clear filter</button>
+        </div>
+        <div class="topic-pills-row" id="topicPillsRow" aria-label="Topic filters"></div>
+        <div class="topic-pills-meta" id="topicPillsMeta"></div>
+      </div>
+      <div class="q-grid" id="qGrid"></div>
     </div>
-    <div class="q-grid" id="qGrid"></div>
     <div class="sidebar-footer-actions">
       <button class="btn btn-ghost" id="sidebarCopyBtn" style="width:100%;border:1.5px solid var(--border);padding:8px;font-size:.85rem;" onclick="copySidebarResults()">📋 Copy Status</button>
       <button class="btn btn-primary" style="width:100%;margin-top:0;" onclick="showResults()">Finish Quiz</button>
@@ -876,8 +901,8 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
       <div class="options" id="options"></div>
     </div>
     <div class="note-wrap" id="noteWrap">
-      <div class="note-side-header">📝 Notes</div>
-      <button class="note-toggle" id="noteToggleBtn" onclick="toggleNote()">📝 Add note</button>
+      <div class="note-side-header">📔 Notes</div>
+      <button class="note-toggle" id="noteToggleBtn" onclick="toggleNote()">✏ Add note</button>
       <div class="note-body" id="noteBody">
         <textarea class="note-textarea" id="noteTextarea" placeholder="Type your notes for this question…" oninput="onNoteInput()" onkeydown="if(event.key==='Escape'){event.preventDefault();this.blur();document.getElementById('noteBody').classList.remove('open');}"></textarea>
         <div class="note-save-status" id="noteSaveStatus"></div>
@@ -946,7 +971,7 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
       <div class="review-filters" style="margin-bottom:16px;display:flex;gap:8px;padding:0 4px;flex-wrap:wrap;">
         <button class="filter-btn" id="filterWrong"   onclick="filterReview('wrong')">Incorrect / Skipped</button>
         <button class="filter-btn" id="filterFlagged" onclick="filterReview('flagged')">🚩 Flagged</button>
-        <button class="filter-btn" id="filterNotes"   onclick="filterReview('notes')">📝 With Notes</button>
+        <button class="filter-btn" id="filterNotes"   onclick="filterReview('notes')">📔 With Notes</button>
         <button class="filter-btn" id="filterAll"     onclick="filterReview('all')">All Questions</button>
       </div>
       <div class="review-list" id="reviewList"></div>
@@ -979,7 +1004,7 @@ let score     = 0;
 let results   = [];
 let flagged   = [];
 let notes     = []; // array of strings, one per question
-/** Per-question list of { chosen, wasCorrect, at? } for each time the user submitted an answer. */
+/** Per-question list of { chosen, wasCorrect, at? } for every submit ever — cumulative across restarts (never cleared on restart). */
 let attemptHistory = [];
 let currentFilter = 'wrong';
 let _noteSaveTimer = null;
@@ -1721,7 +1746,7 @@ function finishQuizLoad(restored) {
       const r = results[current];
       if (r && !r.skipped) {
         selected = r.chosen;
-        submitAnswer();
+        submitAnswer({ replay: true });
       }
       updateProgress();
     }
@@ -1858,13 +1883,45 @@ function coerceAttemptAtMs(raw) {
   return undefined;
 }
 
+/**
+ * Firestore does not allow "array of arrays". In memory we keep slot[] as arrays; on save we encode
+ * each slot as { tries: [...] } so the top-level attemptHistory is an array of maps.
+ */
+function encodeAttemptHistoryForFirestore(ah, n) {
+  const out = [];
+  const src = Array.isArray(ah) ? ah : [];
+  for (let i = 0; i < n; i++) {
+    const slot = Array.isArray(src[i]) ? src[i] : [];
+    const tries = [];
+    for (const a of slot) {
+      if (!a || typeof a.chosen !== 'string') continue;
+      const atMs = coerceAttemptAtMs(a.at);
+      const o = { chosen: a.chosen, wasCorrect: !!a.wasCorrect };
+      if (typeof atMs === 'number') o.at = atMs;
+      tries.push(o);
+    }
+    out.push({ tries });
+  }
+  return out;
+}
+
 function normalizeAttemptHistoryDoc(raw, n) {
   const out = emptyAttemptHistory(n);
   if (!Array.isArray(raw)) return out;
   for (let i = 0; i < n; i++) {
     const h = raw[i];
-    if (!Array.isArray(h)) continue;
-    out[i] = h
+    if (h == null) continue;
+    let list = [];
+    if (Array.isArray(h)) {
+      list = h;
+    } else if (typeof h === 'object' && Array.isArray(h.tries)) {
+      list = h.tries;
+    } else if (typeof h === 'object' && Array.isArray(h.entries)) {
+      list = h.entries;
+    } else {
+      continue;
+    }
+    out[i] = list
       .filter((a) => a && typeof a.chosen === 'string')
       .map((a) => ({
         chosen: a.chosen,
@@ -1999,15 +2056,55 @@ function syncAttemptHistoryPanelVisibility() {
   panel.classList.toggle('attempt-history-panel--pending', !answered);
 }
 
+/** Serializes writes so an in-flight save from before Restart cannot finish later and overwrite the reset session (last-write-wins). */
+let _saveStateChain = Promise.resolve();
 async function saveState() {
+  if (!uid) return;
+  _saveStateChain = _saveStateChain
+    .then(() => flushSaveState())
+    .catch((e) => console.warn('Save failed:', e));
+  return _saveStateChain;
+}
+/** Omit undefined — Firestore rejects undefined in field values. */
+function snapshotResultForSave(r) {
+  if (r == null) return null;
+  const o = { wasCorrect: !!r.wasCorrect, skipped: !!r.skipped };
+  if (r.q !== undefined && r.q !== null) o.q = r.q;
+  if (r.chosen !== undefined) o.chosen = r.chosen;
+  if (r.correct !== undefined) o.correct = r.correct;
+  return o;
+}
+
+/** Snapshot session fields so nothing mutates before Firestore serializes the write. */
+function snapshotSessionForSave() {
+  const n = QUESTIONS.length;
+  const res = Array.isArray(results) ? results : [];
+  const resultsSnap = [];
+  for (let i = 0; i < n; i++) {
+    resultsSnap[i] = snapshotResultForSave(res[i]);
+  }
+  const fl = Array.isArray(flagged) ? flagged : [];
+  const flaggedSnap = [];
+  for (let i = 0; i < n; i++) flaggedSnap[i] = !!fl[i];
+  return {
+    results: resultsSnap,
+    flagged: flaggedSnap,
+    current: typeof current === 'number' ? current : 0,
+    score: typeof score === 'number' ? score : 0,
+    attemptHistory: encodeAttemptHistoryForFirestore(attemptHistory, n),
+  };
+}
+
+async function flushSaveState() {
   if (!uid) return;
   if (AGGREGATE_MODE) {
     await saveAggState();
     return;
   }
+  const snap = snapshotSessionForSave();
   try {
     await sessionRef().set({
-      results, flagged, current, score, attemptHistory,
+      ...snap,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
   } catch(e) { console.warn('Save failed:', e); }
@@ -2017,7 +2114,12 @@ async function loadState() {
   if (AGGREGATE_MODE) return false;
   if (!uid) return false;
   try {
-    const snap = await sessionRef().get();
+    let snap;
+    try {
+      snap = await sessionRef().get({ source: 'server' });
+    } catch (e) {
+      snap = await sessionRef().get();
+    }
     if (!snap.exists) return false;
     const d = snap.data();
     const n = QUESTIONS.length;
@@ -2103,7 +2205,7 @@ function initSidebarGrids() {
         div.className = 'q-grid-item';
         div.id = `grid-item-${i}`;
         div.onclick = () => jumpTo(i);
-        div.innerHTML = `${i + 1}<div class="flag-icon">🚩</div><div class="note-icon">📝</div>`;
+        div.innerHTML = `${i + 1}<div class="flag-icon">🚩</div><div class="note-icon">📔</div>`;
         qGrid.appendChild(div);
 
         // Collapsed view (vertical)
@@ -2111,7 +2213,7 @@ function initSidebarGrids() {
         collapsedDiv.className = 'q-grid-item collapsed-q-item';
         collapsedDiv.id = `collapsed-grid-item-${i}`;
         collapsedDiv.onclick = () => jumpTo(i);
-        collapsedDiv.innerHTML = `${i + 1}<div class="flag-icon">🚩</div><div class="note-icon">📝</div>`;
+        collapsedDiv.innerHTML = `${i + 1}<div class="flag-icon">🚩</div><div class="note-icon">📔</div>`;
         collapsedQGrid.appendChild(collapsedDiv);
         
     });
@@ -2373,22 +2475,21 @@ async function saveAggState() {
   syncAggCacheFromFlat();
   try {
     await Promise.all(
-      Object.keys(aggQuizSessions).map((qid) =>
-        db
+      Object.keys(aggQuizSessions).map((qid) => {
+        const s = aggQuizSessions[qid];
+        const n = Array.isArray(s.results) ? s.results.length : 0;
+        return db
           .collection('quizSessions')
           .doc(uid)
           .collection('quizzes')
           .doc(qid)
-          .set(
-            {
-              results: aggQuizSessions[qid].results,
-              flagged: aggQuizSessions[qid].flagged,
-              attemptHistory: aggQuizSessions[qid].attemptHistory,
-              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            },
-            { merge: true }
-          )
-      )
+          .set({
+            results: (s.results || []).map((r) => snapshotResultForSave(r)),
+            flagged: s.flagged,
+            attemptHistory: encodeAttemptHistoryForFirestore(s.attemptHistory, n),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+      })
     );
     localStorage.setItem(AGG_POS_KEY, String(current));
   } catch (e) {
@@ -2560,7 +2661,7 @@ function renderQuestion(idx) {
   document.getElementById('noteSaveStatus').textContent = '';
   noteBody.classList.remove('open');
   const hasNote = !!(notes[idx]?.trim());
-  noteToggleBtn.textContent = hasNote ? '📝 View / edit note' : '📝 Add note';
+  noteToggleBtn.textContent = hasNote ? '📔 View / edit note' : '📔 Add note';
   noteToggleBtn.classList.toggle('has-note', hasNote);
 
   const hw = document.getElementById('hintWrap');
@@ -2635,7 +2736,7 @@ function onNoteInput() {
   notes[idx] = document.getElementById('noteTextarea').value;
   const hasNote = notes[idx].trim().length > 0;
   const btn = document.getElementById('noteToggleBtn');
-  btn.textContent = hasNote ? '📝 View / edit note' : '📝 Add note';
+  btn.textContent = hasNote ? '📔 View / edit note' : '📔 Add note';
   btn.classList.toggle('has-note', hasNote);
   document.getElementById('noteSaveStatus').textContent = 'Saving…';
   clearTimeout(_noteSaveTimer);
@@ -2675,17 +2776,21 @@ function selectOption(letter) {
   document.getElementById('submitBtn').disabled = false;
 }
 
-function submitAnswer() {
+/** @param {{ replay?: boolean }} [opts] — replay=true: restore UI from loaded session without recording a new attempt or saving (used after refresh / when jumping to an already-answered question). */
+function submitAnswer(opts) {
+  const replay = !!(opts && opts.replay);
   if (!selected || answered) return;
   optionsRevealed = true;
   applyVeil();
   answered = true;
   const q = QUESTIONS[current];
   const isCorrect = selected === q.correct;
-  if (!attemptHistory[current]) attemptHistory[current] = [];
-  attemptHistory[current].push({ chosen: selected, wasCorrect: isCorrect, at: Date.now() });
-  results[current] = { q: current, chosen: selected, correct: q.correct, wasCorrect: isCorrect, skipped: false };
-  score = results.filter(r => r?.wasCorrect).length;
+  if (!replay) {
+    if (!attemptHistory[current]) attemptHistory[current] = [];
+    attemptHistory[current].push({ chosen: selected, wasCorrect: isCorrect, at: Date.now() });
+    results[current] = { q: current, chosen: selected, correct: q.correct, wasCorrect: isCorrect, skipped: false };
+    score = results.filter(r => r?.wasCorrect).length;
+  }
 
   document.querySelectorAll('.option').forEach(el => {
     el.classList.add('locked');
@@ -2711,7 +2816,7 @@ function submitAnswer() {
   document.getElementById('skipBtn').style.display = 'none';
   updateSidebar();
   updateProgress();
-  saveState();
+  if (!replay) saveState();
   renderAttemptHistoryPanel(current);
   syncAttemptHistoryPanelVisibility();
 }
@@ -2723,7 +2828,7 @@ function goBack() {
   answered = false; selected = null;
   renderQuestion(current);
   const r = results[current];
-  if (r && !r.skipped) { selected = r.chosen; submitAnswer(); }
+  if (r && !r.skipped) { selected = r.chosen; submitAnswer({ replay: true }); }
 }
 
 function nextQuestion() {
@@ -2733,7 +2838,7 @@ function nextQuestion() {
   else {
     renderQuestion(current);
     const r = results[current];
-    if (r && !r.skipped) { selected = r.chosen; submitAnswer(); }
+    if (r && !r.skipped) { selected = r.chosen; submitAnswer({ replay: true }); }
   }
 }
 
@@ -2825,7 +2930,7 @@ function renderReviewList() {
     div.innerHTML = `
       <div style="display:flex;align-items:flex-start;gap:14px;" onclick="jumpTo(${i})">
         <div class="review-dot ${isCorrect ? 'correct' : 'wrong'}" style="margin-top:6px;flex-shrink:0;"></div>
-        <div class="review-text" style="flex:1;">Q${i+1}. ${escHtml(short)}${flagged[i]?' <span style="color:var(--wrong);font-size:.8rem;">🚩</span>':''}${notes[i]?.trim()?' <span style="font-size:.8rem;">📝</span>':''}</div>
+        <div class="review-text" style="flex:1;">Q${i+1}. ${escHtml(short)}${flagged[i]?' <span style="color:var(--wrong);font-size:.8rem;">🚩</span>':''}${notes[i]?.trim()?' <span style="font-size:.8rem;">📔</span>':''}</div>
         <div class="review-answer" style="flex-shrink:0;"><span class="status-${statusTxt}">${statusTxt}</span> ${detail}</div>
       </div>
       ${notes[i]?.trim() ? `<div class="review-note">${escHtml(notes[i])}</div>` : ''}`;
@@ -2859,20 +2964,44 @@ function jumpTo(idx) {
   current = idx; answered = false; selected = null;
   renderQuestion(idx);
   const r = results[idx];
-  if (r && !r.skipped) { selected = r.chosen; submitAnswer(); }
+  if (r && !r.skipped) { selected = r.chosen; submitAnswer({ replay: true }); }
 }
 
-function restartQuiz() {
+async function restartQuiz() {
+  try {
+    await db.waitForPendingWrites();
+  } catch (e) {
+    console.warn('waitForPendingWrites (pre-restart):', e);
+  }
+
   current = 0; score = 0; answered = false; selected = null;
+  optionsRevealed = false;
   results = new Array(QUESTIONS.length).fill(null);
+  // Lifetime attempt log ("Your attempts") — keep all tries with timestamps; only reset progress above.
+  {
+    const n = QUESTIONS.length;
+    if (!Array.isArray(attemptHistory)) attemptHistory = emptyAttemptHistory(n);
+    else {
+      while (attemptHistory.length < n) attemptHistory.push([]);
+      attemptHistory.length = n;
+    }
+  }
+  // Flags (and notes) persist per question per user like notes — do not clear on restart.
+  {
+    const n = QUESTIONS.length;
+    if (!Array.isArray(flagged)) flagged = new Array(n).fill(false);
+    else {
+      while (flagged.length < n) flagged.push(false);
+      flagged.length = n;
+      flagged = flagged.map((x) => !!x);
+    }
+  }
   if (AGGREGATE_MODE) {
-    flagged = new Array(QUESTIONS.length).fill(false);
     for (let i = 0; i < AGG_SOURCES.length; i++) {
       const { quizId, qIndex } = AGG_SOURCES[i];
       const s = aggQuizSessions[quizId];
       if (s) {
         s.results[qIndex] = null;
-        s.flagged[qIndex] = false;
       }
     }
     try {
@@ -2886,7 +3015,19 @@ function restartQuiz() {
   document.getElementById('progressWrap').classList.remove('hidden');
   document.getElementById('kbdHints').classList.remove('hidden');
   document.getElementById('submitBtn').onclick = submitAnswer;
-  saveState();
+  if (!AGGREGATE_MODE) {
+    try {
+      await sessionRef().delete();
+    } catch (e) {
+      console.warn('Session delete failed:', e);
+    }
+  }
+  await saveState();
+  try {
+    await db.waitForPendingWrites();
+  } catch (e) {
+    console.warn('waitForPendingWrites (post-restart):', e);
+  }
   initSidebar();
   renderQuestion(0);
 }
