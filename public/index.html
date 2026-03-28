@@ -519,7 +519,7 @@ function renderGrid(groups) {
       versions.forEach(q => {
         const safe = q.id.replace(/__/g, '_');
         pills += `<div class="quiz-pill" data-quiz-id="${q.id}">
-          <a href="/quiz?id=${q.id}" class="pill-link">
+          <a href="quiz.html?id=${encodeURIComponent(q.id)}" class="pill-link">
             <span class="pill-name">${q.name}</span>
             <span class="pill-count">${q.questionCount}q</span>
           </a>
