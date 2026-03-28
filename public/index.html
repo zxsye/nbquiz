@@ -189,6 +189,32 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 /* ── Quiz week cards ── */
 .week-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
 .week-label { font-family: var(--font-mono); font-size: .7rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 14px 20px 10px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.parent-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.parent-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1.5px solid var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
+  font-size: .78rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  text-decoration: none;
+  transition: background 150ms, color 150ms;
+}
+.parent-pill:hover {
+  background: var(--accent);
+  color: #fff;
+}
 .topic-list { padding: 8px 0; }
 .topic-row { display: flex; align-items: flex-start; padding: 12px 20px; gap: 16px; border-bottom: 1px solid var(--border); }
 .topic-row:last-child { border-bottom: none; }
@@ -405,7 +431,7 @@ auth.onAuthStateChanged(async user => {
 });
 
 // ── Tab switching ──────────────────────────────────────────────────────────────
-function switchSection(section, btn) {
+async function switchSection(section, btn) {
   if (section === currentSection) return;
   currentSection = section;
   window.location.hash = section;
@@ -420,7 +446,7 @@ function switchSection(section, btn) {
   // Clear quiz cards (keep skeleton-like re-render)
   clearQuizCards();
   if (allQuizDocs) {
-    renderSectionGrid(allQuizDocs, currentUid);
+    await renderSectionGrid(allQuizDocs, currentUid);
   }
 }
 
@@ -431,7 +457,7 @@ async function loadQuizzes(uid) {
     allQuizDocs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
     renderResources(currentSection);
-    renderSectionGrid(allQuizDocs, uid);
+    await renderSectionGrid(allQuizDocs, uid);
   } catch(e) {
     document.getElementById('skeleton').outerHTML = `<p class="empty">Error loading quizzes: ${escHtml(e.message)}</p>`;
   }
@@ -464,7 +490,7 @@ function clearQuizCards() {
   document.getElementById('grid').appendChild(skel);
 }
 
-function renderSectionGrid(docs, uid) {
+async function renderSectionGrid(docs, uid) {
   // Filter by section; quizzes with no section field fall into Surgery (backwards compat)
   const filtered = docs.filter(d => {
     const s = (d.section || 'Surgery');
@@ -494,7 +520,9 @@ function renderSectionGrid(docs, uid) {
     groups[w][t].push({ id: d.id, name: d.name || d.id, questionCount: d.questionCount || 0 });
   });
 
-  renderGrid(groups);
+  const sortedWeeks = Object.keys(groups).sort((a, b) => weekSortKey(a) - weekSortKey(b));
+  const weekParentByWeek = await fetchWeekParentDataByWeek(currentSection, sortedWeeks);
+  renderGrid(groups, weekParentByWeek, currentSection);
 
   if (uid) {
     const meta = filtered.map(d => ({ id: d.id, questionCount: d.questionCount || 0 }));
@@ -507,7 +535,56 @@ function weekSortKey(w) {
   return m ? parseInt(m[1]) : 9999;
 }
 
-function renderGrid(groups) {
+/** Aligns with Cloud Functions / admin weekParentFirestoreDocId. */
+function weekParentFirestoreDocId(section, week) {
+  const sec = String(section || 'Surgery').trim() || 'Surgery';
+  const w =
+    String(week || 'Unknown')
+      .trim()
+      .replace(/\//g, '_')
+      .toUpperCase() || 'UNKNOWN';
+  return `${sec}__${w}`;
+}
+
+async function fetchWeekParentDataByWeek(section, weekKeys) {
+  const out = {};
+  await Promise.all(
+    weekKeys.map(async (wk) => {
+      try {
+        const snap = await db
+          .collection('weekParentPills')
+          .doc(weekParentFirestoreDocId(section, wk))
+          .get();
+        out[wk] = snap.exists ? snap.data() : null;
+      } catch (e) {
+        console.warn('weekParentPills', wk, e);
+        out[wk] = null;
+      }
+    })
+  );
+  return out;
+}
+
+function parentPillsRowHtml(week, section, docData) {
+  if (!docData || !Array.isArray(docData.parents) || !docData.parents.length) return '';
+  const base = new URLSearchParams({
+    mode: 'parent',
+    section,
+    week,
+  });
+  const links = docData.parents
+    .filter((p) => p && p.slug && p.label)
+    .map((p) => {
+      const q = new URLSearchParams(base);
+      q.set('parentSlug', p.slug);
+      return `<a class="parent-pill" href="/quiz.html?${q.toString()}">${escHtml(p.label)}</a>`;
+    })
+    .join('');
+  if (!links) return '';
+  return `<div class="parent-pills-row" aria-label="Week themes">${links}</div>`;
+}
+
+function renderGrid(groups, weekParentByWeek, sectionName) {
   const sortedWeeks = Object.keys(groups).sort((a, b) => weekSortKey(a) - weekSortKey(b));
   const grid = document.getElementById('grid');
 
@@ -541,9 +618,10 @@ function renderGrid(groups) {
       </div>`;
     });
 
+    const parentRow = parentPillsRowHtml(week, sectionName, weekParentByWeek && weekParentByWeek[week]);
     const card = document.createElement('div');
     card.className = 'week-card';
-    card.innerHTML = `<div class="week-label">${week}</div><div class="topic-list">${rows}</div>`;
+    card.innerHTML = `<div class="week-label">${week}</div>${parentRow}<div class="topic-list">${rows}</div>`;
     grid.appendChild(card);
   });
   

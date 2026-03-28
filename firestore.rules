@@ -22,6 +22,12 @@ service cloud.firestore {
       }
     }
 
+    // Week-level parent pills (semantic clusters of per-quiz AI topic pills)
+    match /weekParentPills/{docId} {
+      allow read:  if request.auth != null;
+      allow write: if isAdmin();
+    }
+
     // Each user can access their own session data; admins can access all
     match /quizSessions/{uid} {
       allow read, write: if (request.auth != null && request.auth.uid == uid)

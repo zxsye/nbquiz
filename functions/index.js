@@ -265,6 +265,337 @@ function safePillsMap(pillsMap) {
   return out;
 }
 
+// ── Week parent pills (cluster child topic pills across quizzes in one week) ──
+
+function weekParentFirestoreDocId(section, week) {
+  const sec = String(section || 'Surgery').trim() || 'Surgery';
+  const w =
+    String(week || 'Unknown')
+      .trim()
+      .replace(/\//g, '_')
+      .toUpperCase() || 'UNKNOWN';
+  return `${sec}__${w}`;
+}
+
+function topicCanonLabel(s) {
+  return String(s || '').replace(/\./g, '·');
+}
+
+function indicesForPillLabel(label, pillsMap) {
+  const rawMap =
+    pillsMap && typeof pillsMap === 'object' && !Array.isArray(pillsMap) ? pillsMap : {};
+  const L = String(label);
+  const tries = [L, L.replace(/·/g, '.'), L.replace(/\./g, '·')];
+  for (const t of tries) {
+    const arr = rawMap[t];
+    if (Array.isArray(arr)) {
+      return arr
+        .map((x) => (typeof x === 'number' ? x : parseInt(x, 10)))
+        .filter((n) => Number.isFinite(n) && n >= 0);
+    }
+  }
+  const want = topicCanonLabel(L);
+  for (const k of Object.keys(rawMap)) {
+    if (topicCanonLabel(k) === want && Array.isArray(rawMap[k])) {
+      return rawMap[k]
+        .map((x) => (typeof x === 'number' ? x : parseInt(x, 10)))
+        .filter((n) => Number.isFinite(n) && n >= 0);
+    }
+  }
+  return [];
+}
+
+function collectWeekChildEntries(quizId, quizName, topicData) {
+  const pills = Array.isArray(topicData.pills) ? topicData.pills.map(String).filter(Boolean) : [];
+  const pillsMap =
+    topicData.pillsMap && typeof topicData.pillsMap === 'object' ? topicData.pillsMap : {};
+  const ordered = [...pills];
+  for (const k of Object.keys(pillsMap)) {
+    const ck = topicCanonLabel(k);
+    if (!ordered.some((p) => topicCanonLabel(p) === ck)) ordered.push(ck);
+  }
+  const seen = new Set();
+  const entries = [];
+  for (const label of ordered) {
+    const canon = topicCanonLabel(label);
+    const key = `${quizId}::${canon}`;
+    if (seen.has(key)) continue;
+    const rawIdx = indicesForPillLabel(label, pillsMap);
+    const indices = [...new Set(rawIdx)].sort((a, b) => a - b);
+    if (!indices.length) continue;
+    seen.add(key);
+    const display = pills.find((p) => topicCanonLabel(p) === canon) || label;
+    entries.push({
+      key,
+      quizId,
+      quizName: String(quizName || '').trim() || quizId,
+      pillLabel: String(display).replace(/\./g, '·'),
+      indices,
+    });
+  }
+  return entries;
+}
+
+function slugifyParentLabel(label) {
+  const s = String(label)
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9_-]/g, '');
+  return s.slice(0, 48) || 'parent';
+}
+
+function parseWeekGroupsFromModel(parsed, validKeysSet) {
+  const raw = Array.isArray(parsed.groups)
+    ? parsed.groups
+    : Array.isArray(parsed.parents)
+      ? parsed.parents
+      : [];
+  const groups = [];
+  for (const g of raw) {
+    if (!g || typeof g !== 'object') continue;
+    const label = String(g.label || g.name || g.title || '').trim();
+    const keys = Array.isArray(g.childKeys)
+      ? g.childKeys
+      : Array.isArray(g.keys)
+        ? g.keys
+        : [];
+    if (!label || label.length < 2 || label.length > 100) continue;
+    const childKeys = keys.map((k) => String(k).trim()).filter((k) => validKeysSet.has(k));
+    if (!childKeys.length) continue;
+    groups.push({ label, childKeys: [...new Set(childKeys)] });
+  }
+  return groups;
+}
+
+/**
+ * Models often repeat the same child key in multiple parent groups. Keep first occurrence only
+ * (order = model group order), then drop empty groups.
+ */
+function dedupeWeekGroupsFirstWins(groups) {
+  const seen = new Set();
+  const out = [];
+  for (const g of groups) {
+    const childKeys = g.childKeys.filter((k) => {
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    if (childKeys.length) out.push({ label: g.label, childKeys });
+  }
+  return out;
+}
+
+function validateWeekGroups(groups, allKeysSet) {
+  const assigned = new Set();
+  for (const g of groups) {
+    for (const k of g.childKeys) {
+      if (assigned.has(k)) return { ok: false, reason: `duplicate key ${k}` };
+      assigned.add(k);
+    }
+  }
+  for (const k of allKeysSet) {
+    if (!assigned.has(k)) return { ok: false, reason: `missing key ${k}` };
+  }
+  return { ok: true };
+}
+
+function buildMembersFromGroups(groups, keyToEntry) {
+  const parents = [];
+  const slugUsed = new Set();
+  for (const g of groups) {
+    const byQuiz = new Map();
+    for (const key of g.childKeys) {
+      const ent = keyToEntry.get(key);
+      if (!ent) continue;
+      const qid = ent.quizId;
+      if (!byQuiz.has(qid)) byQuiz.set(qid, new Set());
+      const set = byQuiz.get(qid);
+      ent.indices.forEach((i) => set.add(i));
+    }
+    const members = [];
+    for (const [quizId, idxSet] of byQuiz) {
+      members.push({
+        quizId,
+        indices: [...idxSet].sort((a, b) => a - b),
+      });
+    }
+    members.sort((a, b) => a.quizId.localeCompare(b.quizId));
+    let baseSlug = slugifyParentLabel(g.label);
+    let slug = baseSlug;
+    let n = 0;
+    while (slugUsed.has(slug)) {
+      n += 1;
+      slug = `${baseSlug}-${n}`;
+    }
+    slugUsed.add(slug);
+    parents.push({ label: g.label, slug, members });
+  }
+  return parents;
+}
+
+async function callModelWeekParents(provider, userPrompt) {
+  if (provider === 'gemini') {
+    const key = readSecretTrimmed(geminiApiKey, 'GEMINI_API_KEY');
+    if (!key) throw callableError('GEMINI_API_KEY secret is empty.');
+    return callGemini(key, userPrompt);
+  }
+  const key = readSecretTrimmed(openaiApiKey, 'OPENAI_API_KEY');
+  if (!key) throw callableError('OPENAI_API_KEY secret is empty.');
+  return callOpenAI(key, userPrompt);
+}
+
+function buildWeekParentPrompt(childRows, c) {
+  const payload = JSON.stringify(childRows);
+  let constraint;
+  if (c < 2) {
+    constraint =
+      'There is only one child pill. Output exactly one parent group containing that single child key.';
+  } else {
+    constraint = `You MUST output between 1 and ${c - 1} parent groups (strictly fewer than ${c}, since there are ${c} child pills). Merge semantically related child pills under one short parent label (2–7 words, Title Case, clinical themes). Every child key must appear in exactly one group.`;
+  }
+  return `You group medical quiz "topic pills" from several subquizzes in the same teaching week into a smaller set of PARENT themes (parent pills).
+
+Each child row has: key (unique id), quizName, pillLabel (the learner-facing child pill name).
+
+${constraint}
+
+Rules:
+- Parent labels must be distinct and clinically meaningful.
+- Do not drop or invent keys; only use keys from the input.
+- Each child key must appear in exactly one group — never list the same key in more than one group.
+- Respond with JSON only of this shape:
+{"groups":[{"label":"string","childKeys":["quizId::Label",...]}]}
+
+Child rows (JSON array):
+${payload}`;
+}
+
+/**
+ * Rebuild weekParentPills/{section}__{week} from all quizzes in that section+week with topicTags.
+ * Deletes the doc if no child pills exist.
+ */
+async function regenerateWeekParentPillsInternal(section, week, provider) {
+  const db = admin.firestore();
+  const sec = String(section || 'Surgery').trim() || 'Surgery';
+  const wk =
+    String(week || 'Unknown')
+      .trim()
+      .replace(/\//g, '_')
+      .toUpperCase() || 'UNKNOWN';
+
+  const snap = await db.collection('quizzes').where('section', '==', sec).get();
+  const docs = snap.docs.filter(
+    (d) =>
+      String(d.data().week || 'Unknown')
+        .trim()
+        .replace(/\//g, '_')
+        .toUpperCase() === wk
+  );
+
+  const allEntries = [];
+  for (const doc of docs) {
+    const qid = doc.id;
+    const m = doc.data();
+    const ttSnap = await db
+      .collection('quizzes')
+      .doc(qid)
+      .collection('data')
+      .doc('topicTags')
+      .get();
+    if (!ttSnap.exists) continue;
+    const entries = collectWeekChildEntries(qid, m.name || m.title, ttSnap.data());
+    allEntries.push(...entries);
+  }
+
+  const docRef = db.collection('weekParentPills').doc(weekParentFirestoreDocId(sec, wk));
+
+  if (!allEntries.length) {
+    await docRef.delete().catch(() => {});
+    return { ok: true, parentCount: 0, childCount: 0, deleted: true };
+  }
+
+  const keyToEntry = new Map(allEntries.map((e) => [e.key, e]));
+  const childKeys = [...keyToEntry.keys()];
+  const c = childKeys.length;
+  const childRows = allEntries.map(({ key, quizName, pillLabel }) => ({
+    key,
+    quizName,
+    pillLabel,
+  }));
+
+  let userPrompt = buildWeekParentPrompt(childRows, c);
+  let lastError = 'Invalid model output';
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let rawText;
+    try {
+      rawText = await callModelWeekParents(provider, userPrompt);
+    } catch (e) {
+      rethrowIfHttpsError(e);
+      throw e;
+    }
+    let parsed;
+    try {
+      parsed = parseJsonFromModel(rawText);
+    } catch (e) {
+      lastError = `Invalid JSON: ${e.message}`;
+      userPrompt = `${buildWeekParentPrompt(childRows, c)}\n\nYour previous output was not valid JSON. Output only one JSON object.`;
+      continue;
+    }
+    const validSet = new Set(childKeys);
+    let groups = dedupeWeekGroupsFirstWins(parseWeekGroupsFromModel(parsed, validSet));
+    const p = groups.length;
+    if (c >= 2 && (p < 1 || p >= c)) {
+      lastError = `Need between 1 and ${c - 1} parent groups; got ${p}`;
+      userPrompt = `${buildWeekParentPrompt(childRows, c)}\n\nFix: you must output strictly fewer than ${c} groups and at least 1. You returned ${p} groups.`;
+      continue;
+    }
+    if (c === 1 && p !== 1) {
+      lastError = 'Need exactly 1 parent group for a single child pill';
+      userPrompt = `${buildWeekParentPrompt(childRows, c)}\n\nFix: with one child key, output exactly one group containing it.`;
+      continue;
+    }
+    const v = validateWeekGroups(groups, validSet);
+    if (!v.ok) {
+      lastError = v.reason;
+      userPrompt = `${buildWeekParentPrompt(childRows, c)}\n\nFix validation error: ${v.reason}`;
+      continue;
+    }
+    const parents = buildMembersFromGroups(groups, keyToEntry);
+    const modelId = provider === 'gemini' ? GEMINI_MODEL : OPENAI_MODEL;
+    await docRef.set({
+      section: sec,
+      week: wk,
+      parents,
+      childKeys,
+      childCount: c,
+      provider,
+      model: modelId,
+      generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return { ok: true, parentCount: parents.length, childCount: c };
+  }
+  throw callableError(lastError);
+}
+
+async function regenerateWeekParentPillsCore(request, provider) {
+  if (!request.auth?.token?.email) {
+    throw new HttpsError('unauthenticated', 'Sign in required.');
+  }
+  const email = request.auth.token.email;
+  const adminSnap = await admin.firestore().collection('admins').doc(email).get();
+  if (!adminSnap.exists) {
+    throw new HttpsError('permission-denied', 'Not an admin.');
+  }
+  const section = request.data?.section;
+  const week = request.data?.week;
+  if (!section || typeof section !== 'string' || !week || typeof week !== 'string') {
+    throw new HttpsError('invalid-argument', 'section and week are required strings.');
+  }
+  return regenerateWeekParentPillsInternal(section.trim(), week.trim(), provider);
+}
+
 async function generateTopicTagsCore(request, provider) {
   try {
     if (!request.auth?.token?.email) {
@@ -389,6 +720,15 @@ ${payload}`;
       throw callableError(`Saving tags failed: ${e.message || e}`);
     }
 
+    const meta = metaSnap.data() || {};
+    const weekSection = meta.section || 'Surgery';
+    const weekLabel = meta.week || 'Unknown';
+    try {
+      await regenerateWeekParentPillsInternal(weekSection, weekLabel, provider);
+    } catch (e) {
+      logger.warn('regenerateWeekParentPillsInternal after topicTags', e);
+    }
+
     return { ok: true, pillCount: pillsSafe.length | 0 };
   } catch (e) {
     rethrowIfHttpsError(e);
@@ -405,4 +745,14 @@ exports.generateTopicTagsOpenAI = onCall(
 exports.generateTopicTagsGemini = onCall(
   { ...CALL_OPTS, secrets: [geminiApiKey] },
   wrapCallableHandler(async (request) => generateTopicTagsCore(request, 'gemini'))
+);
+
+exports.regenerateWeekParentPillsOpenAI = onCall(
+  { ...CALL_OPTS, secrets: [openaiApiKey] },
+  wrapCallableHandler(async (request) => regenerateWeekParentPillsCore(request, 'openai'))
+);
+
+exports.regenerateWeekParentPillsGemini = onCall(
+  { ...CALL_OPTS, secrets: [geminiApiKey] },
+  wrapCallableHandler(async (request) => regenerateWeekParentPillsCore(request, 'gemini'))
 );

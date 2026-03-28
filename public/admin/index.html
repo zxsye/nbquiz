@@ -120,7 +120,11 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 
 /* Quiz list */
 .week-block { margin-bottom: 20px; }
-.week-head  { font-family: var(--font-mono); font-size: .68rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 8px 14px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; display: flex; align-items: center; justify-content: space-between; }
+.week-head  { font-family: var(--font-mono); font-size: .68rem; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--text-3); padding: 8px 14px; background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.week-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.week-parent-ai { font-size: .68rem; color: var(--text-2); padding: 6px 14px 8px; font-family: var(--font-mono); border-bottom: 1px solid var(--border); background: var(--surface); line-height: 1.35; }
+.week-parent-ai.missing { color: var(--text-3); }
+.week-parent-ai .ai-pill-count { color: var(--accent); font-weight: 600; }
 .topic-block { border: 1.5px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); overflow: hidden; }
 .topic-head  { font-size: .72rem; font-weight: 600; color: var(--text-3); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .05em; padding: 6px 14px 4px; background: var(--surface-2); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 .quiz-row    { display: flex; align-items: center; padding: 11px 14px; background: var(--surface); border-top: 1px solid var(--border); gap: 10px; }
@@ -823,6 +827,73 @@ function formatAiPillsLine(id, topicMeta) {
   return `<div class="quiz-row-ai"${titleAttr} data-quiz-ai="${escAttr(id)}"><span class="ai-pill-count">${topicMeta.pillCount}</span> AI pill${topicMeta.pillCount === 1 ? '' : 's'} · ${whenHtml} · ${modelHtml}</div>`;
 }
 
+/** Must match Cloud Functions `weekParentFirestoreDocId`. */
+function weekParentFirestoreDocId(section, week) {
+  const sec = String(section || 'Surgery').trim() || 'Surgery';
+  const w =
+    String(week || 'Unknown')
+      .trim()
+      .replace(/\//g, '_')
+      .toUpperCase() || 'UNKNOWN';
+  return `${sec}__${w}`;
+}
+
+async function fetchWeekParentMetaByWeek(section, weekKeys) {
+  const meta = {};
+  await Promise.all(
+    weekKeys.map(async (wk) => {
+      try {
+        const snap = await db.collection('weekParentPills').doc(weekParentFirestoreDocId(section, wk)).get();
+        if (!snap.exists) {
+          meta[wk] = null;
+          return;
+        }
+        const d = snap.data();
+        const n = Array.isArray(d.parents) ? d.parents.length : 0;
+        if (!n) {
+          meta[wk] = null;
+          return;
+        }
+        let genDate = null;
+        const ga = d.generatedAt;
+        if (ga && typeof ga.toDate === 'function') genDate = ga.toDate();
+        meta[wk] = {
+          parentCount: n,
+          childCount: typeof d.childCount === 'number' ? d.childCount : null,
+          genDate,
+          model: d.model,
+          provider: d.provider,
+        };
+      } catch (e) {
+        console.error('weekParentPills read', wk, e);
+        meta[wk] = null;
+      }
+    })
+  );
+  return meta;
+}
+
+function formatWeekParentLine(weekKey, wp) {
+  if (!wp || !wp.parentCount) {
+    return `<div class="week-parent-ai missing" data-week-parent="${escAttr(weekKey)}">Parent pills: none yet</div>`;
+  }
+  const modelRaw = shortTopicModelName(wp.model, wp.provider);
+  const modelHtml = escHtml(modelRaw);
+  const when = formatTimeAgo(wp.genDate);
+  const whenHtml = when ? escHtml(when) : escHtml('time unknown');
+  const childBit =
+    wp.childCount != null
+      ? ` · ${wp.childCount} child pill${wp.childCount === 1 ? '' : 's'}`
+      : '';
+  const titleBits = [];
+  if (wp.genDate instanceof Date && !Number.isNaN(wp.genDate.getTime())) {
+    titleBits.push(wp.genDate.toISOString());
+  }
+  titleBits.push(modelRaw);
+  const titleAttr = titleBits.length ? ` title="${escAttr(titleBits.join(' · '))}"` : '';
+  return `<div class="week-parent-ai"${titleAttr} data-week-parent="${escAttr(weekKey)}"><span class="ai-pill-count">${wp.parentCount}</span> parent pill${wp.parentCount === 1 ? '' : 's'}${childBit} · ${whenHtml} · ${modelHtml}</div>`;
+}
+
 async function renderManageList() {
   const container = document.getElementById('quizList');
   // Filter to current section, fallback Surgery for legacy docs without section field
@@ -845,15 +916,21 @@ async function renderManageList() {
     groups[w][t].push(d);
   });
 
+  const weekKeysSorted = Object.keys(groups).sort((a, b) => weekSortKey(a) - weekSortKey(b));
+  const weekParentMeta = await fetchWeekParentMetaByWeek(currentManageSection, weekKeysSorted);
+
   let html = '';
-  Object.keys(groups)
-    .sort((a, b) => weekSortKey(a) - weekSortKey(b))
-    .forEach(week => {
+  weekKeysSorted.forEach(week => {
+      const wpLine = formatWeekParentLine(week, weekParentMeta[week]);
       html += `<div class="week-block">
         <div class="week-head">
           <span>${escHtml(week)}</span>
-          <button class="edit-icon-btn" onclick="openRenameModal('week','${escAttr(week)}','')">✏ Rename week</button>
+          <div class="week-head-actions">
+            <button type="button" class="btn btn-ghost btn-sm btn-topic-gen btn-week-parent-gen" onclick="runWeekParentGen(this,'${escAttr(week)}')">Parent topics</button>
+            <button class="edit-icon-btn" onclick="openRenameModal('week','${escAttr(week)}','')">✏ Rename week</button>
+          </div>
         </div>
+        ${wpLine}
         <div class="topic-block">`;
 
       Object.keys(groups[week]).sort().forEach(topic => {
@@ -890,6 +967,38 @@ async function renderManageList() {
   container.innerHTML = html;
 }
 
+async function runWeekParentGen(btn, weekKey) {
+  if (!weekKey || btn.classList.contains('btn-topics-generating')) return;
+  const provider = document.getElementById('selTopicProviderManage').value;
+  const fnName =
+    provider === 'gemini' ? 'regenerateWeekParentPillsGemini' : 'regenerateWeekParentPillsOpenAI';
+  const fn = functions.httpsCallable(fnName, { timeout: 300000 });
+  document.querySelectorAll('.btn-topic-gen, .btn-week-parent-gen').forEach((b) => {
+    b.disabled = true;
+  });
+  btn.classList.add('btn-topics-generating');
+  setStatus('manageStatus', 'inf', 'Regenerating week parent pills…');
+  try {
+    const res = await fn({ section: currentManageSection, week: weekKey });
+    const pc = res.data && res.data.parentCount;
+    setStatus(
+      'manageStatus',
+      'ok',
+      pc != null
+        ? `✅ ${pc} parent pill${pc === 1 ? '' : 's'} for this week.`
+        : '✅ Week parent pills updated.'
+    );
+    await renderManageList();
+  } catch (e) {
+    setStatus('manageStatus', 'err', `❌ ${formatFunctionsError(e)}`);
+  } finally {
+    btn.classList.remove('btn-topics-generating');
+    document.querySelectorAll('.btn-topic-gen, .btn-week-parent-gen').forEach((b) => {
+      b.disabled = false;
+    });
+  }
+}
+
 // ── Delete ────────────────────────────────────────────────────────────────────
 function confirmDel(quizId, name) {
   pendingDel = quizId;
@@ -904,7 +1013,9 @@ function closeModal() { document.getElementById('confirmBg').classList.remove('o
 async function runTopicGenForQuiz(btn, quizId) {
   if (!quizId || btn.classList.contains('btn-topics-generating')) return;
   const provider = document.getElementById('selTopicProviderManage').value;
-  document.querySelectorAll('.btn-topic-gen').forEach(b => { b.disabled = true; });
+  document.querySelectorAll('.btn-topic-gen, .btn-week-parent-gen').forEach((b) => {
+    b.disabled = true;
+  });
   btn.classList.add('btn-topics-generating');
   setStatus('manageStatus', 'inf', 'Generating topic tags…');
   try {
@@ -918,7 +1029,9 @@ async function runTopicGenForQuiz(btn, quizId) {
     setStatus('manageStatus', 'err', `❌ ${formatFunctionsError(e)}`);
   } finally {
     btn.classList.remove('btn-topics-generating');
-    document.querySelectorAll('.btn-topic-gen').forEach(b => { b.disabled = false; });
+    document.querySelectorAll('.btn-topic-gen, .btn-week-parent-gen').forEach((b) => {
+      b.disabled = false;
+    });
   }
 }
 

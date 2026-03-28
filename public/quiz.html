@@ -700,6 +700,16 @@ let optionsRevealed  = false;
 let eliminated       = {}; // keyed by option letter for current question
 let QUIZ_META = null;
 
+/** Parent-pill aggregate: flat QUESTIONS map to source quizzes via AGG_SOURCES. */
+let AGGREGATE_MODE = false;
+/** @type {{ quizId: string, qIndex: number }[]} */
+let AGG_SOURCES = [];
+let AGG_POS_KEY = '';
+/** @type {Record<string, { results: any[], flagged: boolean[] }>} */
+let aggQuizSessions = {};
+/** @type {Record<string, string[]>} */
+let aggNotesByQuiz = {};
+
 // ── Topic pills (weighted TF-IDF / RAKE / MiniSearch) ─────────────────────────
 const TOPIC_W_STEM = 3;
 const TOPIC_W_CORRECT_OPT = 2.5;
@@ -1395,6 +1405,17 @@ function showUI(visible) {
 // ── Load quiz ─────────────────────────────────────────────────────────────────
 async function loadQuiz() {
   const params = new URLSearchParams(location.search);
+  AGGREGATE_MODE = false;
+  AGG_SOURCES = [];
+  aggQuizSessions = {};
+  aggNotesByQuiz = {};
+  AGG_POS_KEY = '';
+
+  if (params.get('mode') === 'parent') {
+    await loadQuizParentMode(params);
+    return;
+  }
+
   QUIZ_ID = params.get('id') || '';
   if (!QUIZ_ID) {
     location.replace(new URL('index.html', location.href).href);
@@ -1462,6 +1483,10 @@ function notesRef() {
 
 async function saveState() {
   if (!uid) return;
+  if (AGGREGATE_MODE) {
+    await saveAggState();
+    return;
+  }
   try {
     await sessionRef().set({
       results, flagged, current, score,
@@ -1471,6 +1496,7 @@ async function saveState() {
 }
 
 async function loadState() {
+  if (AGGREGATE_MODE) return false;
   if (!uid) return false;
   try {
     const snap = await sessionRef().get();
@@ -1489,8 +1515,20 @@ async function saveNote(idx) {
   if (!uid) return;
   const statusEl = document.getElementById('noteSaveStatus');
   try {
-    // Save full notes array each time — clean and simple
-    await notesRef().set({ notes: notes });
+    if (AGGREGATE_MODE) {
+      const { quizId, qIndex } = AGG_SOURCES[idx];
+      if (!quizId || !aggNotesByQuiz[quizId]) return;
+      notes[idx] = document.getElementById('noteTextarea').value;
+      aggNotesByQuiz[quizId][qIndex] = notes[idx];
+      await db
+        .collection('quizSessions')
+        .doc(uid)
+        .collection('notes')
+        .doc(quizId)
+        .set({ notes: aggNotesByQuiz[quizId] || [] });
+    } else {
+      await notesRef().set({ notes: notes });
+    }
     if (statusEl) statusEl.textContent = 'Saved ✓';
     setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 1500);
   } catch(e) {
@@ -1499,7 +1537,7 @@ async function saveNote(idx) {
 }
 
 async function loadNotes() {
-  if (!uid) return;
+  if (!uid || AGGREGATE_MODE) return;
   try {
     const snap = await notesRef().get();
     if (!snap.exists) return;
@@ -1718,6 +1756,197 @@ function buildBreadcrumb() {
     QUIZ_META.topic,
   ];
   return parts.filter(Boolean).join('  ·  ');
+}
+
+function weekParentFirestoreDocId(section, week) {
+  const sec = String(section || 'Surgery').trim() || 'Surgery';
+  const w =
+    String(week || 'Unknown')
+      .trim()
+      .replace(/\//g, '_')
+      .toUpperCase() || 'UNKNOWN';
+  return `${sec}__${w}`;
+}
+
+function syncAggCacheFromFlat() {
+  if (!AGGREGATE_MODE) return;
+  for (let i = 0; i < AGG_SOURCES.length; i++) {
+    const { quizId, qIndex } = AGG_SOURCES[i];
+    const s = aggQuizSessions[quizId];
+    if (!s) continue;
+    s.results[qIndex] = results[i];
+    s.flagged[qIndex] = !!flagged[i];
+  }
+}
+
+async function loadAggregateUserData() {
+  const quizIds = [...new Set(AGG_SOURCES.map((x) => x.quizId))];
+  aggQuizSessions = {};
+  aggNotesByQuiz = {};
+  await Promise.all(
+    quizIds.map(async (qid) => {
+      const qSnap = await db.collection('quizzes').doc(qid).collection('data').doc('questions').get();
+      const n = qSnap.exists ? (qSnap.data().questions || []).length : 0;
+      if (!n) return;
+      const [sessSnap, noteSnap] = await Promise.all([
+        uid
+          ? db.collection('quizSessions').doc(uid).collection('quizzes').doc(qid).get()
+          : Promise.resolve({ exists: false }),
+        uid
+          ? db.collection('quizSessions').doc(uid).collection('notes').doc(qid).get()
+          : Promise.resolve({ exists: false }),
+      ]);
+      const sd = sessSnap.exists ? sessSnap.data() : {};
+      const resultsFull = Array.isArray(sd.results) ? [...sd.results] : [];
+      while (resultsFull.length < n) resultsFull.push(null);
+      resultsFull.length = n;
+      const flaggedFull = Array.isArray(sd.flagged) ? [...sd.flagged] : [];
+      while (flaggedFull.length < n) flaggedFull.push(false);
+      flaggedFull.length = n;
+      aggQuizSessions[qid] = { results: resultsFull, flagged: flaggedFull };
+      const notesFull = new Array(n).fill('');
+      if (noteSnap.exists && Array.isArray(noteSnap.data().notes)) {
+        noteSnap.data().notes.forEach((t, j) => {
+          if (j < n) notesFull[j] = t || '';
+        });
+      }
+      aggNotesByQuiz[qid] = notesFull;
+    })
+  );
+  results = new Array(QUESTIONS.length).fill(null);
+  flagged = new Array(QUESTIONS.length).fill(false);
+  notes = new Array(QUESTIONS.length).fill('');
+  for (let i = 0; i < AGG_SOURCES.length; i++) {
+    const { quizId, qIndex } = AGG_SOURCES[i];
+    const s = aggQuizSessions[quizId];
+    if (!s) continue;
+    const r = s.results[qIndex];
+    results[i] =
+      r != null
+        ? { ...r, q: i }
+        : null;
+    flagged[i] = !!s.flagged[qIndex];
+    notes[i] = (aggNotesByQuiz[quizId] && aggNotesByQuiz[quizId][qIndex]) || '';
+  }
+  const savedPos = parseInt(localStorage.getItem(AGG_POS_KEY), 10);
+  current =
+    Number.isFinite(savedPos) && savedPos >= 0 && savedPos < QUESTIONS.length ? savedPos : 0;
+  score = results.filter((r) => r && r.wasCorrect).length;
+}
+
+async function saveAggState() {
+  if (!uid || !AGGREGATE_MODE) return;
+  syncAggCacheFromFlat();
+  try {
+    await Promise.all(
+      Object.keys(aggQuizSessions).map((qid) =>
+        db
+          .collection('quizSessions')
+          .doc(uid)
+          .collection('quizzes')
+          .doc(qid)
+          .set(
+            {
+              results: aggQuizSessions[qid].results,
+              flagged: aggQuizSessions[qid].flagged,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          )
+      )
+    );
+    localStorage.setItem(AGG_POS_KEY, String(current));
+  } catch (e) {
+    console.warn('saveAggState failed', e);
+  }
+}
+
+async function loadQuizParentMode(params) {
+  const section = (params.get('section') || '').trim();
+  const weekRaw = (params.get('week') || '').trim();
+  const parentSlug = (params.get('parentSlug') || '').trim();
+  if (!section || !weekRaw || !parentSlug) {
+    showError('Missing section, week, or parentSlug for this combined quiz.');
+    return;
+  }
+  const weekNorm = weekRaw.replace(/\//g, '_').toUpperCase();
+  const docId = weekParentFirestoreDocId(section, weekNorm);
+  try {
+    document.getElementById('loadingScreen').classList.remove('hidden');
+    const wpSnap = await db.collection('weekParentPills').doc(docId).get();
+    if (!wpSnap.exists) {
+      showError('Week parent pills are not available yet. Ask an admin to generate them in Manage.');
+      return;
+    }
+    const wp = wpSnap.data();
+    const parents = Array.isArray(wp.parents) ? wp.parents : [];
+    const parent = parents.find((p) => p && p.slug === parentSlug);
+    if (!parent || !Array.isArray(parent.members) || !parent.members.length) {
+      showError('This week theme was not found or has no questions.');
+      return;
+    }
+
+    const qCache = new Map();
+    async function getQuestions(quizId) {
+      if (qCache.has(quizId)) return qCache.get(quizId);
+      const snap = await db.collection('quizzes').doc(quizId).collection('data').doc('questions').get();
+      const qs = snap.exists ? snap.data().questions || [] : [];
+      qCache.set(quizId, qs);
+      return qs;
+    }
+
+    const flatQ = [];
+    const sources = [];
+    for (const m of parent.members) {
+      const quizId = m && m.quizId;
+      const indices = m && Array.isArray(m.indices) ? m.indices : [];
+      if (!quizId || !indices.length) continue;
+      const qs = await getQuestions(quizId);
+      for (const qi of indices) {
+        const j = typeof qi === 'number' ? qi : parseInt(qi, 10);
+        if (!Number.isFinite(j) || j < 0 || j >= qs.length) continue;
+        flatQ.push(qs[j]);
+        sources.push({ quizId, qIndex: j });
+      }
+    }
+
+    if (!flatQ.length) {
+      showError('No questions in this combined set.');
+      return;
+    }
+
+    AGGREGATE_MODE = true;
+    AGG_SOURCES = sources;
+    AGG_POS_KEY = `nbquiz_agg:${docId}:${parentSlug}`;
+    QUIZ_ID = `agg:${docId}:${parentSlug}`;
+    topicTagsDoc = null;
+    QUIZ_META = {
+      section,
+      week: weekNorm,
+      topic: parent.label || parentSlug,
+      name: 'Combined',
+      title: `${weekNorm} · ${parent.label || parentSlug}`,
+    };
+    QUESTIONS = flatQ;
+
+    document.title = (QUIZ_META.title || 'Combined quiz') + ' — NB Quiz';
+    document.getElementById('totalQ').textContent = QUESTIONS.length;
+
+    await loadAggregateUserData();
+
+    document.getElementById('loadingScreen').classList.add('hidden');
+    showUI(true);
+
+    topicPrefs = { showTopics: false, algorithm: 'tfidf' };
+    topicFilterActive = null;
+    topicPillData = { pills: [], map: new Map() };
+    topicMiniSearch = null;
+    topicApplyPrefsFromState();
+    initSidebar();
+    finishQuizLoad(true);
+  } catch (e) {
+    showError('Failed to load combined quiz: ' + e.message);
+  }
 }
 
 function toggleSidebar() {
@@ -2092,6 +2321,20 @@ function jumpTo(idx) {
 function restartQuiz() {
   current = 0; score = 0; answered = false; selected = null;
   results = new Array(QUESTIONS.length).fill(null);
+  if (AGGREGATE_MODE) {
+    flagged = new Array(QUESTIONS.length).fill(false);
+    for (let i = 0; i < AGG_SOURCES.length; i++) {
+      const { quizId, qIndex } = AGG_SOURCES[i];
+      const s = aggQuizSessions[quizId];
+      if (s) {
+        s.results[qIndex] = null;
+        s.flagged[qIndex] = false;
+      }
+    }
+    try {
+      localStorage.removeItem(AGG_POS_KEY);
+    } catch (e) {}
+  }
   document.getElementById('resultsScreen').classList.remove('visible');
   document.getElementById('reviewSection').classList.add('hidden');
   document.getElementById('quizCard').classList.remove('hidden');
