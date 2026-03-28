@@ -138,10 +138,15 @@ body {
   max-width: 1400px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 300px 220px 1fr;
+  grid-template-columns: 300px minmax(0, 220px) minmax(0, 1fr);
   gap: 20px;
   padding: 20px 24px 40px;
   align-items: start;
+}
+.layout > .sidebar,
+.layout > .outline-panel,
+.layout > .reader {
+  min-width: 0;
 }
 .panel {
   background: var(--surface);
@@ -215,6 +220,16 @@ body.outline-in-sidebar .sidebar .note-list {
   transition: background .12s ease;
 }
 .note-folder-row:hover { background: #e8e4db; }
+.note-folder-row-wrap {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  background: var(--surface-2);
+}
+.note-folder-row-wrap .note-folder-row {
+  flex: 1;
+  min-width: 0;
+}
 .note-folder-chevron {
   flex-shrink: 0;
   width: .85em;
@@ -314,6 +329,23 @@ body.outline-in-sidebar .sidebar .note-list {
   cursor: pointer;
   user-select: none;
 }
+/* Smaller switch (sidebar toolbar, bulk rows, reader meta row) */
+.ios-toggle-wrap--compact {
+  font-size: .72rem;
+}
+.ios-toggle-wrap--compact .ios-switch {
+  width: 32px;
+  height: 18px;
+}
+.ios-toggle-wrap--compact .ios-switch::after {
+  width: 14px;
+  height: 14px;
+  top: 2px;
+  left: 2px;
+}
+.ios-toggle-wrap--compact input:checked + .ios-switch::after {
+  transform: translateX(14px);
+}
 .note-bulk-bar {
   display: flex;
   flex-wrap: wrap;
@@ -343,17 +375,52 @@ body.outline-in-sidebar .sidebar .note-list {
 }
 .note-item-row:hover { background: var(--accent-light); }
 .note-item-row:hover .note-item { background: transparent; }
+/* Bulk selection: native checkboxes aligned with panel chrome */
 .note-check-label {
   display: flex;
   align-items: center;
+  justify-content: center;
   padding: 0 8px 0 10px;
   flex-shrink: 0;
+  align-self: center;
   cursor: pointer;
 }
-.note-check-label input {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--accent);
+.note-check-label input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  cursor: pointer;
+  flex-shrink: 0;
+  vertical-align: middle;
+  position: relative;
+  transition: border-color .12s ease, background .12s ease;
+}
+.note-check-label input[type="checkbox"]:hover {
+  border-color: #93b4d4;
+}
+.note-check-label input[type="checkbox"]:focus-visible {
+  outline: 2px solid rgba(37, 99, 168, .35);
+  outline-offset: 2px;
+}
+.note-check-label input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.note-check-label input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 .note-item {
   display: block;
@@ -568,11 +635,13 @@ body.outline-in-sidebar .sidebar .note-list {
   min-height: 70vh;
 }
 .reader-top {
+  min-width: 0;
+  width: 100%;
   padding: 14px 16px;
   border-bottom: 1px solid var(--border);
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px 12px;
   position: sticky;
   top: 0;
@@ -580,10 +649,59 @@ body.outline-in-sidebar .sidebar .note-list {
   background: var(--surface);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
+.reader-title-block {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .reader-title {
   font-family: var(--font-serif);
   font-size: 1.35rem;
   font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.25;
+}
+.reader-title-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2em 0.32em;
+}
+.reader-title-folder {
+  color: var(--text-2);
+  font-weight: 500;
+  font-size: 0.86em;
+  letter-spacing: 0.02em;
+}
+.reader-title-sep {
+  color: var(--text-3);
+  font-weight: 400;
+  font-size: 0.68em;
+  user-select: none;
+  opacity: 0.9;
+  position: relative;
+  top: -0.04em;
+}
+.reader-title-leaf {
+  font-weight: 600;
+  color: var(--text);
+}
+.reader-title-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.reader-title-meta .ios-toggle-wrap {
+  font-size: .72rem;
+  color: var(--text-2);
+}
+.reader-top .sidebar-toggle {
+  align-self: flex-start;
 }
 .chip {
   font-size: .68rem;
@@ -592,19 +710,12 @@ body.outline-in-sidebar .sidebar .note-list {
   border: 1px solid var(--border);
   border-radius: 99px;
   padding: 4px 10px;
-}
-.toggle-wrap {
-  margin-left: auto;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  font-size: .75rem;
-  color: var(--text-2);
-  font-family: var(--font-sans);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .reader-search-block {
   flex: 1 1 100%;
-  min-width: min(100%, 220px);
+  min-width: 0;
   position: relative;
   z-index: 20;
 }
@@ -613,10 +724,11 @@ body.outline-in-sidebar .sidebar .note-list {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
+  min-width: 0;
 }
 .reader-search-input {
   flex: 1 1 180px;
-  min-width: 140px;
+  min-width: 0;
   max-width: 420px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -751,6 +863,8 @@ body.outline-in-sidebar .sidebar .note-list {
 }
 .reader-body {
   padding: 16px;
+  min-width: 0;
+  overflow-x: auto;
 }
 .empty-reader {
   padding: 50px 20px;
@@ -1087,17 +1201,12 @@ body.outline-in-sidebar .sidebar .note-list {
   border: 1px solid var(--border);
 }
 .bulk-folder-check {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: .84rem;
-  color: var(--text);
-  font-family: var(--font-sans);
-  cursor: pointer;
-  user-select: none;
   margin-bottom: 8px;
 }
-.bulk-folder-check input { width: 15px; height: 15px; accent-color: var(--accent); }
+.bulk-folder-check.ios-toggle-wrap {
+  font-size: .84rem;
+  color: var(--text);
+}
 .bulk-folder-input { margin-top: 4px; }
 .bulk-import-list {
   display: flex;
@@ -1214,11 +1323,6 @@ body.outline-in-sidebar .outline-panel { display: none !important; }
 body.outline-in-sidebar .layout { grid-template-columns: 300px 1fr; }
 body.outline-in-sidebar .sidebar-outline-section { display: flex; }
 
-/* non-sidebar mode on mobile: show reader strip */
-@media (max-width: 1000px) {
-  body:not(.outline-in-sidebar) .reader-outline-strip { display: block; }
-}
-
 /* Mobile sidebar toggle button — hidden on desktop */
 .sidebar-toggle {
   display: none;
@@ -1253,8 +1357,10 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
 }
 
 @media (max-width: 1200px) {
-  body:not(.outline-in-sidebar) .layout { grid-template-columns: 280px 1fr; }
+  body:not(.outline-in-sidebar) .layout { grid-template-columns: 300px 1fr; }
   body:not(.outline-in-sidebar) .outline-panel { display: none; }
+  /* Same moment standalone outline hides, show strip inside reader (avoids 1000–1200px dead zone) */
+  body:not(.outline-in-sidebar) .reader-outline-strip { display: block; }
 }
 
 /* "Vertical mode" (portrait tablets): stack panels full-width */
@@ -1357,13 +1463,17 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
     </div>
     <div class="panel-head">Your Notes</div>
     <div class="note-list-toolbar">
-      <label><input type="checkbox" id="noteBulkModeToggle" onchange="onBulkModeChange()"> Select multiple</label>
+      <label class="ios-toggle-wrap ios-toggle-wrap--compact" title="Select notes and folders to move or delete">
+        <input type="checkbox" id="noteBulkModeToggle" onchange="onBulkModeChange()">
+        <span class="ios-switch"></span>
+        <span>Select multiple</span>
+      </label>
     </div>
     <div class="note-bulk-bar hidden" id="noteBulkBar">
       <span id="noteBulkCount">0 selected</span>
       <button type="button" class="btn" onclick="bulkSelectAllNotes()">Select all</button>
       <button type="button" class="btn" onclick="bulkClearNoteSelection()">Clear</button>
-      <input type="text" class="bulk-move-input" id="bulkMoveFolderInput" placeholder="Folder path (empty = root)" autocomplete="off" title="Parent folder; each note keeps its title segment">
+      <input type="text" class="bulk-move-input" id="bulkMoveFolderInput" placeholder="Destination parent (empty = root)" autocomplete="off" title="Parent folder for moved items. Notes keep their name; whole folders keep their folder name.">
       <button type="button" class="btn" onclick="bulkMoveSelectedNotes()">Move to folder</button>
       <button type="button" class="btn" onclick="bulkDeleteSelectedNotes()">Delete selected</button>
     </div>
@@ -1396,17 +1506,22 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
       <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle sidebar">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
-      <div class="reader-title" id="readerTitle">No note selected</div>
-      <div class="chip" id="tileCountChip">0 tiles</div>
-      <div class="chip" id="markedCountChip">0 marked</div>
-      <div class="chip reader-search-filter-chip hidden" id="readerSearchFilterChip" title="Reader shows matching tiles only (Enter). Click × for full note.">
-        <span id="readerSearchFilterLabel"></span>
-        <button type="button" class="reader-search-filter-clear" onclick="clearReaderTileSearchFilter()" aria-label="Clear reader search filter">×</button>
+      <div class="reader-title-block">
+        <div class="reader-title" id="readerTitle">No note selected</div>
+        <div class="reader-title-meta">
+          <div class="chip" id="tileCountChip">0 tiles</div>
+          <div class="chip" id="markedCountChip">0 marked</div>
+          <div class="chip reader-search-filter-chip hidden" id="readerSearchFilterChip" title="Reader shows matching tiles only (Enter). Click × for full note.">
+            <span id="readerSearchFilterLabel"></span>
+            <button type="button" class="reader-search-filter-clear" onclick="clearReaderTileSearchFilter()" aria-label="Clear reader search filter">×</button>
+          </div>
+          <label class="ios-toggle-wrap ios-toggle-wrap--compact" title="Hide unmarked tiles in the reader">
+            <input type="checkbox" id="markedOnlyToggle" onchange="toggleMarkedOnly()">
+            <span class="ios-switch"></span>
+            <span>Show marked tiles only</span>
+          </label>
+        </div>
       </div>
-      <label class="toggle-wrap">
-        <input type="checkbox" id="markedOnlyToggle" onchange="toggleMarkedOnly()">
-        Show marked tiles only
-      </label>
       <div class="reader-search-block">
         <div class="reader-search-wrap">
           <input type="search" class="reader-search-input" id="tileSearchInput" placeholder="Search tiles… (Enter: filter reader)" autocomplete="off" aria-label="Search tiles" oninput="onTileSearchInput()" onfocus="onTileSearchFocus()" onkeydown="onTileSearchKeydown(event)">
@@ -1433,8 +1548,9 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
     <div class="modal-body">
       <p class="modal-hint">Edit each note title before importing. Titles can use <code style="font-family:var(--font-mono);font-size:.78em;">/</code> for nested folders (e.g. <code style="font-family:var(--font-mono);font-size:.78em;">Topic/Sub</code>). Files over ~1&nbsp;MB cannot be stored.</p>
       <div class="bulk-folder-block">
-        <label class="bulk-folder-check">
+        <label class="bulk-folder-check ios-toggle-wrap">
           <input type="checkbox" id="bulkImportUseFolder" onchange="onBulkImportFolderToggle()">
+          <span class="ios-switch"></span>
           <span>Put all imported notes in one folder</span>
         </label>
         <input type="text" class="input bulk-folder-input" id="bulkImportFolderName" placeholder="Folder name (e.g. Cardiology block)" disabled autocomplete="off">
@@ -1495,6 +1611,7 @@ let isDraftNote = false;
 let composerEditMode = false;
 let bulkSelectMode = false;
 const selectedNoteIds = new Set();
+const selectedFolderPaths = new Set();
 let draftRenderRaf = null;
 
 function applyComposerCollapsed() {
@@ -1568,6 +1685,7 @@ auth.onAuthStateChanged(async user => {
     composerEditMode = false;
     bulkSelectMode = false;
     selectedNoteIds.clear();
+    selectedFolderPaths.clear();
     const bulkT = document.getElementById('noteBulkModeToggle');
     if (bulkT) bulkT.checked = false;
     renderNotesList();
@@ -1607,6 +1725,40 @@ function splitNoteTitlePath(title) {
     .filter(Boolean);
 }
 
+/** HTML for reader header: folder segments muted, › separators instead of raw slashes. */
+function formatReaderTitleHtml(title) {
+  const raw = String(title || '').trim();
+  if (!raw) {
+    return '<span class="reader-title-leaf">' + escHtml('Untitled note') + '</span>';
+  }
+  const parts = splitNoteTitlePath(raw);
+  if (!parts.length) {
+    return '<span class="reader-title-leaf">' + escHtml('Untitled note') + '</span>';
+  }
+  if (parts.length === 1) {
+    return '<span class="reader-title-leaf">' + escHtml(parts[0]) + '</span>';
+  }
+  const folders = parts.slice(0, -1);
+  const leaf = parts[parts.length - 1];
+  let html = '<span class="reader-title-crumbs">';
+  folders.forEach((seg, i) => {
+    if (i > 0) html += '<span class="reader-title-sep" aria-hidden="true">\u203a</span>';
+    html += '<span class="reader-title-folder">' + escHtml(seg) + '</span>';
+  });
+  html += '<span class="reader-title-sep" aria-hidden="true">\u203a</span>';
+  html += '<span class="reader-title-leaf">' + escHtml(leaf) + '</span>';
+  html += '</span>';
+  return html;
+}
+
+function readerTitleAccessibilityLabel(title) {
+  const raw = String(title || '').trim();
+  if (!raw) return 'Untitled note';
+  const parts = splitNoteTitlePath(raw);
+  if (!parts.length) return 'Untitled note';
+  return parts.join(' / ');
+}
+
 function buildNotesFolderTree(notesList) {
   const root = { folders: new Map(), entries: [] };
   for (const note of notesList) {
@@ -1625,6 +1777,56 @@ function buildNotesFolderTree(notesList) {
   return root;
 }
 
+function filterRedundantFolderPaths(paths) {
+  const uniq = [...new Set(paths.map(p => normalizeNoteTitlePath(p)))].filter(Boolean);
+  uniq.sort((a, b) => (a.length !== b.length ? a.length - b.length : a.localeCompare(b, undefined, { sensitivity: 'base' })));
+  const kept = [];
+  for (const p of uniq) {
+    if (kept.some(k => p === k || p.startsWith(k + '/'))) continue;
+    kept.push(p);
+  }
+  return kept;
+}
+
+function noteTitleUnderFolderPath(noteTitle, folderPath) {
+  const t = normalizeNoteTitlePath(noteTitle);
+  const f = normalizeNoteTitlePath(folderPath);
+  if (!f) return false;
+  return t === f || t.startsWith(f + '/');
+}
+
+function longestMatchingSelectedFolder(noteTitle, folderPathsEffective) {
+  const t = normalizeNoteTitlePath(noteTitle);
+  let best = null;
+  let bestLen = -1;
+  for (const fp of folderPathsEffective) {
+    const f = normalizeNoteTitlePath(fp);
+    if (!f) continue;
+    if (t === f || t.startsWith(f + '/')) {
+      if (f.length > bestLen) {
+        bestLen = f.length;
+        best = f;
+      }
+    }
+  }
+  return best;
+}
+
+function newTitleAfterMovingFolder(noteTitle, folderPath, destParent) {
+  const t = normalizeNoteTitlePath(noteTitle);
+  const f = normalizeNoteTitlePath(folderPath);
+  const dest = normalizeNoteTitlePath(destParent);
+  const parts = splitNoteTitlePath(f);
+  const seg = parts.length ? parts[parts.length - 1] : f;
+  if (!f || !seg) return t;
+  if (t === f) return dest ? `${dest}/${seg}` : seg;
+  if (t.startsWith(f + '/')) {
+    const tail = t.slice(f.length + 1);
+    return dest ? `${dest}/${seg}/${tail}` : `${seg}/${tail}`;
+  }
+  return t;
+}
+
 function renderNotesTreeHtml(tree, depth, pathPrefix) {
   const padLeft = 14 + depth * 12;
   const showChecks = bulkSelectMode;
@@ -1638,11 +1840,20 @@ function renderNotesTreeHtml(tree, depth, pathPrefix) {
     const folderPath = pathPrefix ? `${pathPrefix}/${name}` : name;
     const collapsed = folderCollapsedPaths.has(folderPath);
     const chev = collapsed ? '▸' : '▾';
+    const folderChecked = selectedFolderPaths.has(normalizeNoteTitlePath(folderPath)) ? 'checked' : '';
+    const folderCheckbox = showChecks
+      ? `<label class="note-check-label" onclick="event.stopPropagation()">
+        <input type="checkbox" ${folderChecked} aria-label="Select folder ${escAttr(name)}" onchange="toggleFolderSelected('${escAttr(folderPath)}')">
+      </label>`
+      : '';
     html += `<div class="note-folder-wrap">
+      <div class="note-folder-row-wrap">
+      ${folderCheckbox}
       <button type="button" class="note-folder-row" style="padding-left:${padLeft}px" onclick="toggleFolderCollapse('${escAttr(folderPath)}')" aria-expanded="${!collapsed}">
         <span class="note-folder-chevron" aria-hidden="true">${chev}</span>
         <span class="note-folder-name">${escHtml(name)}</span>
-      </button>`;
+      </button>
+      </div>`;
     if (!collapsed) {
       html += `<div class="note-folder-children">${renderNotesTreeHtml(child, depth + 1, folderPath)}</div>`;
     }
@@ -1677,15 +1888,22 @@ function updateNoteBulkBar() {
   const countEl = document.getElementById('noteBulkCount');
   if (!bar || !countEl) return;
   const n = selectedNoteIds.size;
-  countEl.textContent = n === 1 ? '1 note selected' : `${n} notes selected`;
-  const show = bulkSelectMode || n > 0;
+  const f = selectedFolderPaths.size;
+  const parts = [];
+  if (n) parts.push(n === 1 ? '1 note' : `${n} notes`);
+  if (f) parts.push(f === 1 ? '1 folder' : `${f} folders`);
+  countEl.textContent = parts.length ? `${parts.join(', ')} selected` : 'Nothing selected';
+  const show = bulkSelectMode || n > 0 || f > 0;
   bar.classList.toggle('hidden', !show);
 }
 
 function onBulkModeChange() {
   const t = document.getElementById('noteBulkModeToggle');
   bulkSelectMode = !!(t && t.checked);
-  if (!bulkSelectMode) selectedNoteIds.clear();
+  if (!bulkSelectMode) {
+    selectedNoteIds.clear();
+    selectedFolderPaths.clear();
+  }
   renderNotesList();
   updateNoteBulkBar();
 }
@@ -1693,6 +1911,13 @@ function onBulkModeChange() {
 function toggleNoteSelected(noteId) {
   if (selectedNoteIds.has(noteId)) selectedNoteIds.delete(noteId);
   else selectedNoteIds.add(noteId);
+  updateNoteBulkBar();
+}
+
+function toggleFolderSelected(folderPath) {
+  const key = normalizeNoteTitlePath(folderPath);
+  if (selectedFolderPaths.has(key)) selectedFolderPaths.delete(key);
+  else selectedFolderPaths.add(key);
   updateNoteBulkBar();
 }
 
@@ -1704,44 +1929,101 @@ function bulkSelectAllNotes() {
 
 function bulkClearNoteSelection() {
   selectedNoteIds.clear();
+  selectedFolderPaths.clear();
   renderNotesList();
   updateNoteBulkBar();
 }
 
 async function bulkMoveSelectedNotes() {
-  const ids = [...selectedNoteIds];
-  if (!ids.length) {
-    setComposerStatus('No notes selected.', true);
-    return;
-  }
   if (!currentUid) {
     setComposerStatus('Sign in to move notes.', true);
     return;
   }
-  const parent = normalizeNoteTitlePath(document.getElementById('bulkMoveFolderInput').value.trim());
-  setComposerStatus('Moving notes...');
+  const destParent = normalizeNoteTitlePath(document.getElementById('bulkMoveFolderInput').value.trim());
+  const foldersEffective = filterRedundantFolderPaths([...selectedFolderPaths]);
+
+  for (const fp of foldersEffective) {
+    const f = normalizeNoteTitlePath(fp);
+    if (destParent === f || (f && destParent.startsWith(f + '/'))) {
+      setComposerStatus('Cannot move a folder into itself or into one of its subfolders.', true);
+      return;
+    }
+  }
+
+  if (!selectedFolderPaths.size && !selectedNoteIds.size) {
+    setComposerStatus('Select notes or folders to move.', true);
+    return;
+  }
+
+  const idsUnderSelectedFolders = new Set();
+  for (const note of notes) {
+    if (foldersEffective.some(fp => noteTitleUnderFolderPath(note.title, fp))) idsUnderSelectedFolders.add(note.id);
+  }
+  const noteIdsToReparent = [...selectedNoteIds].filter(id => !idsUnderSelectedFolders.has(id));
+
+  const folderMoveUpdates = [];
+  for (const note of notes) {
+    const matched = longestMatchingSelectedFolder(note.title, foldersEffective);
+    if (!matched) continue;
+    const newTitle = newTitleAfterMovingFolder(note.title, matched, destParent);
+    if (normalizeNoteTitlePath(note.title) !== newTitle) {
+      folderMoveUpdates.push({ id: note.id, newTitle });
+    }
+  }
+
+  const noteOnlyUpdates = [];
+  for (const id of noteIdsToReparent) {
+    const note = notes.find(n => n.id === id);
+    if (!note) continue;
+    const parts = splitNoteTitlePath(note.title);
+    const base = parts.length ? parts[parts.length - 1] : 'Untitled note';
+    const newTitle = destParent ? normalizeNoteTitlePath(`${destParent}/${base}`) : base;
+    if (normalizeNoteTitlePath(note.title) !== newTitle) {
+      noteOnlyUpdates.push({ id, newTitle });
+    }
+  }
+
+  if (!folderMoveUpdates.length && !noteOnlyUpdates.length) {
+    setComposerStatus('Nothing to move — items are already under that destination.', true);
+    return;
+  }
+
+  setComposerStatus('Moving…');
   try {
     const CHUNK = 400;
-    for (let i = 0; i < ids.length; i += CHUNK) {
-      const slice = ids.slice(i, i + CHUNK);
-      const batch = db.batch();
-      for (const id of slice) {
-        const note = notes.find(n => n.id === id);
-        if (!note) continue;
-        const parts = splitNoteTitlePath(note.title);
-        const base = parts.length ? parts[parts.length - 1] : 'Untitled note';
-        const newTitle = parent ? normalizeNoteTitlePath(`${parent}/${base}`) : base;
-        batch.update(notesCollection().doc(id), {
-          title: newTitle,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        });
-        note.title = newTitle;
-        note.updatedAt = { toDate: () => new Date() };
+    const applyUpdates = async updates => {
+      for (let i = 0; i < updates.length; i += CHUNK) {
+        const slice = updates.slice(i, i + CHUNK);
+        const batch = db.batch();
+        for (const { id, newTitle } of slice) {
+          batch.update(notesCollection().doc(id), {
+            title: newTitle,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+          const note = notes.find(n => n.id === id);
+          if (note) {
+            note.title = newTitle;
+            note.updatedAt = { toDate: () => new Date() };
+          }
+        }
+        await batch.commit();
       }
-      await batch.commit();
-    }
-    setComposerStatus(`Moved ${ids.length} note${ids.length === 1 ? '' : 's'}.`);
+    };
+
+    await applyUpdates(folderMoveUpdates);
+    await applyUpdates(noteOnlyUpdates);
+
+    const total = folderMoveUpdates.length + noteOnlyUpdates.length;
+    const fc = foldersEffective.length;
+    const nc = noteOnlyUpdates.length;
+    let msg = `Updated ${total} note${total === 1 ? '' : 's'}`;
+    if (fc && nc) msg += ` (${fc} folder${fc === 1 ? '' : 's'} + ${nc} individual)`;
+    else if (fc) msg += ` (${fc} folder${fc === 1 ? '' : 's'})`;
+    msg += '.';
+    setComposerStatus(msg);
+
     selectedNoteIds.clear();
+    selectedFolderPaths.clear();
     renderNotesList();
     syncComposerToCurrent();
     renderReader();
@@ -1753,12 +2035,18 @@ async function bulkMoveSelectedNotes() {
 }
 
 async function bulkDeleteSelectedNotes() {
-  const ids = [...selectedNoteIds];
+  const foldersEffective = filterRedundantFolderPaths([...selectedFolderPaths]);
+  const idsFromFolders = new Set();
+  for (const note of notes) {
+    if (foldersEffective.some(fp => noteTitleUnderFolderPath(note.title, fp))) idsFromFolders.add(note.id);
+  }
+  const ids = [...new Set([...selectedNoteIds, ...idsFromFolders])];
   if (!ids.length) {
-    setComposerStatus('No notes selected.', true);
+    setComposerStatus('Select notes or folders to delete.', true);
     return;
   }
-  if (!window.confirm(`Delete ${ids.length} note${ids.length === 1 ? '' : 's'}? This cannot be undone.`)) return;
+  const folderPart = foldersEffective.length ? ` and everything under ${foldersEffective.length} folder${foldersEffective.length === 1 ? '' : 's'}` : '';
+  if (!window.confirm(`Delete ${ids.length} note${ids.length === 1 ? '' : 's'}${folderPart}? This cannot be undone.`)) return;
   if (!currentUid) {
     setComposerStatus('Sign in to delete notes.', true);
     return;
@@ -1776,6 +2064,7 @@ async function bulkDeleteSelectedNotes() {
     }
     notes = notes.filter(n => !ids.includes(n.id));
     selectedNoteIds.clear();
+    selectedFolderPaths.clear();
     if (currentNoteId && ids.includes(currentNoteId)) {
       currentNoteId = notes.length ? notes[0].id : null;
       if (!currentNoteId) isDraftNote = false;
@@ -2634,6 +2923,7 @@ function renderReader() {
     renderedTree = null;
     renderedMarkedCount = 0;
     if (!notes.length) {
+      readerTitle.removeAttribute('aria-label');
       readerTitle.textContent = 'All-notes search';
       tileChip.textContent = '0 notes';
       markedChip.textContent = '—';
@@ -2674,6 +2964,7 @@ function renderReader() {
         </div>`);
       }
     }
+    readerTitle.removeAttribute('aria-label');
     readerTitle.textContent = 'All-notes search';
     tileChip.textContent = totalMatches ? `${totalMatches} matching tiles` : '0 matches';
     markedChip.textContent = '—';
@@ -2690,6 +2981,7 @@ function renderReader() {
 
   const note = getCurrentNote();
   if (!note) {
+    readerTitle.removeAttribute('aria-label');
     readerTitle.textContent = 'No note selected';
     tileChip.textContent = '0 tiles';
     markedChip.textContent = '0 marked';
@@ -2708,8 +3000,13 @@ function renderReader() {
   for (const legacyId of legacyMarked) markedSet.add(legacyId);
   renderedMarkedCount = allNodes.filter(n => markedSet.has(n.id)).length;
 
-  readerTitle.textContent =
-    note.isDraft && !String(note.title || '').trim() ? 'New draft (unsaved)' : (note.title || 'Untitled note');
+  if (note.isDraft && !String(note.title || '').trim()) {
+    readerTitle.removeAttribute('aria-label');
+    readerTitle.textContent = 'New draft (unsaved)';
+  } else {
+    readerTitle.innerHTML = formatReaderTitleHtml(note.title);
+    readerTitle.setAttribute('aria-label', readerTitleAccessibilityLabel(note.title));
+  }
   tileChip.textContent = `${allNodes.length} tiles`;
   markedChip.textContent = `${renderedMarkedCount} marked`;
 
@@ -2867,15 +3164,30 @@ function selectNoteFromAllNotesSearch(noteId) {
 
 function scrollToTile(tileEl, durationMs) {
   const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const rect = tileEl.getBoundingClientRect();
-  const targetY = window.scrollY + rect.top - 10;
+  const readerTopEl = document.querySelector('.reader-top');
+  const titleEl = tileEl.querySelector('.tile-title');
+  const headEl = tileEl.querySelector('.tile-head');
+  const anchorEl = titleEl || headEl || tileEl;
+  const rect = anchorEl.getBoundingClientRect();
+  const anchorCenterY = rect.top + rect.height / 2;
+  const notesTop = readerTopEl ? readerTopEl.getBoundingClientRect().bottom : 0;
+  const notesHeight = Math.max(0, window.innerHeight - notesTop);
+  const notesCenterY = notesTop + notesHeight / 2;
+  const targetY = window.scrollY + (anchorCenterY - notesCenterY);
+  const docEl = document.documentElement;
+  const docHeight = Math.max(
+    docEl ? docEl.scrollHeight : 0,
+    document.body ? document.body.scrollHeight : 0
+  );
+  const maxScroll = Math.max(0, docHeight - window.innerHeight);
+  const clampedY = Math.max(0, Math.min(targetY, maxScroll));
   if (prefersReduced || !durationMs || durationMs <= 0) {
-    window.scrollTo(0, targetY);
+    window.scrollTo(0, clampedY);
     return;
   }
 
   const startY = window.scrollY;
-  const delta = targetY - startY;
+  const delta = clampedY - startY;
   const startT = performance.now();
   const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
 
