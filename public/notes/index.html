@@ -397,6 +397,90 @@ body.outline-in-sidebar .sidebar .note-list {
   background: #fffbeb;
   color: var(--mark);
 }
+.outline-item.search-match {
+  border-color: rgba(37, 99, 168, .45);
+  background: rgba(37, 99, 168, .07);
+  color: var(--accent);
+}
+.reader-search-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(100%, 220px);
+}
+.reader-search-filter-chip.hidden {
+  display: none;
+}
+.reader-search-filter-clear {
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+  border-radius: 4px;
+}
+.reader-search-filter-clear:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.all-notes-search-note {
+  margin-bottom: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+.all-notes-search-note-open {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  padding: 10px 14px;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  transition: background .12s ease;
+}
+.all-notes-search-note-open:hover {
+  background: #e8eef6;
+}
+.all-notes-search-tiles {
+  padding: 12px 14px 14px;
+}
+.all-notes-search-tiles .tile:last-child {
+  margin-bottom: 0;
+}
+.all-notes-outline-group {
+  margin-bottom: 12px;
+}
+.all-notes-outline-group:last-child {
+  margin-bottom: 0;
+}
+.all-notes-outline-note-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  font-size: .72rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  color: var(--accent);
+  cursor: pointer;
+}
+.all-notes-outline-note-btn:hover {
+  border-color: rgba(37, 99, 168, .4);
+}
 
 /* Reader */
 .reader {
@@ -438,6 +522,152 @@ body.outline-in-sidebar .sidebar .note-list {
   font-size: .75rem;
   color: var(--text-2);
   font-family: var(--font-sans);
+}
+.reader-search-block {
+  flex: 1 1 100%;
+  min-width: min(100%, 220px);
+  position: relative;
+  z-index: 20;
+}
+.reader-search-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.reader-search-input {
+  flex: 1 1 180px;
+  min-width: 140px;
+  max-width: 420px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 11px;
+  font-size: .82rem;
+  font-family: var(--font-sans);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.reader-search-input:focus {
+  outline: 2px solid rgba(37, 99, 168, .35);
+  outline-offset: 1px;
+  border-color: #93b4d4;
+}
+.reader-search-input::placeholder {
+  color: var(--text-3);
+}
+.reader-search-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: .72rem;
+  color: var(--text-2);
+  font-family: var(--font-sans);
+}
+.reader-search-scope label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+}
+.reader-search-scope input {
+  accent-color: var(--accent, #2563eb);
+}
+.tile-search-results {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  max-height: min(55vh, 360px);
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgba(26, 23, 20, .12);
+  padding: 6px 0;
+}
+.tile-search-results.hidden {
+  display: none;
+}
+.tile-search-results.is-empty {
+  padding: 12px 14px;
+  font-size: .82rem;
+  color: var(--text-3);
+  font-family: var(--font-sans);
+}
+.tile-search-hit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background .12s ease;
+}
+.tile-search-hit:last-child {
+  border-bottom: none;
+}
+.tile-search-hit:hover,
+.tile-search-hit:focus-visible {
+  background: var(--surface-2);
+  outline: none;
+}
+.tile-search-hit .search-breadcrumb {
+  font-size: .72rem;
+  color: var(--text-3);
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+.tile-search-hit .search-breadcrumb-sep {
+  color: #b7aea2;
+}
+.tile-search-hit .search-note-label {
+  font-size: .68rem;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  margin-bottom: 3px;
+}
+.tile-search-hit .search-hit-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tile-search-hit .search-hit-level {
+  font-size: .6rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+}
+.tile-search-hit .search-hit-title {
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.tile-search-hit .search-hit-snippet {
+  font-size: .75rem;
+  color: var(--text-2);
+  margin-top: 5px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tile-search-hit mark.search-hit-highlight {
+  background: #ffeb3b;
+  color: var(--text);
+  font-weight: inherit;
+  padding: 0 0.06em;
+  border-radius: 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 .reader-body {
   padding: 16px;
@@ -1040,10 +1270,24 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
       <div class="reader-title" id="readerTitle">No note selected</div>
       <div class="chip" id="tileCountChip">0 tiles</div>
       <div class="chip" id="markedCountChip">0 marked</div>
+      <div class="chip reader-search-filter-chip hidden" id="readerSearchFilterChip" title="Reader shows matching tiles only (Enter). Click × for full note.">
+        <span id="readerSearchFilterLabel"></span>
+        <button type="button" class="reader-search-filter-clear" onclick="clearReaderTileSearchFilter()" aria-label="Clear reader search filter">×</button>
+      </div>
       <label class="toggle-wrap">
         <input type="checkbox" id="markedOnlyToggle" onchange="toggleMarkedOnly()">
         Show marked tiles only
       </label>
+      <div class="reader-search-block">
+        <div class="reader-search-wrap">
+          <input type="search" class="reader-search-input" id="tileSearchInput" placeholder="Search tiles… (Enter: filter reader)" autocomplete="off" aria-label="Search tiles" oninput="onTileSearchInput()" onfocus="onTileSearchFocus()" onkeydown="onTileSearchKeydown(event)">
+          <div class="reader-search-scope" role="radiogroup" aria-label="Search scope">
+            <label><input type="radio" name="tileSearchScope" value="current" id="tileSearchScopeCurrent" onchange="onTileSearchScopeChange()"> This note</label>
+            <label><input type="radio" name="tileSearchScope" value="all" id="tileSearchScopeAll" onchange="onTileSearchScopeChange()"> All notes</label>
+          </div>
+        </div>
+        <div id="tileSearchResults" class="tile-search-results hidden" role="listbox" aria-label="Search results"></div>
+      </div>
     </div>
     <div class="reader-body" id="readerBody">
       <div class="empty-reader">Create or import a markdown note to start.</div>
@@ -1114,6 +1358,10 @@ let folderCollapsedPaths = new Set(
 let bulkImportState = null;
 const FIRESTORE_NOTE_MAX_CHARS = 950000;
 let bulkImportEscapeHandler = null;
+/** When set, reader shows only tiles matching this query, nested under ancestors. Cleared on note switch or ×. */
+let readerTileSearchQuery = null;
+/** If true with readerTileSearchQuery, reader aggregates matches across all notes; if false, only current note. */
+let readerTileSearchAllNotes = false;
 
 function applyComposerCollapsed() {
   const btn = document.getElementById('composerSectionToggle');
@@ -1154,6 +1402,8 @@ function toggleOutlineInSidebar() {
 
 applyOutlineInSidebar();
 applyComposerCollapsed();
+applyTileSearchScopeFromStorage();
+document.addEventListener('mousedown', onTileSearchDocMouseDown, true);
 
 function signInWithGoogle() {
   document.getElementById('loginError').textContent = '';
@@ -1270,6 +1520,8 @@ function renderNotesList() {
 
 function selectNote(noteId) {
   currentNoteId = noteId;
+  readerTileSearchQuery = null;
+  readerTileSearchAllNotes = false;
   renderNotesList();
   syncComposerToCurrent();
   renderReader();
@@ -1638,6 +1890,254 @@ async function confirmBulkImport() {
   }
 }
 
+function applyTileSearchScopeFromStorage() {
+  const all = localStorage.getItem('notesTileSearchScope') === 'all';
+  const cur = document.getElementById('tileSearchScopeCurrent');
+  const a = document.getElementById('tileSearchScopeAll');
+  if (cur) cur.checked = !all;
+  if (a) a.checked = all;
+}
+
+function onTileSearchScopeChange() {
+  const all = document.getElementById('tileSearchScopeAll')?.checked;
+  localStorage.setItem('notesTileSearchScope', all ? 'all' : 'current');
+  runTileSearch();
+  if (readerTileSearchQuery && readerTileSearchQuery.trim()) {
+    readerTileSearchAllNotes = all === true;
+    renderReader();
+  }
+}
+
+function onTileSearchInput() {
+  const q = String(document.getElementById('tileSearchInput')?.value || '').trim();
+  if (!q) {
+    readerTileSearchQuery = null;
+    readerTileSearchAllNotes = false;
+    updateReaderSearchFilterChip();
+    renderReader();
+  }
+  runTileSearch();
+}
+
+function updateReaderSearchFilterChip() {
+  const chip = document.getElementById('readerSearchFilterChip');
+  const label = document.getElementById('readerSearchFilterLabel');
+  if (!chip || !label) return;
+  if (readerTileSearchQuery && readerTileSearchQuery.trim()) {
+    chip.classList.remove('hidden');
+    const t = readerTileSearchQuery.trim();
+    let show = t.length > 22 ? t.slice(0, 19) + '…' : t;
+    if (readerTileSearchAllNotes) show += ' · all notes';
+    label.textContent = show.length > 34 ? show.slice(0, 31) + '…' : show;
+  } else {
+    chip.classList.add('hidden');
+    label.textContent = '';
+  }
+}
+
+function clearReaderTileSearchFilter() {
+  readerTileSearchQuery = null;
+  readerTileSearchAllNotes = false;
+  updateReaderSearchFilterChip();
+  renderReader();
+}
+
+function onTileSearchFocus() {
+  const q = String(document.getElementById('tileSearchInput')?.value || '').trim();
+  if (q) runTileSearch();
+}
+
+function onTileSearchKeydown(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const q = String(document.getElementById('tileSearchInput')?.value || '').trim();
+    readerTileSearchQuery = q || null;
+    readerTileSearchAllNotes = q
+      ? document.getElementById('tileSearchScopeAll')?.checked === true
+      : false;
+    updateReaderSearchFilterChip();
+    runTileSearch();
+    renderReader();
+    return;
+  }
+  if (e.key === 'Escape') {
+    dismissTileSearchResults();
+    document.getElementById('tileSearchInput')?.blur();
+  }
+}
+
+function onTileSearchDocMouseDown(e) {
+  const block = document.querySelector('.reader-search-block');
+  if (block && !block.contains(e.target)) {
+    const panel = document.getElementById('tileSearchResults');
+    if (panel) panel.classList.add('hidden');
+  }
+}
+
+function dismissTileSearchResults() {
+  const panel = document.getElementById('tileSearchResults');
+  if (panel) {
+    panel.classList.add('hidden');
+    panel.classList.remove('is-empty');
+  }
+}
+
+function tileSearchSnippetFromBody(contentLines, queryLower) {
+  const lines = contentLines || [];
+  const q = queryLower;
+  for (const line of lines) {
+    const t = String(line || '').trim();
+    if (!t) continue;
+    if (t.toLowerCase().includes(q)) {
+      return t.length > 160 ? t.slice(0, 157) + '…' : t;
+    }
+  }
+  const joined = lines.map(l => String(l || '').trim()).filter(Boolean).join(' ');
+  if (!joined) return '';
+  return joined.length > 160 ? joined.slice(0, 157) + '…' : joined;
+}
+
+function computeTileSearchMatchSet(markdown, queryLower) {
+  if (!queryLower) return new Set();
+  const parsed = parseMarkdownHierarchy(markdown || '');
+  const index = buildHeadingIndex(parsed.root.children);
+  const set = new Set();
+  for (const { node } of index) {
+    const titleLower = String(node.title || '').toLowerCase();
+    const bodyLower = (node.contentLines || []).join('\n').toLowerCase();
+    if (titleLower.includes(queryLower) || bodyLower.includes(queryLower)) set.add(node.id);
+  }
+  return set;
+}
+
+function runTileSearch() {
+  const panel = document.getElementById('tileSearchResults');
+  const input = document.getElementById('tileSearchInput');
+  if (!panel || !input) return;
+  const qRaw = String(input.value || '').trim();
+  if (!qRaw) {
+    panel.classList.add('hidden');
+    panel.innerHTML = '';
+    panel.classList.remove('is-empty');
+    return;
+  }
+  const q = qRaw.toLowerCase();
+  const scopeAll = document.getElementById('tileSearchScopeAll')?.checked;
+  let rowsHtml = '';
+
+  if (!scopeAll) {
+    const note = getCurrentNote();
+    if (!note) {
+      panel.classList.remove('hidden');
+      panel.classList.add('is-empty');
+      panel.innerHTML = 'Select a note to search.';
+      return;
+    }
+    const parsed = parseMarkdownHierarchy(note.markdown || '');
+    const index = buildHeadingIndex(parsed.root.children);
+    for (const { node, ancestors } of index) {
+      const titleLower = String(node.title || '').toLowerCase();
+      const bodyLower = (node.contentLines || []).join('\n').toLowerCase();
+      const inTitle = titleLower.includes(q);
+      const inBody = bodyLower.includes(q);
+      if (!inTitle && !inBody) continue;
+      rowsHtml += renderTileSearchHitRow({
+        noteId: note.id,
+        noteTitle: note.title || 'Untitled note',
+        node,
+        ancestors,
+        inTitle,
+        inBody,
+        q,
+        showNoteLabel: false,
+      });
+    }
+    if (!index.length) {
+      panel.classList.remove('hidden');
+      panel.classList.add('is-empty');
+      panel.innerHTML = 'This note has no headings yet.';
+      return;
+    }
+  } else {
+    if (!notes.length) {
+      panel.classList.remove('hidden');
+      panel.classList.add('is-empty');
+      panel.innerHTML = 'No notes to search.';
+      return;
+    }
+    for (const note of notes) {
+      const parsed = parseMarkdownHierarchy(note.markdown || '');
+      const index = buildHeadingIndex(parsed.root.children);
+      for (const { node, ancestors } of index) {
+        const titleLower = String(node.title || '').toLowerCase();
+        const bodyLower = (node.contentLines || []).join('\n').toLowerCase();
+        const inTitle = titleLower.includes(q);
+        const inBody = bodyLower.includes(q);
+        if (!inTitle && !inBody) continue;
+        rowsHtml += renderTileSearchHitRow({
+          noteId: note.id,
+          noteTitle: note.title || 'Untitled note',
+          node,
+          ancestors,
+          inTitle,
+          inBody,
+          q,
+          showNoteLabel: true,
+        });
+      }
+    }
+  }
+
+  panel.classList.remove('is-empty');
+  if (!rowsHtml) {
+    panel.classList.remove('hidden');
+    panel.classList.add('is-empty');
+    panel.innerHTML = 'No matching tiles.';
+    return;
+  }
+  panel.innerHTML = rowsHtml;
+  panel.classList.remove('hidden');
+}
+
+function renderTileSearchHitRow({ noteId, noteTitle, node, ancestors, inTitle, inBody, q, showNoteLabel }) {
+  const bc = renderAncestorBreadcrumbHtml(ancestors);
+  let titleHtml = markdownToInlineHtml(node.title);
+  if (inTitle) titleHtml = highlightSearchInHtmlFragment(titleHtml, q);
+  const snippetRaw = !inTitle && inBody ? tileSearchSnippetFromBody(node.contentLines, q) : '';
+  const snippet = snippetRaw ? highlightSearchMatchesPlain(snippetRaw, q) : '';
+  const noteLine = showNoteLabel
+    ? `<div class="search-note-label">${escHtml(noteTitle || 'Untitled note')}</div>`
+    : '';
+  return `<button type="button" class="tile-search-hit" role="option" onclick="navigateToSearchResult('${escAttr(noteId)}','${escAttr(node.id)}')">
+    ${noteLine}
+    ${bc}
+    <div class="search-hit-title-row">
+      <span class="search-hit-level">H${node.level}</span>
+      <span class="search-hit-title">${titleHtml}</span>
+    </div>
+    ${snippet ? `<div class="search-hit-snippet">${snippet}</div>` : ''}
+  </button>`;
+}
+
+function navigateToSearchResult(noteId, nodeId) {
+  dismissTileSearchResults();
+  readerTileSearchQuery = null;
+  readerTileSearchAllNotes = false;
+  if (markedOnly) {
+    markedOnly = false;
+    const t = document.getElementById('markedOnlyToggle');
+    if (t) t.checked = false;
+  }
+  if (noteId && noteId !== currentNoteId) {
+    selectNote(noteId);
+  } else {
+    renderReader();
+  }
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => jumpToTile(nodeId));
+  });
+}
+
 function toggleMarkedOnly() {
   markedOnly = document.getElementById('markedOnlyToggle').checked;
   renderReader();
@@ -1649,17 +2149,83 @@ function renderReader() {
   const tileChip = document.getElementById('tileCountChip');
   const markedChip = document.getElementById('markedCountChip');
 
+  const setAllOutlines = (html) => {
+    ['outlineBody', 'sidebarOutlineBody', 'readerOutlineBody'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = html;
+    });
+  };
+
+  const searchQ = readerTileSearchQuery && readerTileSearchQuery.trim()
+    ? readerTileSearchQuery.trim().toLowerCase()
+    : '';
+
+  if (searchQ && readerTileSearchAllNotes) {
+    renderedTree = null;
+    renderedMarkedCount = 0;
+    if (!notes.length) {
+      readerTitle.textContent = 'All-notes search';
+      tileChip.textContent = '0 notes';
+      markedChip.textContent = '—';
+      readerBody.innerHTML = '<div class="empty-reader">No notes to search.</div>';
+      setAllOutlines('<div class="outline-empty">No notes.</div>');
+      updateReaderSearchFilterChip();
+      return;
+    }
+    let totalMatches = 0;
+    let sectionsHtml = '';
+    const outlinePieces = [];
+    for (const n of notes) {
+      const md = n.markdown || '';
+      const parsed = parseMarkdownHierarchy(md);
+      const topChildren = parsed.root.children || [];
+      if (!flattenNodes(topChildren).length) continue;
+      const matchSet = computeTileSearchMatchSet(md, searchQ);
+      if (!matchSet.size) continue;
+      const displayRoot = pruneTreeToTargets(parsed.root, matchSet);
+      const vis = flattenNodes(displayRoot.children);
+      if (!vis.length) continue;
+      totalMatches += matchSet.size;
+      const markedSetN = new Set(flattenNodes(topChildren).filter(x => x.isMarked).map(x => x.id));
+      const legacy = Array.isArray(n.markedHeadingIds) ? n.markedHeadingIds : [];
+      for (const lid of legacy) markedSetN.add(lid);
+      const tilesHtml = displayRoot.children.map(node =>
+        renderTile(node, markedSetN, false, true, matchSet, n.id)
+      ).join('');
+      sectionsHtml += `<section class="all-notes-search-note">
+        <button type="button" class="all-notes-search-note-open" onclick="selectNoteFromAllNotesSearch('${escAttr(n.id)}')">${escHtml(n.title || 'Untitled note')}</button>
+        <div class="all-notes-search-tiles">${tilesHtml}</div>
+      </section>`;
+      const subOutline = buildOutlineTreeHtml(displayRoot, markedSetN, false, true, matchSet, n.id);
+      if (subOutline) {
+        outlinePieces.push(`<div class="all-notes-outline-group">
+          <button type="button" class="all-notes-outline-note-btn" onclick="selectNoteFromAllNotesSearch('${escAttr(n.id)}')">${escHtml(n.title || 'Untitled note')}</button>
+          ${subOutline}
+        </div>`);
+      }
+    }
+    readerTitle.textContent = 'All-notes search';
+    tileChip.textContent = totalMatches ? `${totalMatches} matching tiles` : '0 matches';
+    markedChip.textContent = '—';
+    if (!sectionsHtml) {
+      readerBody.innerHTML = '<div class="empty-reader">No tiles match this search in any note. Adjust the query or click ×.</div>';
+      setAllOutlines('<div class="outline-empty">No matching tiles.</div>');
+    } else {
+      readerBody.innerHTML = `<div class="all-notes-search-wrap">${sectionsHtml}</div>`;
+      setAllOutlines(outlinePieces.length ? outlinePieces.join('') : '<div class="outline-empty">No matching tiles.</div>');
+    }
+    updateReaderSearchFilterChip();
+    return;
+  }
+
   const note = getCurrentNote();
   if (!note) {
     readerTitle.textContent = 'No note selected';
     tileChip.textContent = '0 tiles';
     markedChip.textContent = '0 marked';
     readerBody.innerHTML = '<div class="empty-reader">Create or import a markdown note to start.</div>';
-    const emptyOutline = '<div class="outline-empty">No headings to show.</div>';
-    ['outlineBody', 'sidebarOutlineBody', 'readerOutlineBody'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = emptyOutline;
-    });
+    setAllOutlines('<div class="outline-empty">No headings to show.</div>');
+    updateReaderSearchFilterChip();
     return;
   }
 
@@ -1676,42 +2242,69 @@ function renderReader() {
   tileChip.textContent = `${allNodes.length} tiles`;
   markedChip.textContent = `${renderedMarkedCount} marked`;
 
-  const setAllOutlines = (html) => {
-    ['outlineBody', 'sidebarOutlineBody', 'readerOutlineBody'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = html;
-    });
-  };
-
   if (!allNodes.length) {
     const html = markdownToHtml(markdown);
     readerBody.innerHTML = html
       ? `<div class="doc-content">${html}</div>`
       : '<div class="empty-reader">This note has no headings yet. Add markdown headings like #, ##, ### to create tiles.</div>';
     setAllOutlines('<div class="outline-empty">This note has no headings yet.</div>');
+    updateReaderSearchFilterChip();
     return;
   }
 
-  const displayRoot = markedOnly ? pruneTreeToMarked(renderedTree, markedSet) : cloneTree(renderedTree);
+  const searchMatchSet = searchQ ? computeTileSearchMatchSet(markdown, searchQ) : new Set();
+  const searchFiltered = searchQ.length > 0;
+
+  let displayRoot;
+  if (searchFiltered) {
+    displayRoot = pruneTreeToTargets(renderedTree, searchMatchSet);
+  } else if (markedOnly) {
+    displayRoot = pruneTreeToTargets(renderedTree, markedSet);
+  } else {
+    displayRoot = cloneTree(renderedTree);
+  }
   const visibleNodes = flattenNodes(displayRoot.children);
-  if (markedOnly && !visibleNodes.length) {
+  if (searchFiltered && !visibleNodes.length) {
+    readerBody.innerHTML = '<div class="empty-reader">No tiles match this search in this note. Adjust the query or click × to show the full note.</div>';
+    setAllOutlines('<div class="outline-empty">No matching tiles.</div>');
+    updateReaderSearchFilterChip();
+    return;
+  }
+  if (markedOnly && !searchFiltered && !visibleNodes.length) {
     readerBody.innerHTML = '<div class="empty-reader">No marked headings yet. Mark tiles to build your filtered document view.</div>';
     setAllOutlines('<div class="outline-empty">No marked headings yet.</div>');
+    updateReaderSearchFilterChip();
     return;
   }
 
-  renderOutline(displayRoot, markedSet, markedOnly);
+  renderOutline(displayRoot, markedSet, markedOnly, searchFiltered, searchMatchSet);
 
   let html = '';
   const rootContent = (displayRoot.contentLines || []).join('\n').trim();
-  if (rootContent && !markedOnly) {
+  if (rootContent && !markedOnly && !searchFiltered) {
     html += `<div class="doc-content">${markdownToHtml(rootContent)}</div>`;
   }
-  html += displayRoot.children.map(node => renderTile(node, markedSet, markedOnly)).join('');
+  html += displayRoot.children.map(node =>
+    renderTile(node, markedSet, markedOnly, searchFiltered, searchMatchSet, null)
+  ).join('');
   readerBody.innerHTML = html;
+  updateReaderSearchFilterChip();
 }
 
-function renderOutline(root, markedSet, isMarkedOnly) {
+function buildOutlineTreeHtml(root, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, outlineNoteScopeId) {
+  if (!root.children || !root.children.length) return '';
+  let nearestMap = new Map();
+  if (isSearchFiltered) {
+    nearestMap = computeNearestTargetMap(root, searchMatchSet);
+  } else if (isMarkedOnly) {
+    nearestMap = computeNearestTargetMap(root, markedSet);
+  }
+  return root.children.map(node =>
+    renderOutlineNode(node, 1, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, nearestMap, outlineNoteScopeId)
+  ).join('');
+}
+
+function renderOutline(root, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet) {
   const containers = [
     document.getElementById('outlineBody'),
     document.getElementById('sidebarOutlineBody'),
@@ -1723,36 +2316,55 @@ function renderOutline(root, markedSet, isMarkedOnly) {
     return;
   }
 
-  const nearestMarkedMap = isMarkedOnly ? computeNearestMarkedMap(root, markedSet) : new Map();
-  const html = root.children.map(node => renderOutlineNode(node, 1, markedSet, isMarkedOnly, nearestMarkedMap)).join('');
+  const html = buildOutlineTreeHtml(root, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, null);
   containers.forEach(c => { if (c) c.innerHTML = html; });
 }
 
-function renderOutlineNode(node, depth, markedSet, isMarkedOnly, nearestMarkedMap) {
-  const isDirectMarked = markedSet.has(node.id);
-  const isAncestorOnly = isMarkedOnly && !isDirectMarked;
-  const targetNodeId = isAncestorOnly ? (nearestMarkedMap.get(node.id) || node.id) : node.id;
+function renderOutlineNode(node, depth, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, nearestMap, outlineNoteScopeId) {
   const titleHtml = markdownToInlineHtml(node.title);
-  const classes = [
-    'outline-item',
-    isDirectMarked ? 'marked' : '',
-    isAncestorOnly ? 'ancestor' : '',
-  ].filter(Boolean).join(' ');
+  let targetNodeId = node.id;
+  let classes = ['outline-item'];
+
+  if (isSearchFiltered) {
+    const isMatch = searchMatchSet.has(node.id);
+    const isAncestorOnly = !isMatch;
+    if (isMatch) classes.push('search-match');
+    if (isAncestorOnly) {
+      classes.push('ancestor');
+      targetNodeId = nearestMap.get(node.id) || node.id;
+    }
+  } else {
+    const isDirectMarked = markedSet.has(node.id);
+    const isAncestorOnly = isMarkedOnly && !isDirectMarked;
+    if (isDirectMarked) classes.push('marked');
+    if (isAncestorOnly) {
+      classes.push('ancestor');
+      targetNodeId = nearestMap.get(node.id) || node.id;
+    }
+  }
+
   const padding = 8 + Math.max(0, depth - 1) * 14;
+  const jump =
+    outlineNoteScopeId != null && String(outlineNoteScopeId).length
+      ? `jumpToTile('${escAttr(targetNodeId)}','${escAttr(outlineNoteScopeId)}')`
+      : `jumpToTile('${escAttr(targetNodeId)}')`;
 
   return `<div>
-    <button class="${classes}" style="padding-left:${padding}px;" onclick="jumpToTile('${escAttr(targetNodeId)}')">
+    <button class="${classes.join(' ')}" style="padding-left:${padding}px;" onclick="${jump}">
       <span class="outline-item-level">H${node.level}</span>
       <span class="outline-item-title">${titleHtml}</span>
     </button>
-    ${node.children.map(child => renderOutlineNode(child, depth + 1, markedSet, isMarkedOnly, nearestMarkedMap)).join('')}
+    ${node.children.map(child =>
+      renderOutlineNode(child, depth + 1, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, nearestMap, outlineNoteScopeId)
+    ).join('')}
   </div>`;
 }
 
-function computeNearestMarkedMap(root, markedSet) {
+/** Nearest descendant whose id is in targetSet (distance in tree). Used for outline jump targets in filtered views. */
+function computeNearestTargetMap(root, targetSet) {
   const map = new Map();
   function walk(node) {
-    let best = markedSet.has(node.id) ? { id: node.id, distance: 0 } : null;
+    let best = targetSet.has(node.id) ? { id: node.id, distance: 0 } : null;
     for (const child of node.children) {
       const childBest = walk(child);
       if (!childBest) continue;
@@ -1766,13 +2378,20 @@ function computeNearestMarkedMap(root, markedSet) {
   return map;
 }
 
-function jumpToTile(nodeId) {
+function jumpToTile(nodeId, noteDocId) {
   if (window.innerWidth <= 1000) closeSidebar();
-  const tile = document.getElementById(domTileId(nodeId));
+  const tile = document.getElementById(domTileId(nodeId, noteDocId));
   if (!tile) return;
   scrollToTile(tile, 120);
   tile.classList.add('tile-flash');
   window.setTimeout(() => tile.classList.remove('tile-flash'), 1200);
+}
+
+function selectNoteFromAllNotesSearch(noteId) {
+  readerTileSearchQuery = null;
+  readerTileSearchAllNotes = false;
+  updateReaderSearchFilterChip();
+  selectNote(noteId);
 }
 
 function scrollToTile(tileEl, durationMs) {
@@ -1798,84 +2417,106 @@ function scrollToTile(tileEl, durationMs) {
   requestAnimationFrame(step);
 }
 
-function domTileId(nodeId) {
+function domTileId(nodeId, noteDocId) {
+  if (noteDocId != null && String(noteDocId).length) {
+    const p = encodeURIComponent(String(noteDocId)).replace(/%/g, '_');
+    const n = encodeURIComponent(String(nodeId || '')).replace(/%/g, '_');
+    return `tilen_${p}_${n}`;
+  }
   return 'tile_' + encodeURIComponent(String(nodeId || '')).replace(/%/g, '_');
 }
 
-function renderTile(node, markedSet, isMarkedOnly) {
+function renderTile(node, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, tileScopeNoteId) {
   const titleHtml = markdownToInlineHtml(node.title);
   const contentMd = (node.contentLines || []).join('\n').trim();
   const contentHtml = contentMd ? `<div class="tile-content">${markdownToHtml(contentMd)}</div>` : '';
   const isMarked = markedSet.has(node.id);
+  const isSearchMatch = isSearchFiltered && searchMatchSet.has(node.id);
   const markBtnClass = isMarked ? 'mark-btn marked' : 'mark-btn';
   const tileClass = isMarked ? 'tile marked' : 'tile';
-  const contextualAncestorClass = isMarkedOnly && !isMarked ? ' tile-context-only' : '';
+  const isContextOnly =
+    (isMarkedOnly && !isMarked && !isSearchFiltered) ||
+    (isSearchFiltered && !isSearchMatch);
+  const contextualAncestorClass = isContextOnly ? ' tile-context-only' : '';
+  const scopeNoteJs =
+    tileScopeNoteId != null && String(tileScopeNoteId).length
+      ? `'${escAttr(String(tileScopeNoteId))}'`
+      : 'null';
+  const markBtn = `<button class="${markBtnClass}" onmousedown="startUnmark(event, '${escAttr(node.id)}', ${scopeNoteJs})" onmouseup="cancelUnmark('${escAttr(node.id)}', ${scopeNoteJs})" onmouseleave="cancelUnmark('${escAttr(node.id)}', ${scopeNoteJs})" ontouchstart="startUnmark(event, '${escAttr(node.id)}', ${scopeNoteJs})" ontouchend="cancelUnmark('${escAttr(node.id)}', ${scopeNoteJs})">${isMarked ? 'Marked' : 'Mark'}</button>`;
 
-  return `<article class="${tileClass}${contextualAncestorClass}" id="${domTileId(node.id)}">
+  return `<article class="${tileClass}${contextualAncestorClass}" id="${domTileId(node.id, tileScopeNoteId)}">
     <div class="tile-head">
       <span class="tile-level">H${node.level}</span>
       <div class="tile-title">${titleHtml}</div>
-      <button class="${markBtnClass}" onmousedown="startUnmark(event, '${escAttr(node.id)}')" onmouseup="cancelUnmark('${escAttr(node.id)}')" onmouseleave="cancelUnmark('${escAttr(node.id)}')" ontouchstart="startUnmark(event, '${escAttr(node.id)}')" ontouchend="cancelUnmark('${escAttr(node.id)}')">${isMarked ? 'Marked' : 'Mark'}</button>
+      ${markBtn}
     </div>
     ${contentHtml}
-    ${node.children.length ? `<div class="tile-children">${node.children.map(child => renderTile(child, markedSet, isMarkedOnly)).join('')}</div>` : ''}
+    ${node.children.length ? `<div class="tile-children">${node.children.map(child => renderTile(child, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, tileScopeNoteId)).join('')}</div>` : ''}
   </article>`;
 }
 
 let unmarkTimers = {};
 let unmarkProgressEls = {};
 
-function startUnmark(e, nodeId) {
-  const note = getCurrentNote();
+function unmarkActionKey(scopeNoteId, nodeId) {
+  return (scopeNoteId || '\0current') + '\u0001' + nodeId;
+}
+
+function startUnmark(e, nodeId, scopeNoteId) {
+  const note = scopeNoteId ? notes.find(n => n.id === scopeNoteId) : getCurrentNote();
   if (!note) return;
+  const key = unmarkActionKey(scopeNoteId, nodeId);
   const parsed = parseMarkdownHierarchy(note.markdown || '');
   const set = new Set(flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id));
   const legacyMarked = Array.isArray(note.markedHeadingIds) ? note.markedHeadingIds : [];
   for (const legacyId of legacyMarked) set.add(legacyId);
   if (!set.has(nodeId)) {
-    doMark(nodeId);
+    doMark(nodeId, scopeNoteId);
     return;
   }
   const btn = e.currentTarget;
   const progress = document.createElement('span');
   progress.className = 'unmark-progress';
   btn.appendChild(progress);
-  unmarkProgressEls[nodeId] = progress;
+  unmarkProgressEls[key] = progress;
 
-  unmarkTimers[nodeId] = setTimeout(() => {
-    doUnmark(nodeId);
-    clearUnmarkProgress(nodeId);
+  unmarkTimers[key] = setTimeout(() => {
+    doUnmark(nodeId, scopeNoteId);
+    clearUnmarkProgress(key);
   }, 800);
 }
 
-function cancelUnmark(nodeId) {
-  if (unmarkTimers[nodeId]) {
-    clearTimeout(unmarkTimers[nodeId]);
-    delete unmarkTimers[nodeId];
+function cancelUnmark(nodeId, scopeNoteId) {
+  const key = unmarkActionKey(scopeNoteId, nodeId);
+  if (unmarkTimers[key]) {
+    clearTimeout(unmarkTimers[key]);
+    delete unmarkTimers[key];
   }
-  clearUnmarkProgress(nodeId);
+  clearUnmarkProgress(key);
 }
 
-function clearUnmarkProgress(nodeId) {
-  if (unmarkProgressEls[nodeId]) {
-    unmarkProgressEls[nodeId].remove();
-    delete unmarkProgressEls[nodeId];
+function clearUnmarkProgress(key) {
+  if (unmarkProgressEls[key]) {
+    unmarkProgressEls[key].remove();
+    delete unmarkProgressEls[key];
   }
 }
 
-async function doMark(nodeId) {
-  const note = getCurrentNote();
+async function doMark(nodeId, scopeNoteId) {
+  const note = scopeNoteId ? notes.find(n => n.id === scopeNoteId) : getCurrentNote();
   if (!note) return;
   const updatedMarkdown = updateHeadingMarkInMarkdown(note.markdown || '', nodeId, true);
   if (!updatedMarkdown) return;
   note.markdown = updatedMarkdown;
-  const markdownEl = document.getElementById('noteMarkdown');
-  if (markdownEl) markdownEl.value = updatedMarkdown;
+  if (note.id === currentNoteId) {
+    const markdownEl = document.getElementById('noteMarkdown');
+    if (markdownEl) markdownEl.value = updatedMarkdown;
+  }
   const parsed = parseMarkdownHierarchy(updatedMarkdown);
   const markedHeadingIds = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
   note.markedHeadingIds = markedHeadingIds;
   renderReader();
-  const tile = document.getElementById(domTileId(nodeId));
+  const tile = document.getElementById(domTileId(nodeId, scopeNoteId || undefined));
   if (tile) {
     tile.classList.add('mark-sweep');
     setTimeout(() => tile.classList.remove('mark-sweep'), 750);
@@ -1891,14 +2532,16 @@ async function doMark(nodeId) {
   }
 }
 
-async function doUnmark(nodeId) {
-  const note = getCurrentNote();
+async function doUnmark(nodeId, scopeNoteId) {
+  const note = scopeNoteId ? notes.find(n => n.id === scopeNoteId) : getCurrentNote();
   if (!note) return;
   const updatedMarkdown = updateHeadingMarkInMarkdown(note.markdown || '', nodeId, false);
   if (!updatedMarkdown) return;
   note.markdown = updatedMarkdown;
-  const markdownEl = document.getElementById('noteMarkdown');
-  if (markdownEl) markdownEl.value = updatedMarkdown;
+  if (note.id === currentNoteId) {
+    const markdownEl = document.getElementById('noteMarkdown');
+    if (markdownEl) markdownEl.value = updatedMarkdown;
+  }
   const parsed = parseMarkdownHierarchy(updatedMarkdown);
   const markedHeadingIds = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
   note.markedHeadingIds = markedHeadingIds;
@@ -1981,6 +2624,11 @@ function updateHeadingMarkInMarkdown(markdown, nodeId, shouldMark) {
 }
 
 function pruneTreeToMarked(root, markedSet) {
+  return pruneTreeToTargets(root, markedSet);
+}
+
+/** Keep nodes on paths to any id in targetSet; matching nodes include full subtrees (same as marked-only pruning). */
+function pruneTreeToTargets(root, targetSet) {
   const cloneRoot = {
     id: root.id,
     level: root.level,
@@ -1988,16 +2636,15 @@ function pruneTreeToMarked(root, markedSet) {
     contentLines: root.contentLines ? [...root.contentLines] : [],
     children: [],
   };
-  cloneRoot.children = root.children.map(child => pruneNode(child, markedSet)).filter(Boolean);
+  cloneRoot.children = root.children.map(child => pruneNodeToTargets(child, targetSet)).filter(Boolean);
   return cloneRoot;
 }
 
-function pruneNode(node, markedSet) {
-  if (markedSet.has(node.id)) {
-    // Node is marked: include it with all its descendants (not just marked ones)
+function pruneNodeToTargets(node, targetSet) {
+  if (targetSet.has(node.id)) {
     return cloneTree(node);
   }
-  const children = node.children.map(child => pruneNode(child, markedSet)).filter(Boolean);
+  const children = node.children.map(child => pruneNodeToTargets(child, targetSet)).filter(Boolean);
   if (!children.length) return null;
   return {
     id: node.id,
@@ -2029,6 +2676,27 @@ function flattenNodes(nodes) {
     }
   }
   return list;
+}
+
+/** Each entry: heading node plus ancestors from document root (parent chain only). */
+function buildHeadingIndex(rootChildren) {
+  const out = [];
+  function walk(nodes, ancestors) {
+    for (const node of nodes) {
+      out.push({ node, ancestors });
+      walk(node.children || [], [...ancestors, node]);
+    }
+  }
+  walk(rootChildren || [], []);
+  return out;
+}
+
+function renderAncestorBreadcrumbHtml(ancestors) {
+  if (!ancestors || !ancestors.length) return '';
+  const parts = ancestors.map(a =>
+    `<span class="search-breadcrumb-seg">${markdownToInlineHtml(a.title)}</span>`
+  ).join('<span class="search-breadcrumb-sep"> › </span>');
+  return `<div class="search-breadcrumb">${parts}</div>`;
 }
 
 function slugify(text) {
@@ -2086,6 +2754,73 @@ function escHtml(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function escapeRegex(s) {
+  return String(s).replace(/[\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+/** Plain text → HTML with query matches wrapped in <mark> (search results pane). */
+function highlightSearchMatchesPlain(text, queryLower) {
+  const q = String(queryLower || '').trim();
+  const plain = String(text || '');
+  if (!q) return escHtml(plain);
+  const re = new RegExp(escapeRegex(q), 'gi');
+  let out = '';
+  let last = 0;
+  let m;
+  while ((m = re.exec(plain)) !== null) {
+    out += escHtml(plain.slice(last, m.index));
+    out += '<mark class="search-hit-highlight">' + escHtml(m[0]) + '</mark>';
+    last = m.index + m[0].length;
+  }
+  out += escHtml(plain.slice(last));
+  return out;
+}
+
+/** Sanitized inline HTML → same with query matches wrapped in <mark> (text nodes only). */
+function highlightSearchInHtmlFragment(sanitizedHtml, queryLower) {
+  const q = String(queryLower || '').trim();
+  if (!q || !sanitizedHtml) return sanitizedHtml || '';
+  const doc = new DOMParser().parseFromString(
+    '<div class="search-highlight-root">' + sanitizedHtml + '</div>',
+    'text/html'
+  );
+  const root = doc.querySelector('.search-highlight-root');
+  if (!root) return DOMPurify.sanitize(sanitizedHtml);
+  const re = new RegExp(escapeRegex(q), 'gi');
+  function highlightTextNode(node) {
+    const text = node.nodeValue;
+    if (!text) return;
+    re.lastIndex = 0;
+    if (!re.test(text)) {
+      re.lastIndex = 0;
+      return;
+    }
+    re.lastIndex = 0;
+    const frag = doc.createDocumentFragment();
+    let last = 0;
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) frag.appendChild(doc.createTextNode(text.slice(last, m.index)));
+      const mark = doc.createElement('mark');
+      mark.className = 'search-hit-highlight';
+      mark.appendChild(doc.createTextNode(m[0]));
+      frag.appendChild(mark);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) frag.appendChild(doc.createTextNode(text.slice(last)));
+    node.parentNode.replaceChild(frag, node);
+  }
+  function walk(el) {
+    const children = [...el.childNodes];
+    for (const child of children) {
+      if (child.nodeType === Node.TEXT_NODE) highlightTextNode(child);
+      else if (child.nodeType === Node.ELEMENT_NODE) walk(child);
+    }
+  }
+  walk(root);
+  return DOMPurify.sanitize(root.innerHTML);
 }
 function escAttr(s) {
   return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
