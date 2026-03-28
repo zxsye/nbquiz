@@ -660,7 +660,8 @@ body.outline-in-sidebar .sidebar .note-list {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.tile-search-hit mark.search-hit-highlight {
+.tile-search-hit mark.search-hit-highlight,
+.tile mark.search-hit-highlight {
   background: #ffeb3b;
   color: var(--text);
   font-weight: inherit;
@@ -2190,7 +2191,7 @@ function renderReader() {
       const legacy = Array.isArray(n.markedHeadingIds) ? n.markedHeadingIds : [];
       for (const lid of legacy) markedSetN.add(lid);
       const tilesHtml = displayRoot.children.map(node =>
-        renderTile(node, markedSetN, false, true, matchSet, n.id)
+        renderTile(node, markedSetN, false, true, matchSet, n.id, searchQ)
       ).join('');
       sectionsHtml += `<section class="all-notes-search-note">
         <button type="button" class="all-notes-search-note-open" onclick="selectNoteFromAllNotesSearch('${escAttr(n.id)}')">${escHtml(n.title || 'Untitled note')}</button>
@@ -2285,7 +2286,7 @@ function renderReader() {
     html += `<div class="doc-content">${markdownToHtml(rootContent)}</div>`;
   }
   html += displayRoot.children.map(node =>
-    renderTile(node, markedSet, markedOnly, searchFiltered, searchMatchSet, null)
+    renderTile(node, markedSet, markedOnly, searchFiltered, searchMatchSet, null, searchQ)
   ).join('');
   readerBody.innerHTML = html;
   updateReaderSearchFilterChip();
@@ -2426,10 +2427,20 @@ function domTileId(nodeId, noteDocId) {
   return 'tile_' + encodeURIComponent(String(nodeId || '')).replace(/%/g, '_');
 }
 
-function renderTile(node, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, tileScopeNoteId) {
-  const titleHtml = markdownToInlineHtml(node.title);
+function renderTile(node, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, tileScopeNoteId, searchHighlightQ) {
+  const qHl =
+    isSearchFiltered && searchHighlightQ && String(searchHighlightQ).trim()
+      ? String(searchHighlightQ).trim().toLowerCase()
+      : '';
+  let titleHtml = markdownToInlineHtml(node.title);
+  if (qHl) titleHtml = highlightSearchInHtmlFragment(titleHtml, qHl);
   const contentMd = (node.contentLines || []).join('\n').trim();
-  const contentHtml = contentMd ? `<div class="tile-content">${markdownToHtml(contentMd)}</div>` : '';
+  let contentHtml = '';
+  if (contentMd) {
+    let inner = markdownToHtml(contentMd);
+    if (qHl) inner = highlightSearchInHtmlFragment(inner, qHl);
+    contentHtml = `<div class="tile-content">${inner}</div>`;
+  }
   const isMarked = markedSet.has(node.id);
   const isSearchMatch = isSearchFiltered && searchMatchSet.has(node.id);
   const markBtnClass = isMarked ? 'mark-btn marked' : 'mark-btn';
@@ -2451,7 +2462,7 @@ function renderTile(node, markedSet, isMarkedOnly, isSearchFiltered, searchMatch
       ${markBtn}
     </div>
     ${contentHtml}
-    ${node.children.length ? `<div class="tile-children">${node.children.map(child => renderTile(child, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, tileScopeNoteId)).join('')}</div>` : ''}
+    ${node.children.length ? `<div class="tile-children">${node.children.map(child => renderTile(child, markedSet, isMarkedOnly, isSearchFiltered, searchMatchSet, tileScopeNoteId, searchHighlightQ)).join('')}</div>` : ''}
   </article>`;
 }
 
