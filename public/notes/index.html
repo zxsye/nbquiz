@@ -1206,15 +1206,6 @@ function splitNoteTitlePath(title) {
     .filter(Boolean);
 }
 
-function noteUpdatedMs(note) {
-  const ts = note.updatedAt;
-  if (ts && typeof ts.toDate === 'function') {
-    const d = ts.toDate();
-    return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
-  }
-  return 0;
-}
-
 function buildNotesFolderTree(notesList) {
   const root = { folders: new Map(), entries: [] };
   for (const note of notesList) {
@@ -1236,7 +1227,9 @@ function buildNotesFolderTree(notesList) {
 function renderNotesTreeHtml(tree, depth, pathPrefix) {
   const padLeft = 14 + depth * 12;
   const folderNames = [...tree.folders.keys()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-  const sortedNotes = [...tree.entries].sort((a, b) => noteUpdatedMs(b.note) - noteUpdatedMs(a.note));
+  const sortedNotes = [...tree.entries].sort((a, b) =>
+    a.displayTitle.localeCompare(b.displayTitle, undefined, { sensitivity: 'base', numeric: true })
+  );
   let html = '';
   for (const name of folderNames) {
     const child = tree.folders.get(name);
