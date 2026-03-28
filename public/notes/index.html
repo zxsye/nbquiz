@@ -775,22 +775,30 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
   .sidebar-toggle { display: flex; }
   body.outline-in-sidebar .layout,
   body:not(.outline-in-sidebar) .layout { grid-template-columns: 1fr; padding-left: 12px; padding-right: 12px; }
+  /* Drawer sits below page header + reader outline strip + reader toolbar so the menu button stays visible */
   .layout > .sidebar {
     position: fixed;
-    top: 0;
+    top: var(--notes-drawer-top, 120px);
     left: 0;
     width: 80vw;
     max-width: 380px;
-    height: 100vh;
+    height: calc(100vh - var(--notes-drawer-top, 120px) - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100vh - var(--notes-drawer-top, 120px) - env(safe-area-inset-bottom, 0px));
     z-index: 950;
     border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
     transform: translateX(-100%);
     transition: transform .3s cubic-bezier(.4,0,.2,1);
     overflow-y: auto;
-    max-height: none;
   }
   .layout > .sidebar.drawer-open {
     transform: translateX(0);
+  }
+  .reader .reader-outline-strip {
+    position: relative;
+    z-index: 960;
+  }
+  .reader .reader-top {
+    z-index: 960;
   }
   body:not(.outline-in-sidebar) .outline-panel { display: none; }
 }
@@ -1217,6 +1225,7 @@ function toggleMarkedOnly() {
 }
 
 function renderReader() {
+  try {
   const readerBody = document.getElementById('readerBody');
   const readerTitle = document.getElementById('readerTitle');
   const tileChip = document.getElementById('tileCountChip');
@@ -1282,6 +1291,9 @@ function renderReader() {
   }
   html += displayRoot.children.map(node => renderTile(node, markedSet, markedOnly)).join('');
   readerBody.innerHTML = html;
+  } finally {
+    syncNotesDrawerTop();
+  }
 }
 
 function renderOutline(root, markedSet, isMarkedOnly) {
@@ -1664,6 +1676,29 @@ function escAttr(s) {
   return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+/** Offset for the mobile drawer so it clears the header and reader chrome (incl. hamburger row). */
+function syncNotesDrawerTop() {
+  const header = document.querySelector('.page-header');
+  const outlineStrip = document.getElementById('readerOutlineStrip');
+  const readerTop = document.querySelector('.reader-top');
+  let h = header ? header.offsetHeight : 0;
+  if (outlineStrip && getComputedStyle(outlineStrip).display !== 'none') {
+    h += outlineStrip.offsetHeight;
+  }
+  if (readerTop) h += readerTop.offsetHeight;
+  document.documentElement.style.setProperty('--notes-drawer-top', `${h}px`);
+}
+
+let notesDrawerTopSyncScheduled = false;
+function scheduleSyncNotesDrawerTop() {
+  if (notesDrawerTopSyncScheduled) return;
+  notesDrawerTopSyncScheduled = true;
+  requestAnimationFrame(() => {
+    notesDrawerTopSyncScheduled = false;
+    syncNotesDrawerTop();
+  });
+}
+
 function toggleSidebar() {
   const sidebar = document.querySelector('.sidebar');
   const backdrop = document.getElementById('drawerBackdrop');
@@ -1682,6 +1717,22 @@ function closeSidebar() {
   sidebar.classList.remove('drawer-open');
   backdrop.classList.remove('visible');
 }
+
+(function initNotesMobileDrawer() {
+  const reader = document.querySelector('.reader');
+  if (reader) {
+    reader.addEventListener('click', (e) => {
+      if (window.innerWidth > 1000) return;
+      const sidebar = document.querySelector('.sidebar');
+      if (!sidebar.classList.contains('drawer-open')) return;
+      if (e.target.closest('.sidebar-toggle')) return;
+      closeSidebar();
+    });
+  }
+  window.addEventListener('resize', scheduleSyncNotesDrawerTop);
+  window.addEventListener('orientationchange', () => window.setTimeout(syncNotesDrawerTop, 250));
+  syncNotesDrawerTop();
+})();
 </script>
 </body>
 </html>
