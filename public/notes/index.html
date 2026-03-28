@@ -668,6 +668,172 @@ body.outline-in-sidebar .sidebar .note-list {
   transform: translateX(16px);
 }
 
+/* Bulk import modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 23, 20, 0.48);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+.modal-overlay.hidden { display: none !important; }
+.modal-dialog {
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--border);
+  box-shadow: 0 8px 40px rgba(0,0,0,.12), var(--shadow);
+  max-width: 540px;
+  width: 100%;
+  max-height: min(90vh, 760px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+.modal-head h2 {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+.modal-close {
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+}
+.modal-close:hover { color: var(--accent); background: var(--accent-light); }
+.modal-body {
+  padding: 14px 18px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+.modal-hint {
+  font-size: .82rem;
+  color: var(--text-2);
+  margin-bottom: 14px;
+  line-height: 1.45;
+}
+.bulk-folder-block {
+  margin-bottom: 14px;
+  padding: 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.bulk-folder-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .84rem;
+  color: var(--text);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 8px;
+}
+.bulk-folder-check input { width: 15px; height: 15px; accent-color: var(--accent); }
+.bulk-folder-input { margin-top: 4px; }
+.bulk-import-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bulk-import-row {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  background: var(--surface);
+}
+.bulk-import-row.is-warn { border-color: #d97706; background: #fffbeb; }
+.bulk-import-row.is-empty { opacity: 0.72; }
+.bulk-import-row-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.bulk-import-filename {
+  font-size: .72rem;
+  font-family: var(--font-mono);
+  color: var(--text-3);
+  word-break: break-all;
+  line-height: 1.35;
+}
+.bulk-import-meta {
+  font-size: .68rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.bulk-import-title-input {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-family: var(--font-sans);
+  font-size: .84rem;
+  color: var(--text);
+}
+.bulk-import-title-input:focus { outline: none; border-color: var(--accent); }
+.bulk-import-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.bulk-import-row-actions .btn {
+  padding: 5px 10px;
+  font-size: .72rem;
+}
+.modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  background: var(--surface-2);
+  flex-shrink: 0;
+}
+.bulk-import-progress {
+  width: 100%;
+  font-size: .8rem;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+}
+.bulk-import-progress.hidden { display: none; }
+.bulk-import-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.bulk-import-toolbar .btn { padding: 5px 12px; font-size: .74rem; }
+
 /* Sidebar outline section (shown when outline-in-sidebar mode) */
 .sidebar-outline-section {
   display: none;
@@ -834,11 +1000,11 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
       <textarea class="textarea" id="noteMarkdown" placeholder="# Topic&#10;## Subtopic&#10;Content..."></textarea>
       <div class="row">
         <button class="btn btn-primary" onclick="createNote()">Create note</button>
-        <button class="btn" onclick="triggerFileImport()">Import .md file</button>
+        <button class="btn" onclick="triggerFileImport()">Import .md file(s)</button>
         <button class="btn" onclick="saveCurrentNote()">Save changes</button>
         <button class="btn" onclick="deleteCurrentNote()">Delete note</button>
       </div>
-      <input type="file" id="fileInput" accept=".md,.markdown,.txt" style="display:none;" onchange="handleFileImport(event)">
+      <input type="file" id="fileInput" accept=".md,.markdown,.txt" multiple style="display:none;" onchange="handleFileImport(event)">
       <div class="status" id="composerStatus"></div>
     </div>
     <div class="panel-head">Your Notes</div>
@@ -885,6 +1051,36 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
   </section>
 </main>
 
+<div id="bulkImportModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="bulkImportTitle" aria-hidden="true" onclick="onBulkImportOverlayClick(event)">
+  <div class="modal-dialog" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <h2 id="bulkImportTitle">Import markdown files</h2>
+      <button type="button" class="modal-close" onclick="closeBulkImportModal()" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-hint">Edit each note title before importing. Titles can use <code style="font-family:var(--font-mono);font-size:.78em;">/</code> for nested folders (e.g. <code style="font-family:var(--font-mono);font-size:.78em;">Topic/Sub</code>). Files over ~1&nbsp;MB cannot be stored.</p>
+      <div class="bulk-folder-block">
+        <label class="bulk-folder-check">
+          <input type="checkbox" id="bulkImportUseFolder" onchange="onBulkImportFolderToggle()">
+          <span>Put all imported notes in one folder</span>
+        </label>
+        <input type="text" class="input bulk-folder-input" id="bulkImportFolderName" placeholder="Folder name (e.g. Cardiology block)" disabled autocomplete="off">
+      </div>
+      <div class="bulk-import-toolbar">
+        <button type="button" class="btn" onclick="bulkImportResetTitlesFromFilename()">Reset titles from filenames</button>
+        <button type="button" class="btn" onclick="bulkImportFillFirstHeading()">Use first heading as title where empty</button>
+        <button type="button" class="btn" id="bulkImportEditorBtn" onclick="bulkImportOpenSingleInEditor()" style="display:none">Open in editor instead</button>
+      </div>
+      <div id="bulkImportList" class="bulk-import-list"></div>
+    </div>
+    <div class="modal-footer">
+      <div id="bulkImportProgress" class="bulk-import-progress hidden" aria-live="polite"></div>
+      <button type="button" class="btn" onclick="closeBulkImportModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" id="bulkImportConfirmBtn" onclick="confirmBulkImport()">Import</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -915,6 +1111,9 @@ let composerCollapsed = localStorage.getItem('notesComposerCollapsed') === 'true
 let folderCollapsedPaths = new Set(
   JSON.parse(localStorage.getItem('notesFoldersCollapsed') || '[]').filter(p => typeof p === 'string')
 );
+let bulkImportState = null;
+const FIRESTORE_NOTE_MAX_CHARS = 950000;
+let bulkImportEscapeHandler = null;
 
 function applyComposerCollapsed() {
   const btn = document.getElementById('composerSectionToggle');
@@ -1102,6 +1301,18 @@ function setComposerStatus(msg, isErr = false) {
   el.style.color = isErr ? '#991b1b' : 'var(--text-3)';
 }
 
+async function createNoteDocument(title, markdown) {
+  const parsed = parseMarkdownHierarchy(markdown);
+  const markedHeadingIds = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
+  return notesCollection().add({
+    title,
+    markdown,
+    markedHeadingIds,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  });
+}
+
 async function createNote() {
   const titleInput = document.getElementById('noteTitle').value.trim();
   const markdown = document.getElementById('noteMarkdown').value;
@@ -1110,17 +1321,9 @@ async function createNote() {
     return;
   }
   const title = titleInput || deriveTitleFromMarkdown(markdown);
-  const parsed = parseMarkdownHierarchy(markdown);
-  const markedHeadingIds = flattenNodes(parsed.root.children).filter(n => n.isMarked).map(n => n.id);
   setComposerStatus('Creating note...');
   try {
-    const ref = await notesCollection().add({
-      title,
-      markdown,
-      markedHeadingIds,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
+    const ref = await createNoteDocument(title, markdown);
     setComposerStatus('Created.');
     await loadNotes();
     currentNoteId = ref.id;
@@ -1196,18 +1399,249 @@ function triggerFileImport() {
   document.getElementById('fileInput').click();
 }
 
+function newBulkImportRowId() {
+  if (window.crypto && crypto.getRandomValues) {
+    const a = new Uint8Array(8);
+    crypto.getRandomValues(a);
+    return Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
+  }
+  return String(Date.now()) + Math.random().toString(16).slice(2);
+}
+
+function normalizeNoteTitlePath(title) {
+  return String(title || '')
+    .split('/')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .join('/');
+}
+
+function onBulkImportOverlayClick(event) {
+  if (event.target === event.currentTarget) closeBulkImportModal();
+}
+
+function onBulkImportFolderToggle() {
+  const use = document.getElementById('bulkImportUseFolder').checked;
+  const input = document.getElementById('bulkImportFolderName');
+  input.disabled = !use;
+  if (use) input.focus();
+}
+
+function closeBulkImportModal() {
+  const modal = document.getElementById('bulkImportModal');
+  if (!modal.classList.contains('hidden')) {
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    if (bulkImportEscapeHandler) {
+      document.removeEventListener('keydown', bulkImportEscapeHandler);
+      bulkImportEscapeHandler = null;
+    }
+  }
+  bulkImportState = null;
+}
+
+function openBulkImportModal() {
+  const modal = document.getElementById('bulkImportModal');
+  modal.classList.remove('hidden');
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  const useFolder = document.getElementById('bulkImportUseFolder');
+  const folderName = document.getElementById('bulkImportFolderName');
+  useFolder.checked = false;
+  folderName.value = sessionStorage.getItem('notesBulkImportLastFolder') || '';
+  folderName.disabled = true;
+  document.getElementById('bulkImportProgress').classList.add('hidden');
+  document.getElementById('bulkImportProgress').textContent = '';
+  document.getElementById('bulkImportConfirmBtn').disabled = false;
+  const edBtn = document.getElementById('bulkImportEditorBtn');
+  if (edBtn) edBtn.style.display = bulkImportState.rows.length === 1 ? 'inline-flex' : 'none';
+  renderBulkImportRows();
+  bulkImportEscapeHandler = (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      closeBulkImportModal();
+    }
+  };
+  document.addEventListener('keydown', bulkImportEscapeHandler);
+  const firstInput = document.querySelector('.bulk-import-title-input');
+  if (firstInput) window.setTimeout(() => firstInput.focus(), 50);
+}
+
+function renderBulkImportRows() {
+  const list = document.getElementById('bulkImportList');
+  if (!bulkImportState || !bulkImportState.rows.length) {
+    list.innerHTML = '<p class="modal-hint" style="margin:0;">No files left. Close or pick files again.</p>';
+    return;
+  }
+  list.innerHTML = bulkImportState.rows.map((row) => {
+    const bytes = new Blob([row.markdown]).size;
+    const sizeKb = (bytes / 1024).toFixed(1);
+    const tooBig = row.markdown.length > FIRESTORE_NOTE_MAX_CHARS;
+    const empty = !String(row.markdown || '').trim();
+    const rowClass = ['bulk-import-row', tooBig ? 'is-warn' : '', empty ? 'is-empty' : ''].filter(Boolean).join(' ');
+    const warnText = tooBig ? ' — exceeds storage limit' : '';
+    return `<div class="${rowClass}" data-bulk-row="${escHtml(row.id)}">
+      <div class="bulk-import-row-head">
+        <span class="bulk-import-filename">${escHtml(row.fileName)}</span>
+        <span class="bulk-import-meta">${sizeKb} KB${warnText}</span>
+      </div>
+      <input type="text" class="bulk-import-title-input" id="bulkTit_${row.id}" data-row-id="${escHtml(row.id)}" value="${escHtml(row.defaultTitle)}" aria-label="Title for ${escHtml(row.fileName)}">
+      <div class="bulk-import-row-actions">
+        <button type="button" class="btn" onclick="bulkImportRemoveRow('${escAttr(row.id)}')">Remove</button>
+        <button type="button" class="btn" onclick="bulkImportUseFilenameTitle('${escAttr(row.id)}')">Use filename</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function bulkImportRemoveRow(rowId) {
+  if (!bulkImportState) return;
+  bulkImportState.rows = bulkImportState.rows.filter(r => r.id !== rowId);
+  const edBtn = document.getElementById('bulkImportEditorBtn');
+  if (edBtn) edBtn.style.display = bulkImportState.rows.length === 1 ? 'inline-flex' : 'none';
+  renderBulkImportRows();
+}
+
+function bulkImportOpenSingleInEditor() {
+  if (!bulkImportState || bulkImportState.rows.length !== 1) return;
+  const row = bulkImportState.rows[0];
+  const input = document.getElementById('bulkTit_' + row.id);
+  let titlePart = (input && input.value.trim()) || row.defaultTitle;
+  titlePart = normalizeNoteTitlePath(titlePart) || 'Untitled note';
+  const useFolder = document.getElementById('bulkImportUseFolder').checked;
+  let folderSeg = normalizeNoteTitlePath(document.getElementById('bulkImportFolderName').value.trim());
+  const fullTitle = useFolder && folderSeg ? normalizeNoteTitlePath(`${folderSeg}/${titlePart}`) : titlePart;
+  document.getElementById('noteTitle').value = fullTitle;
+  document.getElementById('noteMarkdown').value = row.markdown;
+  closeBulkImportModal();
+  setComposerStatus('Review in editor, then click Create note.');
+}
+
+function bulkImportUseFilenameTitle(rowId) {
+  const row = bulkImportState && bulkImportState.rows.find(r => r.id === rowId);
+  const input = document.getElementById('bulkTit_' + rowId);
+  if (row && input) input.value = row.defaultTitle;
+}
+
+function bulkImportResetTitlesFromFilename() {
+  if (!bulkImportState) return;
+  bulkImportState.rows.forEach((row) => {
+    const input = document.getElementById('bulkTit_' + row.id);
+    if (input) input.value = row.defaultTitle;
+  });
+}
+
+function bulkImportFillFirstHeading() {
+  if (!bulkImportState) return;
+  bulkImportState.rows.forEach((row) => {
+    const input = document.getElementById('bulkTit_' + row.id);
+    if (!input) return;
+    if (input.value.trim()) return;
+    input.value = deriveTitleFromMarkdown(row.markdown);
+  });
+}
+
 async function handleFileImport(event) {
-  const file = event.target.files && event.target.files[0];
+  const files = event.target.files;
   event.target.value = '';
-  if (!file) return;
+  if (!files || !files.length) return;
   try {
-    const text = await file.text();
-    const inferredTitle = file.name.replace(/\.[^.]+$/, '');
-    document.getElementById('noteTitle').value = inferredTitle;
-    document.getElementById('noteMarkdown').value = text;
-    setComposerStatus('Imported file into editor. Click "Create note".');
+    const rows = [];
+    for (const file of files) {
+      const text = await file.text();
+      const inferredTitle = file.name.replace(/\.[^.]+$/, '').trim() || 'Untitled';
+      rows.push({
+        id: newBulkImportRowId(),
+        fileName: file.name,
+        markdown: text,
+        defaultTitle: inferredTitle,
+      });
+    }
+    bulkImportState = { rows };
+    openBulkImportModal();
   } catch (err) {
     setComposerStatus('Import failed: ' + err.message, true);
+  }
+}
+
+async function confirmBulkImport() {
+  if (!bulkImportState || !bulkImportState.rows.length) {
+    setComposerStatus('No files to import.', true);
+    closeBulkImportModal();
+    return;
+  }
+  if (!currentUid) {
+    setComposerStatus('Sign in to import notes.', true);
+    closeBulkImportModal();
+    return;
+  }
+  const useFolder = document.getElementById('bulkImportUseFolder').checked;
+  let folderSeg = document.getElementById('bulkImportFolderName').value.trim();
+  folderSeg = normalizeNoteTitlePath(folderSeg.replace(/\/+/g, '/'));
+  if (useFolder && !folderSeg) {
+    setComposerStatus('Enter a folder name, or turn off “Put all in one folder”.', true);
+    return;
+  }
+  if (useFolder && folderSeg) {
+    sessionStorage.setItem('notesBulkImportLastFolder', folderSeg);
+  }
+  const progressEl = document.getElementById('bulkImportProgress');
+  const confirmBtn = document.getElementById('bulkImportConfirmBtn');
+  const rows = bulkImportState.rows.slice();
+  let ok = 0;
+  let skipped = 0;
+  let failed = 0;
+  const errors = [];
+  progressEl.classList.remove('hidden');
+  confirmBtn.disabled = true;
+  let firstNewId = null;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    progressEl.textContent = `Importing ${i + 1} / ${rows.length}…`;
+    const input = document.getElementById('bulkTit_' + row.id);
+    let titlePart = (input && input.value.trim()) || row.defaultTitle;
+    if (!titlePart) titlePart = deriveTitleFromMarkdown(row.markdown);
+    titlePart = normalizeNoteTitlePath(titlePart);
+    if (!titlePart) titlePart = 'Untitled note';
+    let fullTitle = useFolder && folderSeg ? `${folderSeg}/${titlePart}` : titlePart;
+    fullTitle = normalizeNoteTitlePath(fullTitle);
+    const md = row.markdown || '';
+    if (!md.trim()) {
+      skipped++;
+      continue;
+    }
+    if (md.length > FIRESTORE_NOTE_MAX_CHARS) {
+      failed++;
+      errors.push(row.fileName + ' (too large)');
+      continue;
+    }
+    try {
+      const ref = await createNoteDocument(fullTitle, md);
+      ok++;
+      if (!firstNewId) firstNewId = ref.id;
+    } catch (err) {
+      failed++;
+      errors.push(row.fileName + ': ' + err.message);
+    }
+  }
+  progressEl.textContent = '';
+  progressEl.classList.add('hidden');
+  confirmBtn.disabled = false;
+  closeBulkImportModal();
+  await loadNotes();
+  if (firstNewId) {
+    currentNoteId = firstNewId;
+  }
+  renderNotesList();
+  syncComposerToCurrent();
+  renderReader();
+  let msg = `Imported ${ok} note${ok === 1 ? '' : 's'}.`;
+  if (skipped) msg += ` Skipped ${skipped} empty.`;
+  if (failed) msg += ` ${failed} failed.`;
+  setComposerStatus(msg, failed > 0);
+  if (errors.length) {
+    console.warn('Bulk import errors', errors);
   }
 }
 
