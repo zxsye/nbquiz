@@ -162,6 +162,61 @@ body.outline-in-sidebar .sidebar .note-list {
   font-family: var(--font-mono);
   font-weight: 500;
 }
+.collapsible-panel-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border: none;
+  font: inherit;
+  text-align: left;
+  transition: background .12s ease;
+}
+.collapsible-panel-head:hover { background: #e8e4db; }
+.collapsible-chevron {
+  flex-shrink: 0;
+  font-size: .55rem;
+  color: var(--text-3);
+  line-height: 1;
+  transition: transform .15s ease;
+}
+.collapsible-panel-head[aria-expanded="false"] .collapsible-chevron {
+  transform: rotate(-90deg);
+}
+.composer.is-collapsed { display: none; }
+.note-folder-wrap { border-bottom: 1px solid var(--border); }
+.note-folder-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  border: none;
+  background: var(--surface-2);
+  padding: 9px 14px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--text-2);
+  text-align: left;
+  transition: background .12s ease;
+}
+.note-folder-row:hover { background: #e8e4db; }
+.note-folder-chevron {
+  flex-shrink: 0;
+  width: .85em;
+  font-size: .6rem;
+  color: var(--text-3);
+  line-height: 1;
+}
+.note-folder-name {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .composer {
   padding: 14px;
   border-bottom: 1px solid var(--border);
@@ -768,8 +823,11 @@ body.outline-in-sidebar .sidebar-outline-section { display: flex; }
 
 <main class="layout">
   <aside class="panel sidebar">
-    <div class="panel-head">Create or Import Note</div>
-    <div class="composer">
+    <button type="button" class="panel-head collapsible-panel-head" id="composerSectionToggle" aria-expanded="true" onclick="toggleComposerSection()">
+      <span class="collapsible-chevron" aria-hidden="true">▾</span>
+      Create or Import Note
+    </button>
+    <div class="composer" id="composerSectionBody">
       <label class="label" for="noteTitle">Title</label>
       <input class="input" id="noteTitle" placeholder="e.g. Endocrine summary">
       <label class="label" style="margin-top:10px;" for="noteMarkdown">Markdown</label>
@@ -853,6 +911,31 @@ let outlineInSidebar = localStorage.getItem('outlineInSidebar') === 'true';
 let renderedTree = null;
 let renderedMarkedCount = 0;
 let suppressComposerWrite = false;
+let composerCollapsed = localStorage.getItem('notesComposerCollapsed') === 'true';
+let folderCollapsedPaths = new Set(
+  JSON.parse(localStorage.getItem('notesFoldersCollapsed') || '[]').filter(p => typeof p === 'string')
+);
+
+function applyComposerCollapsed() {
+  const btn = document.getElementById('composerSectionToggle');
+  const body = document.getElementById('composerSectionBody');
+  if (!btn || !body) return;
+  btn.setAttribute('aria-expanded', composerCollapsed ? 'false' : 'true');
+  body.classList.toggle('is-collapsed', composerCollapsed);
+}
+
+function toggleComposerSection() {
+  composerCollapsed = !composerCollapsed;
+  localStorage.setItem('notesComposerCollapsed', composerCollapsed ? 'true' : 'false');
+  applyComposerCollapsed();
+}
+
+function toggleFolderCollapse(folderPath) {
+  if (folderCollapsedPaths.has(folderPath)) folderCollapsedPaths.delete(folderPath);
+  else folderCollapsedPaths.add(folderPath);
+  localStorage.setItem('notesFoldersCollapsed', JSON.stringify([...folderCollapsedPaths]));
+  renderNotesList();
+}
 
 function applyOutlineInSidebar() {
   document.getElementById('outlineInSidebarToggle').checked = outlineInSidebar;
@@ -871,6 +954,7 @@ function toggleOutlineInSidebar() {
 }
 
 applyOutlineInSidebar();
+applyComposerCollapsed();
 
 function signInWithGoogle() {
   document.getElementById('loginError').textContent = '';
@@ -916,19 +1000,80 @@ async function loadNotes() {
   }
 }
 
+function splitNoteTitlePath(title) {
+  return String(title || '')
+    .split('/')
+    .map(s => s.trim())
+    .filter(Boolean);
+}
+
+function noteUpdatedMs(note) {
+  const ts = note.updatedAt;
+  if (ts && typeof ts.toDate === 'function') {
+    const d = ts.toDate();
+    return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+  }
+  return 0;
+}
+
+function buildNotesFolderTree(notesList) {
+  const root = { folders: new Map(), entries: [] };
+  for (const note of notesList) {
+    const parts = splitNoteTitlePath(note.title);
+    const displayTitle = parts.length ? parts[parts.length - 1] : 'Untitled note';
+    const pathParts = parts.length > 1 ? parts.slice(0, -1) : [];
+    let node = root;
+    for (const seg of pathParts) {
+      if (!node.folders.has(seg)) {
+        node.folders.set(seg, { folders: new Map(), entries: [] });
+      }
+      node = node.folders.get(seg);
+    }
+    node.entries.push({ note, displayTitle });
+  }
+  return root;
+}
+
+function renderNotesTreeHtml(tree, depth, pathPrefix) {
+  const padLeft = 14 + depth * 12;
+  const folderNames = [...tree.folders.keys()].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  const sortedNotes = [...tree.entries].sort((a, b) => noteUpdatedMs(b.note) - noteUpdatedMs(a.note));
+  let html = '';
+  for (const name of folderNames) {
+    const child = tree.folders.get(name);
+    const folderPath = pathPrefix ? `${pathPrefix}/${name}` : name;
+    const collapsed = folderCollapsedPaths.has(folderPath);
+    const chev = collapsed ? '▸' : '▾';
+    html += `<div class="note-folder-wrap">
+      <button type="button" class="note-folder-row" style="padding-left:${padLeft}px" onclick="toggleFolderCollapse('${escAttr(folderPath)}')" aria-expanded="${!collapsed}">
+        <span class="note-folder-chevron" aria-hidden="true">${chev}</span>
+        <span class="note-folder-name">${escHtml(name)}</span>
+      </button>`;
+    if (!collapsed) {
+      html += `<div class="note-folder-children">${renderNotesTreeHtml(child, depth + 1, folderPath)}</div>`;
+    }
+    html += '</div>';
+  }
+  for (const { note, displayTitle } of sortedNotes) {
+    const active = note.id === currentNoteId ? 'active' : '';
+    const fullTitle = note.title || 'Untitled note';
+    const metaTitle = displayTitle !== fullTitle ? escHtml(fullTitle) + ' · ' : '';
+    html += `<button type="button" class="note-item ${active}" style="padding-left:${padLeft}px" onclick="selectNote('${escAttr(note.id)}')">
+      <div class="note-title">${escHtml(displayTitle)}</div>
+      <div class="note-meta">${metaTitle}${formatDate(note.updatedAt)} · ${countHeadings(note.markdown || '')} headings</div>
+    </button>`;
+  }
+  return html;
+}
+
 function renderNotesList() {
   const list = document.getElementById('noteList');
   if (!notes.length) {
     list.innerHTML = '<div class="empty-list">No notes yet.</div>';
     return;
   }
-  list.innerHTML = notes.map(note => {
-    const active = note.id === currentNoteId ? 'active' : '';
-    return `<button class="note-item ${active}" onclick="selectNote('${escAttr(note.id)}')">
-      <div class="note-title">${escHtml(note.title || 'Untitled note')}</div>
-      <div class="note-meta">${formatDate(note.updatedAt)} · ${countHeadings(note.markdown || '')} headings</div>
-    </button>`;
-  }).join('');
+  const tree = buildNotesFolderTree(notes);
+  list.innerHTML = renderNotesTreeHtml(tree, 0, '');
 }
 
 function selectNote(noteId) {
