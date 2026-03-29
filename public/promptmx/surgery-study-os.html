@@ -1,0 +1,3237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Pipeline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f7f5f0; --surface: #ffffff; --surface-2: #f0ede6; --border: #e2ddd5;
+  --text: #1a1714; --text-2: #5a534a; --text-3: #9a8f83;
+  --accent: #2563a8; --accent-light: #dbeafe;
+  --step1: #7c3aed; --step1-light: #ede9fe;
+  --step2: #1d6b99; --step2-light: #dbeafe;
+  --step3: #b45309; --step3-light: #fef3c7;
+  --step4: #c2410c; --step4-light: #ffedd5;
+  --step5: #166534; --step5-light: #dcfce7;
+  --correct: #166534; --correct-bg: #dcfce7; --correct-ring: #4ade80;
+  --radius: 10px; --radius-lg: 16px;
+  --shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.06);
+  --font-serif: 'Crimson Pro', Georgia, serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --transition: 200ms cubic-bezier(.4,0,.2,1);
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.main-content {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+
+/* === HEADER === */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 24px;
+  margin-bottom: 32px;
+  border-bottom: 1.5px solid var(--border);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.app-title {
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.app-title span { color: var(--accent); }
+
+/* === TABS === */
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-2);
+  padding: 4px;
+  border-radius: 99px;
+  border: 1.5px solid var(--border);
+}
+.tab-btn {
+  font-family: var(--font-sans);
+  font-size: .85rem;
+  font-weight: 500;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 99px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+.tab-btn.active { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(37,99,168,.25); }
+.tab-btn:not(.active):hover { background: var(--surface); color: var(--text); }
+
+/* === BUTTONS === */
+.btn {
+  font-family: var(--font-sans);
+  font-size: .9rem;
+  font-weight: 600;
+  border-radius: 99px;
+  padding: 11px 26px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: #1d4f8a; box-shadow: 0 4px 14px rgba(37,99,168,.3); }
+.btn-ghost { background: transparent; color: var(--text-2); border-color: var(--border); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn-success { background: var(--correct); color: #fff; border-color: var(--correct); }
+.btn-success:hover { background: #14532d; }
+.btn-sm { padding: 7px 14px; font-size: .8rem; }
+.btn-danger { background: transparent; color: #dc2626; border-color: #fca5a5; }
+.btn-danger:hover { background: #fef2f2; }
+
+/* === CARDS === */
+.card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp .3s ease both; }
+
+/* === FORM ELEMENTS === */
+.input-label {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 8px;
+  display: block;
+}
+textarea, input[type="text"], select {
+  width: 100%;
+  padding: 12px 16px;
+  font-family: var(--font-sans);
+  font-size: .9rem;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+  transition: border-color var(--transition);
+}
+textarea:focus, input[type="text"]:focus, select:focus { border-color: var(--accent); }
+textarea { resize: vertical; }
+textarea.mono { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-2); }
+select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%235a534a' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+/* === STATUS BADGES === */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge-pending   { background: var(--surface-2); color: var(--text-3); border: 1px solid var(--border); }
+.badge-expanded  { background: var(--step1-light); color: var(--step1); border: 1px solid #c4b5fd; }
+.badge-notes     { background: var(--step2-light); color: var(--step2); border: 1px solid #93c5fd; }
+.badge-uploaded  { background: var(--step3-light); color: var(--step3); border: 1px solid #fcd34d; }
+.badge-questions { background: var(--step4-light); color: var(--step4); border: 1px solid #fdba74; }
+.badge-studied   { background: var(--step5-light); color: var(--step5); border: 1px solid var(--correct-ring); }
+.badge-raw       { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+
+/* === DASHBOARD === */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 16px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.stat-number {
+  font-family: var(--font-serif);
+  font-size: 2.2rem;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.stat-label {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.week-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+.week-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.week-card:hover { border-color: var(--accent); box-shadow: 0 4px 20px rgba(37,99,168,.12); transform: translateY(-2px); }
+.week-card-title { font-family: var(--font-serif); font-size: 1.15rem; font-weight: 600; margin-bottom: 12px; }
+.progress-bar { height: 6px; background: var(--surface-2); border-radius: 99px; overflow: hidden; margin: 8px 0; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #6d28d9); border-radius: 99px; transition: width .5s ease; }
+.progress-fill.complete { background: linear-gradient(90deg, var(--correct), #059669); }
+.week-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-3); font-family: var(--font-mono); margin-top: 6px; }
+.section-title { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; margin-bottom: 18px; }
+
+/* === IMPORT SECTION === */
+.import-section {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  box-shadow: var(--shadow);
+  margin-bottom: 28px;
+}
+.import-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 18px; }
+.import-preview {
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--text-2);
+  line-height: 1.6;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+}
+.format-hint {
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-size: 0.82rem;
+  color: var(--text-2);
+  line-height: 1.7;
+}
+.format-hint code {
+  background: var(--border);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+}
+
+/* === PROCESS SECTION === */
+.process-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; align-items: start; }
+.process-sidebar {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+.raw-week-card {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.raw-week-card:hover { background: var(--surface-2); }
+.raw-week-card.active { background: var(--accent-light); border-left: 3px solid var(--accent); }
+.raw-week-card.processed { opacity: 0.6; }
+.raw-week-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+.raw-week-meta { font-size: 0.75rem; color: var(--text-3); font-family: var(--font-mono); }
+
+/* === AI COPY PANEL === */
+.ai-panel {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.prompt-combined-block { background: #1e1b16; border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; }
+.prompt-combined-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.03);
+}
+.prompt-combined-label { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .08em; }
+.prompt-combined-content {
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  line-height: 1.65;
+  color: rgba(255,255,255,.82);
+  white-space: pre-wrap;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.ai-instructions {
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+  border-left: 3px solid var(--accent);
+}
+.ai-instructions ol { padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+.ai-instructions li { font-size: 0.88rem; color: var(--text-2); line-height: 1.5; }
+.ai-instructions li strong { color: var(--text); }
+
+/* === TOPICS/WEEKS LIST === */
+.week-section { margin-bottom: 28px; }
+.week-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.week-section-title { font-family: var(--font-serif); font-size: 1.2rem; font-weight: 600; }
+.topic-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow); }
+.topic-table thead th { padding: 11px 18px; text-align: left; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .08em; background: var(--surface-2); border-bottom: 1.5px solid var(--border); }
+.topic-table tbody tr { border-bottom: 1px solid var(--border); transition: background var(--transition); cursor: pointer; }
+.topic-table tbody tr:last-child { border-bottom: none; }
+.topic-table tbody tr:hover { background: #faf8f5; }
+.topic-table td { padding: 13px 18px; font-size: 0.87rem; vertical-align: middle; }
+.topic-name { font-weight: 500; }
+.topic-category { color: var(--text-3); font-size: 0.8rem; margin-top: 2px; }
+.step-dots { display: flex; gap: 5px; align-items: center; }
+.step-dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--border); background: var(--surface-2); }
+.step-dot.done { background: var(--correct); border-color: var(--correct); }
+
+/* === WORKFLOW === */
+.workflow-layout { display: grid; grid-template-columns: 260px 1fr; gap: 20px; align-items: start; }
+.workflow-sidebar {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+}
+.sidebar-week-title, .sidebar-topic-header {
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.sidebar-topic-header { font-size: 0.72rem; color: var(--accent); background: var(--accent-light); }
+.sidebar-topic {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background var(--transition);
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.sidebar-topic:last-child { border-bottom: none; }
+.sidebar-topic:hover { background: var(--surface-2); }
+.sidebar-topic.active { background: var(--accent-light); border-left: 3px solid var(--accent); }
+.sidebar-topic-name { font-size: 0.83rem; font-weight: 500; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* === STEPS === */
+.steps-container { display: flex; flex-direction: column; gap: 14px; }
+.step-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: border-color var(--transition);
+}
+.step-card.next { border-color: var(--accent); }
+.step-card.done { opacity: 0.72; }
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 20px;
+  cursor: pointer;
+  user-select: none;
+}
+.step-header:hover { background: #faf8f5; }
+.step-num {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.82rem;
+  flex-shrink: 0;
+  transition: all var(--transition);
+}
+.step-num.pending { background: var(--surface-2); color: var(--text-3); border: 1.5px solid var(--border); }
+.step-num.next    { background: var(--accent); color: white; }
+.step-num.done    { background: var(--correct); color: white; }
+.step-title-wrap { flex: 1; }
+.step-title { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 600; }
+.step-subtitle { font-size: 0.78rem; color: var(--text-3); margin-top: 2px; }
+.step-chevron { color: var(--text-3); font-size: 0.9rem; flex-shrink: 0; }
+.step-body { display: none; padding: 0 20px 20px; }
+.step-body.open { display: block; }
+.step-instructions {
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+.step-instructions ol { padding-left: 18px; display: flex; flex-direction: column; gap: 7px; }
+.step-instructions li { font-size: 0.88rem; color: var(--text-2); line-height: 1.5; }
+.step-instructions li strong { color: var(--text); }
+
+/* === PROMPT BLOCK === */
+.prompt-block { background: #1e1b16; border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+.prompt-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.prompt-block-label { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: .08em; }
+.prompt-block-content {
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  line-height: 1.65;
+  color: rgba(255,255,255,.82);
+  white-space: pre-wrap;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.result-section { margin-bottom: 16px; }
+.step-footer { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding-top: 4px; }
+.step-complete-label { color: var(--correct); font-size: 0.85rem; font-weight: 600; }
+
+/* === TOPIC HEADER === */
+.topic-workflow-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.topic-workflow-title { font-family: var(--font-serif); font-size: 1.4rem; font-weight: 600; flex: 1; }
+.topic-workflow-subtitle { font-size: 0.85rem; color: var(--text-3); margin-top: 4px; }
+
+/* === TEMPLATES === */
+.templates-stack { display: flex; flex-direction: column; gap: 20px; }
+.template-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
+.template-card-header { padding: 14px 20px; border-bottom: 1.5px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface-2); }
+.template-card-title { font-family: var(--font-serif); font-size: 1.05rem; font-weight: 600; }
+.template-card-desc { font-size: 0.78rem; color: var(--text-3); margin-top: 2px; }
+.template-card-body { padding: 18px 20px; }
+.placeholder-hint { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.placeholder-tag { background: var(--surface-2); border: 1px solid var(--border); padding: 2px 8px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-2); }
+
+/* === EMPTY STATES === */
+.empty-state { text-align: center; padding: 56px 32px; }
+.empty-icon { font-size: 2.8rem; margin-bottom: 14px; }
+.empty-title { font-family: var(--font-serif); font-size: 1.3rem; font-weight: 600; margin-bottom: 8px; color: var(--text-2); }
+.empty-body { font-size: 0.88rem; color: var(--text-3); line-height: 1.6; margin-bottom: 20px; }
+
+.made-by { text-align: center; font-size: .72rem; color: var(--text-3); font-family: var(--font-mono); margin-top: 48px; }
+
+/* === CONFIRM DIALOG OVERRIDE (inline style only) === */
+.delete-btn { all: unset; font-size: 0.78rem; color: #dc2626; cursor: pointer; font-family: var(--font-sans); opacity: 0.7; transition: opacity .15s; }
+.delete-btn:hover { opacity: 1; }
+
+/* === SECTION SELECTOR === */
+.section-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.section-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.section-btn:hover { border-color: var(--accent); }
+.section-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.section-btn .icon { margin-right: 6px; }
+
+@media (max-width: 700px) {
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+  .import-grid { grid-template-columns: 1fr; }
+  .process-layout { grid-template-columns: 1fr; }
+  .workflow-layout { grid-template-columns: 1fr; }
+  .workflow-sidebar, .process-sidebar { position: static; max-height: 250px; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+// ============================================================
+// DEFAULT TEMPLATES
+// ============================================================
+
+const DEFAULT_CURRICULUM_EXPANSION = `You are a medical education curriculum designer with expertise in final-year undergraduate medicine. Your task is to take a raw curriculum input (provided as structured JSON) and transform it into a comprehensive, well-structured curriculum suitable for final-year medical students preparing for clinical practice and exit examinations.
+
+Your output must be valid JSON only — no prose, no markdown fences, no commentary outside the JSON object.
+
+---
+
+## Step 1 — Reorganise into distinct sections
+
+Separate all topics into clearly defined, non-overlapping sections based on specialty, clinical context, or educational format (e.g. Orthopaedic Trauma, Hand Surgery, Arthroplasty, Clinical Skills). No topic may appear in more than one section. If a topic overlaps two areas, assign it to its primary section; record the cross-reference as a brief parenthetical string in that topic's \`crossReference\` field. Use concise, professional section titles.
+
+---
+
+## Step 2 — Expand each topic to final-year level
+
+For each topic produce between 6 and 10 descriptor objects. Each descriptor covers one of the following dimensions — not necessarily one descriptor per dimension, but the full set across the 6–10 descriptors must address:
+
+- Pathophysiology relevant to clinical decision-making
+- Clinical presentation and examination findings
+- Investigations: which to order, sequence, and interpretation
+- Management: acute/emergency steps, conservative options, surgical indications, escalation thresholds
+- Complications and their recognition
+- Prognostic or scoring systems (e.g. GCS, Wells score, ATLS shock classification)
+- Surgical anatomy where it directly informs clinical decision-making
+- Red flags and emergency recognition
+- Medicolegal or consent considerations where relevant
+
+[[IMPORTANT — minimum descriptor count: every topic must have at least 6 descriptor objects. If you reach Step 2 with fewer than 6, add descriptors for complications, anatomy, scoring systems, or consent before proceeding.]]
+
+---
+
+## Step 3 — Add gap-fill topics
+
+Identify topics a final-year curriculum for this specialty would typically include but that are absent from the input. Add these as additional topic objects within the appropriate existing section object.
+
+[[CRITICAL — do NOT create new section objects to hold gap-fill content. Do not add any field that marks a topic as gap-fill. Gap-fill topics must be silently integrated — indistinguishable from original content in the output.]]
+
+---
+
+## Step 4 — Descriptor formatting rules
+
+Every descriptor object has exactly two string fields: \`"label"\` and \`"specifics"\`.
+
+- \`"label"\`: the concept being described (e.g. \`"Pathophysiology"\`, \`"Rutherford classification"\`, \`"Surgical anatomy"\`, \`"Red flags"\`).
+- \`"specifics"\`: noun-phrase content only. No subject-verb prose sentences. Every clause — including every clause after a semicolon — must function as a standalone noun phrase or \`label: specifics\` fragment.
+
+**The test:** if a clause requires a subject-verb pair to make grammatical sense, rewrite it as a noun phrase.
+
+**WRONG** (predicate clause after semicolon):
+\`\`\`json
+{
+  "label": "Pathophysiology",
+  "specifics": "elevated compartment pressure >30 mmHg; leads to cellular hypoxia and rhabdomyolysis"
+}
+\`\`\`
+
+**RIGHT** (noun phrases throughout):
+\`\`\`json
+{
+  "label": "Pathophysiology",
+  "specifics": "elevated intracompartmental pressure >30 mmHg; downstream consequences — cellular hypoxia, muscle necrosis, rhabdomyolysis"
+}
+\`\`\`
+
+**WRONG**:
+\`\`\`json
+{
+  "label": "Management",
+  "specifics": "IV flucloxacillin for 4–6 weeks; requires serial CRP monitoring"
+}
+\`\`\`
+
+**RIGHT**:
+\`\`\`json
+{
+  "label": "Management",
+  "specifics": "IV flucloxacillin (vancomycin if MRSA risk) for 4–6 weeks; response monitoring — serial CRP trending"
+}
+\`\`\`
+
+**Additional descriptor rules:**
+
+- Each descriptor's \`"specifics"\` must include specific thresholds, eponymous scores, imaging criteria, classifications, or decision rules inline. Vague phrases such as \`"appropriate management"\` or \`"relevant investigations"\` are forbidden.
+- Do not begin \`"specifics"\` values with the verbs "Understand", "Know", "Recognise", or similar learning-objective verbs.
+- [[FORBIDDEN adverbs — do not use as filler: "strictly", "rigorously", "reliably", "overwhelmingly", "emergent" (without clinical specificity). Replace each with the precise threshold or decision rule it imprecisely gestures at.]]
+
+---
+
+## Step 5 — Educational resources
+
+Carry across every tutorial, podcast, and lecture from the input into the \`"educationalResources"\` array. Do not invent new entries.
+
+Each resource object has three fields:
+- \`"type"\`: \`"tutorial"\` | \`"podcast"\` | \`"lecture"\`
+- \`"title"\`: the original title string from the input
+- \`"summary"\`: a single dense noun-phrase string covering the key clinical content; semicolons separate distinct sub-topics
+
+[[CRITICAL — \`"summary"\` must be a single string. No nested arrays, no sub-objects. One entry = one summary string, never a list.]]
+
+**WRONG** (nested structure):
+\`\`\`json
+{
+  "type": "tutorial",
+  "title": "Tutorial: IV Fluids in Surgical Patients",
+  "summary": ["maintenance calculations", "bolus thresholds", "post-op oliguria"]
+}
+\`\`\`
+
+**RIGHT** (single summary string):
+\`\`\`json
+{
+  "type": "tutorial",
+  "title": "Tutorial: IV Fluids in Surgical Patients",
+  "summary": "maintenance requirements (25–30 mL/kg/day), bolus thresholds, hyperchloraemic acidosis from 0.9% saline, post-op oliguria: physiological ADH response vs. hypovolaemia"
+}
+\`\`\`
+
+---
+
+## Step 6 — Depth and style calibration
+
+Calibrate content to **final year of an undergraduate medical degree** — post-clerkship, pre-internship. Assume completed clinical rotations and foundational science knowledge. This is a curriculum framework (what to know, at what threshold), not a study guide (everything about it).
+
+Use the following worked examples as the benchmark for descriptor density, noun-phrase discipline, and specificity. Every topic you produce should match this level:
+
+**Style reference — topic example 1:**
+\`\`\`json
+{
+  "id": "acute-limb-ischaemia",
+  "title": "Acute limb ischaemia (ALI)",
+  "descriptors": [
+    {
+      "label": "Pathophysiology",
+      "specifics": "sudden arterial flow cessation from embolism, in-situ thrombosis, or trauma; ischaemia-reperfusion injury and compartment syndrome as downstream consequences"
+    },
+    {
+      "label": "The 6 Ps",
+      "specifics": "pain, pallor, pulselessness, paraesthesia, paralysis, perishing cold — paraesthesia and paralysis indicating advanced ischaemia threatening viability"
+    },
+    {
+      "label": "Rutherford classification",
+      "specifics": "Grade I viable, IIa marginally threatened, IIb immediately threatened, III irreversible — determines urgency and revascularisation vs. primary amputation"
+    },
+    {
+      "label": "Embolism vs. in-situ thrombosis",
+      "specifics": "embolism — AF source, contralateral normal pulses, no prior claudication; thrombosis — background PAD, bilateral absent ankle pulses, more gradual onset"
+    },
+    {
+      "label": "Investigations",
+      "specifics": "urgent duplex USS and/or CTA; ECG for AF identification; echo for cardiac source; CK for rhabdomyolysis; renal function baseline"
+    },
+    {
+      "label": "Emergency management",
+      "specifics": "IV heparin immediately on diagnosis; analgesia; dependent limb positioning; urgent vascular surgery referral"
+    },
+    {
+      "label": "Revascularisation",
+      "specifics": "surgical embolectomy (Fogarty catheter) for embolic; catheter-directed thrombolysis for thrombotic <14 days; angioplasty/bypass for underlying lesion"
+    },
+    {
+      "label": "Post-revascularisation complications",
+      "specifics": "hyperkalaemia, myoglobinuria, AKI, compartment syndrome (low threshold for fasciotomy), reperfusion injury, no-reflow phenomenon"
+    },
+    {
+      "label": "Thrombolysis contraindications",
+      "specifics": "recent stroke, active bleeding, recent surgery — indications to escalate to surgical revascularisation"
+    }
+  ]
+}
+\`\`\`
+
+**Style reference — section example (abbreviated to show structure):**
+\`\`\`json
+{
+  "id": "neurosurgery",
+  "title": "Neurosurgery",
+  "topics": [
+    {
+      "id": "subarachnoid-haemorrhage",
+      "title": "Subarachnoid haemorrhage (SAH)",
+      "descriptors": [
+        { "label": "Causes", "specifics": "ruptured berry aneurysm (85%), AVM, trauma, idiopathic" },
+        { "label": "Clinical presentation", "specifics": "thunderclap headache, meningism, focal deficits, reduced GCS" },
+        { "label": "Investigations", "specifics": "non-contrast CT (sensitivity ~98% within 6h); LP for xanthochromia if CT negative" },
+        { "label": "Grading", "specifics": "Hunt & Hess (clinical severity), Fisher (CT blood load), WFNS (neurological grade)" },
+        { "label": "Acute management", "specifics": "nimodipine for vasospasm prevention; euvolaemia maintenance; blood pressure targets; seizure prophylaxis" },
+        { "label": "Definitive treatment", "specifics": "endovascular coiling vs. surgical clipping; timing decisions based on grade and anatomy" },
+        { "label": "Complications", "specifics": "rebleeding (peak 24h), vasospasm (days 4–14), hydrocephalus, hyponatraemia (SIADH vs. cerebral salt-wasting)" }
+      ]
+    },
+    {
+      "id": "raised-icp",
+      "title": "Raised intracranial pressure (ICP)",
+      "descriptors": [
+        { "label": "Monro-Kellie doctrine", "specifics": "brain, blood, CSF compartments; compensatory displacement before pressure rises" },
+        { "label": "Causes", "specifics": "haematoma, tumour, oedema, hydrocephalus, hypertensive encephalopathy" },
+        { "label": "Clinical features", "specifics": "Cushing's triad — hypertension, bradycardia, irregular respirations; papilloedema; CN VI palsy as false localising sign" },
+        { "label": "Herniation syndromes", "specifics": "uncal — CN III palsy, contralateral hemiplegia; tonsillar — coning, cardiorespiratory arrest; central — bilateral signs" },
+        { "label": "ICP monitoring", "specifics": "indications (GCS ≤8 with abnormal CT, or normal CT with ≥2 risk factors); EVD vs. intraparenchymal bolt; CPP target >60 mmHg" },
+        { "label": "Medical management", "specifics": "30° head elevation; osmotherapy — mannitol 0.25–1 g/kg or hypertonic saline; sedation; hyperventilation as bridge (pCO₂ 30–35 mmHg)" },
+        { "label": "Surgical options", "specifics": "EVD insertion for hydrocephalus; decompressive craniectomy for refractory ICP" }
+      ]
+    },
+    {
+      "id": "cerebral-aneurysms",
+      "title": "Cerebral aneurysms",
+      "descriptors": [
+        { "label": "Epidemiology and risk factors", "specifics": "smoking, hypertension, connective tissue disease, ADPKD, family history of aneurysm or SAH" },
+        { "label": "Morphology", "specifics": "berry (saccular) — most common, at bifurcations; fusiform — atherosclerotic; mycotic — infectious emboli" },
+        { "label": "Unruptured aneurysm management", "specifics": "ISUIA risk stratification by size and location; surveillance MRA vs. intervention; shared decision-making" },
+        { "label": "Endovascular vs. surgical", "specifics": "coiling favoured for elderly, posterior circulation, narrow neck; clipping for young patients, MCA, broad neck — ISAT trial evidence" },
+        { "label": "Screening", "specifics": "first-degree relatives of two or more SAH patients; ADPKD patients; MRA as modality of choice" },
+        { "label": "Ruptured aneurysm", "specifics": "SAH management pathway — see Subarachnoid haemorrhage (SAH)" }
+      ]
+    },
+    {
+      "id": "brain-tumours",
+      "title": "Brain tumours",
+      "descriptors": [
+        { "label": "Primary — glioma", "specifics": "WHO grading I–IV; IDH mutation as favourable prognostic marker; low-grade vs. high-grade behaviour and surveillance intervals" },
+        { "label": "Primary — GBM (WHO Grade IV)", "specifics": "median survival 14–16 months with Stupp protocol (radiotherapy + temozolomide); MGMT methylation as predictive marker" },
+        { "label": "Primary — meningioma", "specifics": "extra-axial, dural attachment, typically WHO Grade I; surgical resection vs. surveillance based on size, symptoms, and growth rate" },
+        { "label": "Primary — other", "specifics": "pituitary adenoma — endocrine effects, bitemporal hemianopia, trans-sphenoidal resection; acoustic neuroma — CN VIII, CPA angle; medulloblastoma — paediatric, posterior fossa" },
+        { "label": "Secondary metastases", "specifics": "common primaries — lung, breast, melanoma, colorectal, renal; ring-enhancing lesions at grey-white matter junction on MRI" },
+        { "label": "Metastases management", "specifics": "whole brain radiotherapy, stereotactic radiosurgery (≤3–4 lesions), surgical resection for single accessible lesion, dexamethasone for vasogenic oedema" },
+        { "label": "Clinical presentation", "specifics": "headache (worse lying/morning — raised ICP pattern), seizures, focal neurological deficits, personality change" },
+        { "label": "Investigations", "specifics": "MRI with gadolinium as gold standard; CT for acute setting; biopsy for histological grading" },
+        { "label": "Peri-operative management", "specifics": "dexamethasone for oedema; seizure prophylaxis (levetiracetam); VTE prophylaxis — mechanical until haemostasis confirmed" }
+      ]
+    },
+    {
+      "id": "post-op-decreased-loc",
+      "title": "Post-operative decreased level of consciousness",
+      "descriptors": [
+        { "label": "Systematic approach", "specifics": "ABCDE assessment; drug chart review; point-of-care glucose; electrolytes; GCS trajectory" },
+        { "label": "Neurosurgical causes", "specifics": "intracranial haematoma (extradural, subdural, intracerebral), cerebral oedema, hydrocephalus, raised ICP — all requiring urgent CT" },
+        { "label": "Non-surgical causes", "specifics": "ischaemic or haemorrhagic stroke; post-ictal state; delirium; metabolic — hyponatraemia, hypoglycaemia, uraemia; sepsis; medication effect (opioids, benzodiazepines)" },
+        { "label": "Investigations", "specifics": "urgent non-contrast CT head; FBC, U&E, LFTs, glucose, coagulation, drug levels; ECG" },
+        { "label": "Escalation thresholds", "specifics": "GCS drop ≥2 points — neurosurgical re-referral; new focal deficit or pupillary asymmetry — immediate CT and senior review; haematoma on CT — return to theatre decision" },
+        { "label": "Pitfalls", "specifics": "assuming sedation as cause without excluding surgical bleeding; delaying CT while awaiting blood results; failure to recognise post-ictal state in context of known tumour" }
+      ]
+    }
+  ]
+}
+\`\`\`
+
+---
+
+## Output Schema
+
+Produce a single JSON object conforming exactly to this schema. No additional fields. No fields omitted.
+
+\`\`\`json
+{
+  "schemaVersion": "2.0.0",
+  "generatedDate": "<ISO 8601 timestamp>",
+  "weekId": "<from input>",
+  "weekTitle": "<from input>",
+  "sections": [
+    {
+      "id": "<kebab-case — unique across all sections>",
+      "title": "<concise professional section heading>",
+      "topics": [
+        {
+          "id": "<kebab-case — unique within section>",
+          "title": "<topic name: the condition, procedure, or clinical entity>",
+          "crossReference": "<optional: brief parenthetical if topic straddles two sections, else omit field>",
+          "descriptors": [
+            {
+              "label": "<concept label>",
+              "specifics": "<noun-phrase content — no full sentences, no predicate clauses>"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "educationalResources": [
+    {
+      "type": "<'tutorial' | 'podcast' | 'lecture'>",
+      "title": "<original title from input>",
+      "summary": "<single dense noun-phrase string; semicolons separate sub-topics>"
+    }
+  ]
+}
+\`\`\`
+
+**Schema enforcement rules:**
+- \`sections\`: array of one or more section objects; no two sections may share an \`id\`
+- \`topics\`: array of one or more topic objects per section; no two topics within a section may share an \`id\`; gap-fill topics are integrated silently with no distinguishing field
+- \`descriptors\`: array of 6–10 objects per topic — no exceptions; every object has exactly \`"label"\` and \`"specifics"\`; no other fields
+- \`educationalResources\`: one object per resource from the input; \`"summary"\` is always a single string; no nested structures
+
+---
+
+## Constraints (all carry over from original specification)
+
+- No topic may appear in more than one section. Each section is self-contained.
+- No prose paragraphs anywhere in the output.
+- \`"specifics"\` values must include specific thresholds, scores, classifications, and decision rules — vague or generic phrasing is forbidden.
+- Depth calibrated to final year of undergraduate medicine — post-clerkship, pre-internship; foundational science assumed.
+- This is a curriculum framework, not a study guide.
+- Gap-fill topics must be silently integrated into existing sections. No field, marker, or comment may distinguish them.
+- Educational resources: one summary string per entry, never a nested list.
+
+
+Produce the output JSON object now. Output valid JSON only — no markdown fences, no commentary.
+
+
+## Input
+
+\`\`\`json
+{{RAW_WEEK_DATA}}
+\`\`\``;
+
+const DEFAULT_EXPANSION = `You are helping a final-year medical student prepare fora clinical assessments in surgery.
+
+Topic: {{TITLE}}
+Category: {{CATEGORY}}
+
+Curriculum content:
+{{CONTENT}}
+
+Expand this topic into a detailed list of high-yield learning outcomes for a final-year medical student. Structure your response as a clear numbered list covering:
+
+1. Definition & classification (brief)
+2. Pathophysiology (clinically relevant only)
+3. Clinical features — key history, examination findings, red flags
+4. Investigations — what to order, what to expect, and why
+5. Management — acute stabilisation and definitive treatment
+6. Surgical aspects — indications, overview of approach, post-op care
+7. Complications — important ones, recognition, and management
+8. Key clinical pearls & exam traps
+
+Keep each point concise and high-yield. Avoid basic science that isn't directly clinically actionable. Pitch at final-year level — beyond introductory, not subspecialty depth.`;
+
+const DEFAULT_NOTES = `You are generating structured study notes for a final-year medical student preparing for surgery assessments.
+
+Topic: {{TITLE}}
+Category: {{CATEGORY}}
+
+High-yield learning outcomes to cover:
+{{EXPANDED_OUTCOMES}}
+
+Generate comprehensive, well-structured notes covering all the above points. Use clear H2/H3 headings.
+
+Label important items clearly:
+🔑 Clinical pearl
+📊 Key number or threshold to memorise
+⚠️ Exam trap or common pitfall
+🚨 Don't-miss finding that changes management
+
+Write at final-year level. Aim for notes you could use for last-minute revision. Be specific — include actual numbers, named criteria, and decision thresholds where relevant.`;
+
+const DEFAULT_MCQ_STYLE_GUIDE = `# Medical MCQ Style Guide
+*Single-best-answer questions for final-year medical students*
+
+---
+
+## CORE PRINCIPLE
+Every question tests the **next best step**, not merely a valid step. Distractors must be plausible and from the same category as the correct answer — students should need to reason through *why* each distractor fails, not just recognise it as wrong.
+
+**Before generating each question, reason through:**
+1. What concept am I testing?
+2. What would a student plausibly choose instead, and why?
+3. Does the stem contain exactly one discriminating detail that separates the correct answer from all distractors?
+
+Then write the question.
+
+---
+
+## ANSWER OPTIONS
+- Always **5 options (A–E)**, one single best answer.
+- Distractors must be: the right action at the wrong time; the right treatment for a related but distinct condition; a valid step that isn't the *most appropriate* given the specific context; or the next step in the sequence rather than the current one.
+
+---
+
+## QUESTION FORMATS
+
+### 1. Clinical Vignette (majority of questions)
+2–5 sentences: patient demographics, chief complaint, relevant history, examination findings, pertinent results. Occasionally include irrelevant history to train filtering.
+
+- **Diagnosis** — enough discriminating features to favour one diagnosis; ask *"most likely diagnosis"* or *"most important to exclude"*
+- **Investigation** — specify what's already been done; distractors are too invasive, less specific, or premature
+- **Acute management** — time-critical scenario; most common trap is treating before stabilising or skipping a diagnostic step
+- **Definitive / next step** — initial action already described; tests sequence of care, not isolated steps; highest-yield format
+- **Complication recognition** — post-procedure patient with temporal clues (e.g., "day 2 post-op"); ask for cause or next step
+- **Pathophysiology / mechanism** — underlying mechanism, expected investigation finding, or drug rationale
+
+### 2. Direct Fact-Based
+1–2 sentence stem for foundational knowledge not suited to a vignette. Epidemiology, classification, pharmacology. Distractors must span a clinically meaningful range — not trivially obvious.
+
+### 3. Sequential / Multi-Step Management
+State the scenario → state the initial action taken → describe patient response → ask for next best step. Each distractor is a step that is premature, already done, or appropriate for a different clinical trajectory.
+
+### 4. Lab / Imaging Interpretation
+Brief vignette + lab values (electrolytes, LFTs, ABG, coagulation) or imaging description. Ask for diagnosis or next action. Distractors have overlapping biochemical or radiological profiles.
+
+### 5. Exception Stem ("Which is NOT…")
+Four options are genuine associations; the correct answer is plausible but belongs to a related, distinct condition. Tests incomplete mental models. Never use when the exception is trivially obvious.
+
+### 6. Applied Anatomy / Procedure
+Frame around a clinical consequence. Distractors are nearby anatomical structures plausible in the procedural context.
+
+---
+
+## BLOOM'S LEVEL MIX
+| Level      | Target | Examples                                                         |
+| ---------- | ------ | ---------------------------------------------------------------- |
+| Remember   | 15%    | Fact-based, classification                                       |
+| Understand | 25%    | Pathophysiology, lab interpretation                              |
+| Apply      | 35%    | Vignette → diagnosis or initial management                       |
+| Analyse    | 25%    | Sequential management, complication recognition, exception stems |
+
+---
+
+## EACH QUESTION MUST INCLUDE AN EXPLANATION COVERING:
+1. Why the correct answer is correct
+2. Why the most tempting distractor is wrong
+3. A clinical pearl or decision rule where applicable
+
+---
+
+## AVOID
+- "All of the above" / "None of the above"
+- Stem clues that make the answer obvious without reasoning
+- Two answers that are equally defensible — add one discriminating clinical detail if needed
+- Pure recall questions unless the fact is genuinely high-yield`;
+
+// ============================================================
+// STEP DEFINITIONS
+// ============================================================
+function cloneDefaultSteps() {
+  return [
+  {
+    id: 'expand', num: 1, icon: '📖', title: 'Expand Learning Outcomes',
+    subtitle: 'Use Claude to turn the curriculum topic into structured high-yield outcomes',
+    instructions: [
+      'Copy the prompt below using the <strong>Copy</strong> button',
+      'Open <strong>Claude</strong> in a new conversation',
+      'Paste the prompt and send — Claude will expand the topic into detailed learning outcomes',
+      'Read through the response and check it looks clinically accurate',
+      'Paste the full response into the <strong>Result</strong> box below',
+      'Click <strong>Mark as Done</strong> to continue to the next step'
+    ],
+    hasPrompt: true, promptTarget: 'Claude',
+    hasResult: true, resultKey: 'expandedOutcomes', resultLabel: 'Paste Expanded Outcomes from Claude'
+  },
+  {
+    id: 'notes', num: 2, icon: '📝', title: 'Generate Structured Notes',
+    subtitle: 'Turn the expanded outcomes into revision-ready notes',
+    instructions: [
+      'The prompt below <strong>already includes your Step 1 outcomes</strong> — complete Step 1 first if the box below looks empty',
+      'Copy the prompt and paste it into <strong>Claude</strong>',
+      'Review the generated notes — check specific numbers, drug doses, and named criteria for accuracy',
+      'Paste the notes into the <strong>Result</strong> box below (for reference and NotebookLM upload)',
+      'Click <strong>Mark as Done</strong>'
+    ],
+    hasPrompt: true, promptTarget: 'Claude',
+    hasResult: true, resultKey: 'notes', resultLabel: 'Paste Generated Notes from Claude'
+  },
+  {
+    id: 'upload', num: 3, icon: '☁️', title: 'Upload to NotebookLM',
+    subtitle: 'Create a notebook and add your notes as a source',
+    instructions: [
+      'Go to <strong>notebooklm.google.com</strong> and create a new notebook',
+      'Name the notebook after this topic (e.g. <em>"Appendicitis"</em>)',
+      'Click <strong>Add source</strong> → <em>Copied text</em>',
+      'Copy your notes from the Step 2 result box and paste them in',
+      'Wait for NotebookLM to process the source (usually 10–30 seconds)',
+      'Click <strong>Mark as Done</strong>'
+    ],
+    hasPrompt: false, hasResult: false
+  },
+  {
+    id: 'questions', num: 4, icon: '❓', title: 'Generate MCQs in NotebookLM',
+    subtitle: 'Use the MCQ style guide to generate questions grounded in your notes',
+    instructions: [
+      'Open the NotebookLM notebook you created for this topic',
+      'Open the <strong>Chat</strong> panel on the right side',
+      'Copy the prompt below and paste it into the NotebookLM chat',
+      'NotebookLM will generate questions grounded in your uploaded notes',
+      'Use your <strong>Chrome extension</strong> to export the questions to your quiz system',
+      'Click <strong>Mark as Done</strong>'
+    ],
+    hasPrompt: true, promptTarget: 'NotebookLM Chat',
+    hasResult: false
+  },
+  {
+    id: 'studied', num: 5, icon: '🧠', title: 'Active Recall Session',
+    subtitle: 'Work through the questions and flag weak areas',
+    instructions: [
+      'Load the exported questions into your quiz app',
+      'Complete at least one full active recall session for this topic',
+      'Flag questions you got wrong — these are your spaced repetition targets',
+      'If you scored below ~70%, consider re-reading your notes before flagging as done',
+      'Click <strong>Mark as Done</strong>'
+    ],
+    hasPrompt: false, hasResult: false
+  }
+  ];
+}
+
+let STEPS = cloneDefaultSteps();
+let STEP_IDS = STEPS.map(s => s.id);
+
+// ============================================================
+// STATE MANAGEMENT
+// ============================================================
+const STORAGE_KEY = 'surgery-study-os-v4';
+const LEGACY_KEY = 'surgery-study-os-v3';
+
+function mkDefaultState() {
+  return {
+    weeks: [],
+    rawWeeks: [],
+    promptTemplates: {
+      curriculumExpansion: DEFAULT_CURRICULUM_EXPANSION,
+      expansion: DEFAULT_EXPANSION,
+      notes: DEFAULT_NOTES,
+      mcqStyleGuide: DEFAULT_MCQ_STYLE_GUIDE
+    },
+    activeTab: 'dashboard',
+    activeTopicId: null,
+    activeRawWeekId: null,
+    selectedSection: 'surgery',
+    openStepId: null
+  };
+}
+
+function migrateLegacyData() {
+  try {
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy) {
+      const parsed = JSON.parse(legacy);
+      const migrated = {
+        ...mkDefaultState(),
+        weeks: parsed.weeks || [],
+        promptTemplates: {
+          curriculumExpansion: DEFAULT_CURRICULUM_EXPANSION,
+          expansion: parsed.promptTemplates?.expansion || DEFAULT_EXPANSION,
+          notes: parsed.promptTemplates?.notes || DEFAULT_NOTES,
+          mcqStyleGuide: parsed.promptTemplates?.mcqStyleGuide || DEFAULT_MCQ_STYLE_GUIDE
+        }
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+  } catch(e) {}
+  return null;
+}
+
+let state = (() => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return Object.assign(mkDefaultState(), JSON.parse(saved));
+    // Try to migrate from v3
+    const migrated = migrateLegacyData();
+    if (migrated) return migrated;
+  } catch(e) {}
+  return mkDefaultState();
+})();
+
+function persist() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+  schedulePmxCloudSave();
+}
+
+function setState(patch) {
+  Object.assign(state, patch);
+  persist();
+  render();
+}
+
+function setStateNoRender(patch) {
+  Object.assign(state, patch);
+  persist();
+}
+
+// ============================================================
+// FIREBASE — PromptMX catalog + user state (see SCHEMA_PROMPTMX_FIRESTORE.md)
+// ============================================================
+let pmxAuth = null;
+let pmxDb = null;
+let pmxUser = null;
+let pmxIsAdmin = false;
+let pmxCloudSaveTimer = null;
+
+function initPmxFirebase() {
+  try {
+    if (typeof firebase === 'undefined') return;
+    if (firebase.apps && firebase.apps.length) {
+      pmxAuth = firebase.auth();
+      pmxDb = firebase.firestore();
+      return;
+    }
+    firebase.initializeApp({
+      apiKey: 'AIzaSyCNnvrEli5lzU3sUFvttTsQPIYQXYK1_WE',
+      authDomain: 'nbquiz-6faf9.firebaseapp.com',
+      projectId: 'nbquiz-6faf9',
+      storageBucket: 'nbquiz-6faf9.firebasestorage.app',
+      messagingSenderId: '913114740758',
+      appId: '1:913114740758:web:a856bb9c8eedf3cd629d37',
+    });
+    pmxAuth = firebase.auth();
+    pmxDb = firebase.firestore();
+  } catch (e) {
+    console.warn('PromptMX Firebase init failed', e);
+  }
+}
+
+initPmxFirebase();
+
+async function pmxCheckAdmin(email) {
+  if (!email || !pmxDb) return false;
+  try {
+    const snap = await pmxDb.collection('admins').doc(email).get();
+    return snap.exists;
+  } catch (e) {
+    return false;
+  }
+}
+
+function firestoreStepToAppStep(stepId, d, index) {
+  const ord = typeof d.order === 'number' ? d.order : index + 1;
+  return {
+    id: stepId,
+    num: ord,
+    icon: d.icon || '📌',
+    title: d.name || stepId,
+    subtitle: d.subtitle || '',
+    instructions: Array.isArray(d.instructions) ? d.instructions : [],
+    hasPrompt: !!d.hasPrompt,
+    promptTarget: d.promptTarget || '',
+    hasResult: !!d.hasResult,
+    resultKey: d.resultKey || '',
+    resultLabel: d.resultLabel || '',
+  };
+}
+
+const PMX_TEMPLATE_STATE_KEYS = {
+  curriculum_expansion: 'curriculumExpansion',
+  topic_expansion: 'expansion',
+  study_notes: 'notes',
+  mcq_style_guide: 'mcqStyleGuide',
+};
+
+async function loadPromptMxConfigFromFirestore() {
+  if (!pmxDb || !pmxUser) return;
+
+  try {
+    const tSnap = await pmxDb.collection('pmx_promptTemplates').get();
+    tSnap.forEach(docSnap => {
+      const d = docSnap.data();
+      if (d.isActive === false) return;
+      const key = d.stateKey || PMX_TEMPLATE_STATE_KEYS[docSnap.id];
+      if (key && typeof d.content === 'string' && state.promptTemplates[key] !== undefined) {
+        state.promptTemplates[key] = d.content;
+      }
+    });
+  } catch (e) {
+    console.warn('pmx_promptTemplates load failed', e);
+  }
+
+  try {
+    const wfSnap = await pmxDb.collection('pmx_workflowDefinitions').doc('default_study').get();
+    if (wfSnap.exists) {
+      const stepIds = wfSnap.data().stepIds;
+      if (Array.isArray(stepIds) && stepIds.length) {
+        const loaded = [];
+        let idx = 0;
+        for (const sid of stepIds) {
+          const sSnap = await pmxDb.collection('pmx_workflowStepTypes').doc(sid).get();
+          if (sSnap.exists) {
+            loaded.push(firestoreStepToAppStep(sid, sSnap.data(), idx));
+            idx++;
+          }
+        }
+        if (loaded.length) {
+          loaded.sort((a, b) => a.num - b.num);
+          STEPS = loaded.map((s, i) => Object.assign({}, s, { num: i + 1 }));
+          STEP_IDS = STEPS.map(s => s.id);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('pmx workflow load failed', e);
+  }
+
+  try {
+    const sSnap = await pmxDb.collection('pmx_sections').get();
+    if (!sSnap.empty) {
+      sSnap.forEach(docSnap => {
+        const d = docSnap.data();
+        if (d.isActive === false) return;
+        SECTIONS[docSnap.id] = { label: d.name || docSnap.id, icon: d.icon || '📁' };
+      });
+    }
+  } catch (e) {
+    console.warn('pmx_sections load failed', e);
+  }
+}
+
+async function loadUserStudyOsStateFromFirestore() {
+  if (!pmxDb || !pmxUser) return false;
+  try {
+    const snap = await pmxDb.collection('pmx_userStudyOsState').doc(pmxUser.uid).get();
+    if (!snap.exists) return false;
+    const d = snap.data();
+    state.weeks = Array.isArray(d.weeks) ? d.weeks : [];
+    state.rawWeeks = Array.isArray(d.rawWeeks) ? d.rawWeeks : [];
+    state.promptTemplates = Object.assign({}, state.promptTemplates, d.promptTemplates || {});
+    if (d.ui && typeof d.ui === 'object') {
+      if (d.ui.activeTab != null) state.activeTab = d.ui.activeTab;
+      if (d.ui.activeTopicId !== undefined) state.activeTopicId = d.ui.activeTopicId;
+      if (d.ui.activeRawWeekId !== undefined) state.activeRawWeekId = d.ui.activeRawWeekId;
+      if (d.ui.selectedSection != null) state.selectedSection = d.ui.selectedSection;
+      if (d.ui.openStepId !== undefined) state.openStepId = d.ui.openStepId;
+    }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e2) {}
+    return true;
+  } catch (e) {
+    console.warn('pmx user state load failed', e);
+    return false;
+  }
+}
+
+async function saveUserStudyOsStateToFirestore() {
+  if (!pmxDb || !pmxUser) return;
+  try {
+    await pmxDb.collection('pmx_userStudyOsState').doc(pmxUser.uid).set(
+      {
+        schemaVersion: 1,
+        weeks: state.weeks,
+        rawWeeks: state.rawWeeks,
+        promptTemplates: state.promptTemplates,
+        ui: {
+          activeTab: state.activeTab,
+          activeTopicId: state.activeTopicId,
+          activeRawWeekId: state.activeRawWeekId,
+          selectedSection: state.selectedSection,
+          openStepId: state.openStepId,
+        },
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (e) {
+    console.warn('pmx user state save failed', e);
+  }
+}
+
+function schedulePmxCloudSave() {
+  if (!pmxDb || !pmxUser) return;
+  clearTimeout(pmxCloudSaveTimer);
+  pmxCloudSaveTimer = setTimeout(() => {
+    saveUserStudyOsStateToFirestore();
+  }, 2000);
+}
+
+async function seedPmxFirestoreDefaults() {
+  if (!pmxDb || !pmxUser || !pmxIsAdmin) {
+    alert('Admin sign-in required.');
+    return;
+  }
+  if (!confirm('Seed pmx_* collections with default templates, steps, workflow, and sections? Existing fields will be merged.')) return;
+
+  const batch = pmxDb.batch();
+  const TS = firebase.firestore.FieldValue.serverTimestamp();
+
+  const sectionRows = [
+    { id: 'surgery', name: 'Surgery', icon: '🔪', order: 1 },
+    { id: 'gp', name: 'GP', icon: '🩺', order: 2 },
+    { id: 'medicine', name: 'Medicine', icon: '💊', order: 3 },
+  ];
+  for (const s of sectionRows) {
+    batch.set(
+      pmxDb.collection('pmx_sections').doc(s.id),
+      { name: s.name, icon: s.icon, order: s.order, isActive: true, createdAt: TS, updatedAt: TS },
+      { merge: true }
+    );
+  }
+
+  const templateRows = [
+    {
+      id: 'curriculum_expansion',
+      name: 'Curriculum expansion',
+      description: 'Raw week → structured * /** outline',
+      content: DEFAULT_CURRICULUM_EXPANSION,
+      placeholders: ['{{RAW_WEEK_DATA}}', '{{RAW_CURRICULUM_DATA}}'],
+      stateKey: 'curriculumExpansion',
+      version: 1,
+    },
+    {
+      id: 'topic_expansion',
+      name: 'Topic expansion',
+      description: 'Single topic learning outcomes',
+      content: DEFAULT_EXPANSION,
+      placeholders: ['{{TITLE}}', '{{CATEGORY}}', '{{CONTENT}}'],
+      stateKey: 'expansion',
+      version: 1,
+    },
+    {
+      id: 'study_notes',
+      name: 'Study notes',
+      description: 'Notes from expanded outcomes',
+      content: DEFAULT_NOTES,
+      placeholders: ['{{TITLE}}', '{{CATEGORY}}', '{{EXPANDED_OUTCOMES}}'],
+      stateKey: 'notes',
+      version: 1,
+    },
+    {
+      id: 'mcq_style_guide',
+      name: 'MCQ style guide',
+      description: 'NotebookLM MCQ generation',
+      content: DEFAULT_MCQ_STYLE_GUIDE,
+      placeholders: [],
+      stateKey: 'mcqStyleGuide',
+      version: 1,
+    },
+  ];
+  for (const t of templateRows) {
+    batch.set(
+      pmxDb.collection('pmx_promptTemplates').doc(t.id),
+      {
+        name: t.name,
+        description: t.description,
+        content: t.content,
+        placeholders: t.placeholders,
+        stateKey: t.stateKey,
+        version: t.version,
+        isActive: true,
+        createdAt: TS,
+        updatedAt: TS,
+      },
+      { merge: true }
+    );
+  }
+
+  const stepIds = ['expand', 'notes', 'upload', 'questions', 'studied'];
+  const defaultSteps = cloneDefaultSteps();
+  for (let i = 0; i < stepIds.length; i++) {
+    const sid = stepIds[i];
+    const st = defaultSteps[i];
+    batch.set(
+      pmxDb.collection('pmx_workflowStepTypes').doc(sid),
+      {
+        name: st.title,
+        icon: st.icon,
+        subtitle: st.subtitle,
+        instructions: st.instructions,
+        hasPrompt: st.hasPrompt,
+        promptTarget: st.promptTarget || '',
+        hasResult: st.hasResult,
+        resultKey: st.resultKey || '',
+        resultLabel: st.resultLabel || '',
+        order: st.num,
+        createdAt: TS,
+        updatedAt: TS,
+      },
+      { merge: true }
+    );
+  }
+
+  batch.set(
+    pmxDb.collection('pmx_workflowDefinitions').doc('default_study'),
+    {
+      name: 'Default study pipeline',
+      description: 'Expand → notes → NotebookLM → MCQs → studied',
+      sectionId: 'surgery',
+      stepIds,
+      isActive: true,
+      createdAt: TS,
+      updatedAt: TS,
+    },
+    { merge: true }
+  );
+
+  try {
+    await batch.commit();
+    alert('Seed complete. Use “Reload catalog from Firestore” to apply in this session.');
+  } catch (e) {
+    console.error(e);
+    alert('Seed failed: ' + (e && e.message));
+  }
+}
+
+async function reloadPromptMxFromFirestore() {
+  if (!pmxUser) {
+    alert('Sign in first.');
+    return;
+  }
+  STEPS = cloneDefaultSteps();
+  STEP_IDS = STEPS.map(s => s.id);
+  SECTIONS = Object.assign({}, SECTIONS_DEFAULT);
+  const base = mkDefaultState();
+  state.promptTemplates = Object.assign({}, base.promptTemplates, {
+    curriculumExpansion: DEFAULT_CURRICULUM_EXPANSION,
+    expansion: DEFAULT_EXPANSION,
+    notes: DEFAULT_NOTES,
+    mcqStyleGuide: DEFAULT_MCQ_STYLE_GUIDE,
+  });
+  await loadPromptMxConfigFromFirestore();
+  render();
+  alert('Reloaded catalog from Firestore (templates, steps, sections).');
+}
+
+function signInPmxGoogle() {
+  if (!pmxAuth) return;
+  const provider = new firebase.auth.GoogleAuthProvider();
+  pmxAuth.signInWithPopup(provider).catch(e => {
+    alert('Sign-in failed: ' + (e && e.message));
+  });
+}
+
+function signOutPmx() {
+  if (pmxAuth) pmxAuth.signOut();
+}
+
+async function pullUserStateFromFirestore() {
+  if (!pmxUser) {
+    alert('Sign in first.');
+    return;
+  }
+  await loadPromptMxConfigFromFirestore();
+  const ok = await loadUserStudyOsStateFromFirestore();
+  render();
+  alert(ok ? 'Loaded your data from Firestore.' : 'No saved cloud state yet.');
+}
+
+async function pushUserStateToFirestore() {
+  if (!pmxUser) {
+    alert('Sign in first.');
+    return;
+  }
+  await saveUserStudyOsStateToFirestore();
+  alert('Saved to Firestore.');
+}
+
+if (pmxAuth) {
+  pmxAuth.onAuthStateChanged(async user => {
+    pmxUser = user;
+    pmxIsAdmin = false;
+    if (user) {
+      pmxIsAdmin = await pmxCheckAdmin(user.email);
+      await loadPromptMxConfigFromFirestore();
+      const hadCloud = await loadUserStudyOsStateFromFirestore();
+      if (!hadCloud) {
+        await saveUserStudyOsStateToFirestore();
+      }
+    } else {
+      STEPS = cloneDefaultSteps();
+      STEP_IDS = STEPS.map(s => s.id);
+      SECTIONS = Object.assign({}, SECTIONS_DEFAULT);
+    }
+    render();
+  });
+}
+
+// ============================================================
+// DATA HELPERS
+// ============================================================
+function allTopics() {
+  return state.weeks.flatMap(w => w.topics);
+}
+
+function findTopic(id) {
+  return allTopics().find(t => t.id === id) || null;
+}
+
+function findRawWeek(id) {
+  return state.rawWeeks.find(r => r.id === id) || null;
+}
+
+function topicStatus(topic) {
+  const c = topic.completedSteps;
+  if (c.studied)   return 'studied';
+  if (c.questions) return 'questions';
+  if (c.upload)    return 'uploaded';
+  if (c.notes)     return 'notes';
+  if (c.expand)    return 'expanded';
+  return 'pending';
+}
+
+function nextStep(topic) {
+  for (const id of STEP_IDS) {
+    if (!topic.completedSteps[id]) return id;
+  }
+  return null;
+}
+
+function dashStats() {
+  const all = allTopics();
+  const rawCount = state.rawWeeks.filter(r => !r.processedAt).length;
+  return {
+    total:     all.length,
+    raw:       rawCount,
+    expanded:  all.filter(t => t.completedSteps.expand).length,
+    notes:     all.filter(t => t.completedSteps.notes).length,
+    questions: all.filter(t => t.completedSteps.questions).length,
+    studied:   all.filter(t => t.completedSteps.studied).length
+  };
+}
+
+// ============================================================
+// WEEK DATA EXTRACTOR (for Surgery Master Reference)
+// ============================================================
+const SECTIONS_DEFAULT = {
+  surgery: { label: 'Surgery', icon: '🔪' },
+  gp: { label: 'GP', icon: '🩺' },
+  medicine: { label: 'Medicine', icon: '💊' }
+};
+let SECTIONS = Object.assign({}, SECTIONS_DEFAULT);
+
+// Embedded week data from surgery_master_reference.html
+const WEEK_DATA = {
+  wk1: {
+    id: "wk1",
+    number: 1,
+    title: "Trauma & Neurosurgery",
+    rotation: "Neurosurgery rotation",
+    handbookWeek: "Handbook Week 7",
+    totalLectureMinutes: 47,
+    lectures: [
+      { number: 1, title: "Brain Tumour", tag: "CORE", durationMinutes: 14 },
+      { number: 2, title: "Trauma Management", tag: "CORE", durationMinutes: 22 },
+      { number: 3, title: "Compartment Syndrome", tag: "RELATED", durationMinutes: 11 }
+    ],
+    overarchingPrinciples: [
+      "Surgical emergencies — recognition and immediate management",
+      "Theatre etiquette and safety (surgical safety checklist, communication in theatre)",
+      "Rehabilitation, mobility and function after surgery (including surgical geriatrics)"
+    ],
+    tutorialsAndPodcasts: [
+      { type: "tutorial", title: "Tutorial: Surgical Emergencies (Wk 7)" },
+      { type: "podcast", title: "Podcast: Neurosurgery emergencies" },
+      { type: "podcast", title: "Podcast: Decreased LOC" }
+    ],
+    curriculum: {
+      acuteConditions: [
+        "Subarachnoid haemorrhage",
+        "Subdural / extradural / intradural haemorrhage",
+        "Raised intracranial pressure",
+        "Traumatic brain injury",
+        "Burns (also in Ortho/Plastics)",
+        "Soft tissue lacerations and tendon injuries"
+      ],
+      specialtyTopics: [
+        { category: "Neurosurgery", topics: [
+          "Cerebral aneurysms",
+          "Brain tumours — primary: glioma, meningioma, glioblastoma multiforme (GBM)",
+          "Brain tumours — secondary metastases"
+        ]},
+        { category: "Spine Surgery", topics: [
+          "Surgery for chronic back pain (red flags; alternative treatment options; pain management)"
+        ]},
+        { category: "Trauma Surgery", topics: [
+          "Trauma-related pneumohaemothorax (see also Cardiothoracic)",
+          "Traumatic brain injury and cerebral bleeding (see also Neurosurgery)",
+          "Solid organ laceration and intra-abdominal bleeding"
+        ]}
+      ],
+      onTheWards: [
+        "Assessment of a trauma patient: primary, secondary and tertiary surveys; c-spine precautions; GCS assessment",
+        "Patient presenting with post-operative decreased level of consciousness: differentiate neurosurgical causes (bleeding, raised ICP) vs stroke vs delirium",
+        "Interpret a CT Brain: identify bleeding and solid masses; differentiate subdural, extradural and intracranial bleeding",
+        "Identify when spinal surgery is indicated for lower back pain: red flags; discuss alternative treatment options and pain management"
+      ]
+    },
+    effortAllocation: {
+      examWeightPercent: 5,
+      examWeightLabel: "5% (Neuro/Ophthalmology)",
+      recommendedEffortPercent: 5,
+      note: "Brain Tumour is the only lecture — but the handbook expects knowledge of SAH, subdural/extradural haemorrhage, raised ICP, and CT brain interpretation which are not directly covered by lectures. Supplement Trauma Management lecture (22 min) with handbook acute surgical content — this material also overlaps into the 20% Acute Surgical category. Compartment Syndrome is examinable under both Neuro/Trauma and Orthopaedics."
+    }
+  },
+  wk2: {
+    id: "wk2",
+    number: 2,
+    title: "Vascular & Cardiothoracic Surgery",
+    rotation: "Ophthalmology rotation",
+    handbookWeek: "Handbook Week 1",
+    totalLectureMinutes: 54,
+    lectures: [
+      { number: 1, title: "Abdominal Aortic Aneurysm (AAA) Surgery", tag: "HANDBOOK WK1", durationMinutes: 15 },
+      { number: 2, title: "Peripheral Artery Disease (PAD)", tag: "HANDBOOK WK1", durationMinutes: 16 },
+      { number: 3, title: "Venous Disease", tag: "HANDBOOK WK1", durationMinutes: 13 },
+      { number: 4, title: "Skin Lesion Excision", tag: "SECONDARY", durationMinutes: 10 }
+    ],
+    overarchingPrinciples: [
+      "Preoperative assessment and investigations (this is Handbook Week 1 focus)",
+      "Identification of the high-risk surgical patient; ASA classification",
+      "Approaches to pre-operative investigations",
+      "Diabetes management in the perioperative setting",
+      "Antithrombotic management perioperatively",
+      "Management of patients with chronic pain pre-operatively (including opioids)"
+    ],
+    tutorialsAndPodcasts: [
+      { type: "tutorial", title: "Tutorial: Preoperative Assessment (Wk 1)" },
+      { type: "podcast", title: "Podcast: Acute Limb Ischaemia" }
+    ],
+    curriculum: {
+      acuteConditions: [
+        "Ruptured AAA",
+        "Acute Aortic Syndromes (dissection, penetrating ulcer)",
+        "Acute Limb Ischaemia",
+        "Deep venous thrombosis (DVT)"
+      ],
+      specialtyTopics: [
+        { category: "Vascular Diseases", topics: [
+          "Peripheral artery disease — atherosclerosis-related PAD including intermittent claudication and chronic limb-threatening ischaemia",
+          "Aortic aneurysm (AAA)",
+          "Diabetes-related foot disease (ulcers, sepsis, osteomyelitis)",
+          "Venous disease — superficial venous disease, varicose veins, venous ulcers, deep venous disease",
+          "Carotid stenosis"
+        ]},
+        { category: "Cardiothoracic Surgery", topics: [
+          "Surgical approaches to ischaemic heart disease (CABG)",
+          "Valvular surgery",
+          "Pneumothorax",
+          "Lung cancer",
+          "Lung abscess / empyema"
+        ]},
+        { category: "Note: Skin Lesion Excision lecture", topics: [
+          "Benign vs malignant skin lesion recognition",
+          "Surgical approaches to skin lesion excision and safe margins",
+          "Appropriate wound management"
+        ]}
+      ],
+      onTheWards: [
+        "Patients presenting with leg pain: differentiate acute vs chronic arterial ischaemia, venous insufficiency, neurological and musculoskeletal causes",
+        "Lower limb swelling: recognise venous insufficiency, venous thrombosis and metabolic causes of peripheral oedema",
+        "Lower limb / foot ulceration: identify arterial, venous and neuroischaemic ulcers (diabetes); recognise infection (cellulitis, osteomyelitis); wound care; when surgery is indicated",
+        "Aortic aneurysm or dissection: acute symptomatic and asymptomatic presentations; screening and investigation; thresholds for treatment; perioperative management",
+        "Ischaemic heart disease — coronary surgery: patients in whom CABG is considered; potential graft conduits; pre-surgical workup and investigations"
+      ]
+    },
+    effortAllocation: {
+      examWeightPercent: 10,
+      examWeightLabel: "10% (Vascular & Cardiothoracic)",
+      recommendedEffortPercent: 10,
+      note: "Lectures cover AAA, PAD and Venous Disease well. Cardiothoracic (CABG, valvular surgery, pneumothorax, lung cancer) is entirely lecture-absent — must cover via handbook and prior year resources. Acute Limb Ischaemia is covered by podcast only. Skin Lesion Excision (10 min lecture) maps to both this week and the Ortho/Plastics block (it also appears in the Ortho handbook under 'Benign vs malignant skin lesions'). Do not skip it."
+    }
+  },
+  wk3: {
+    id: "wk3",
+    number: 3,
+    title: "Orthopaedics — Fractures & Arthroplasty",
+    rotation: "Neurosurgery rotation",
+    handbookWeek: "Handbook Week 2, Part 1",
+    totalLectureMinutes: 54,
+    lectures: [
+      { number: 1, title: "Common Fractures", tag: "FOUNDATION", durationMinutes: 13 },
+      { number: 2, title: "Proximal Humerus Fracture", tag: "SPECIFIC", durationMinutes: 10 },
+      { number: 3, title: "Hip Replacement", tag: "ARTHROPLASTY", durationMinutes: 8 },
+      { number: 4, title: "Knee Replacement (TKR)", tag: "ARTHROPLASTY", durationMinutes: 11 },
+      { number: 5, title: "Shoulder Osteoarthritis", tag: "BRIDGE", durationMinutes: 12 }
+    ],
+    overarchingPrinciples: [
+      "IV fluids in surgical patients (resuscitation, replacement, maintenance)",
+      "Interpretation of fracture x-rays (anatomy, morphology, complications)",
+      "Wound healing principles",
+      "Local anaesthetic doses and administration",
+      "Surgical approaches and techniques for wound closure"
+    ],
+    tutorialsAndPodcasts: [
+      { type: "tutorial", title: "Tutorial: IV Fluids in Surgical Patients (Wk 2)" },
+      { type: "podcast", title: "Podcast: IV Fluids" }
+    ],
+    curriculum: {
+      acuteConditions: [
+        "Neck of femur (NOF) fracture",
+        "Acute extremity fracture",
+        "Acute lacerations and tendon injuries",
+        "Wound closure"
+      ],
+      specialtyTopics: [
+        { category: "Orthopaedic Conditions", topics: [
+          "Surgical management of osteoarthritis — hip and knee",
+          "Common shoulder conditions (including dislocation)",
+          "Bone and joint infections — septic joint, osteomyelitis",
+          "Complications of fractures: non-union, nerve injuries, bleeding, compartment syndrome, contractures"
+        ]},
+        { category: "Hand Surgery", topics: [
+          "Carpal tunnel syndrome",
+          "Hand injuries — lacerations, tendon disruption"
+        ]},
+        { category: "On the Wards (Ortho focus)", topics: [
+          "Interpreting an x-ray to describe a fracture or dislocation (anatomy, complications, morphology)",
+          "Recognise and manage complications of orthopaedic trauma (compartment syndrome, nerve/vessel injury, open fracture, haemarthrosis, osteomyelitis)",
+          "Examine a hand, hip, knee, shoulder (anatomy and functional deficits)",
+          "Recovery after joint replacement (VTE prevention, mobilisation, orthogeriatrics)"
+        ]}
+      ],
+      onTheWards: []
+    },
+    effortAllocation: {
+      examWeightPercent: 5,
+      examWeightLabel: "5% (Orthopaedics & Trauma)",
+      recommendedEffortPercent: 5,
+      note: "Lectures are dense and thorough for arthroplasty and common fractures. However, the handbook also expects knowledge of NOF fractures, septic joints, osteomyelitis, and carpal tunnel — none of which have dedicated lectures. Keep lecture review efficient (these 5 lectures = 54 min but only 5% exam weight). NOF fracture is flagged as acute and is high-yield clinically — read the handbook section. Hand Surgery has no lecture coverage at all."
+    }
+  },
+  wk4: {
+    id: "wk4",
+    number: 4,
+    title: "Orthopaedics Pt.2 — Shoulder Complex & Plastics/Burns",
+    rotation: "Neurosurgery rotation",
+    handbookWeek: "Handbook Week 2, Part 2",
+    totalLectureMinutes: 57,
+    lectures: [
+      { number: 1, title: "Shoulder Instability", tag: "CONTINUATION", durationMinutes: 15 },
+      { number: 2, title: "Rotator Cuff Tears", tag: "CONTINUATION", durationMinutes: 18 },
+      { number: 3, title: "Melanoma", tag: "PLASTICS", durationMinutes: 16 },
+      { number: 4, title: "Skin Grafting and Closure", tag: "PLASTICS", durationMinutes: 8 }
+    ],
+    overarchingPrinciples: [
+      "Continued: Wound healing, wound closure techniques, and complications of healing",
+      "Local anaesthetic doses and administration (reinforce)",
+      "Surgical approaches and techniques — flaps, grafts, reconstruction"
+    ],
+    tutorialsAndPodcasts: [
+      { type: "tutorial", title: "Tutorial: IV Fluids in Surgical Patients (Wk 2, continued)" }
+    ],
+    curriculum: {
+      acuteConditions: [],
+      specialtyTopics: [
+        { category: "Plastics & Burns", topics: [
+          "Common reconstructive surgical techniques (flaps, grafts)",
+          "Wound healing",
+          "Skin cancers — SCC, BCC, Melanoma",
+          "Benign subcutaneous lumps — lipoma, sebaceous cysts, ganglion",
+          "Subcutaneous abscesses",
+          "Soft tissue tumours including sarcomas",
+          "Acute and longer-term management of burns",
+          "Wound closure and complications of healing"
+        ]},
+        { category: "On the Wards — Plastics/Burns", topics: [
+          "Benign vs malignant skin lesions: recognise melanoma; surgical approaches to skin lesion excision and safe margins; wound management",
+          "Methods of skin grafting: split skin, full-thickness, flaps, and synthetic grafts"
+        ]},
+        { category: "Note: Gaps from lectures", topics: [
+          "SCC and BCC have no dedicated lecture — cover via handbook",
+          "Burns management (acute + long-term) has no dedicated lecture — cover via handbook",
+          "Benign lumps (lipoma, sebaceous cyst, ganglion, abscess) have no lecture — cover via handbook",
+          "Soft tissue tumours / sarcomas — no lecture, handbook-only"
+        ]}
+      ],
+      onTheWards: []
+    },
+    effortAllocation: {
+      examWeightPercent: 5,
+      examWeightLabel: "5% (Plastics, Burns & Hand)",
+      recommendedEffortPercent: 5,
+      note: "Melanoma and Skin Grafting lectures are solid. However, SCC/BCC, burns management, and benign lumps/abscesses are common clinical presentations with no lecture coverage. The Shoulder trilogy (Wks 3–4: Shoulder OA + Instability + Rotator Cuff = 45 min of lectures) is only 5% exam weight total — do not over-invest in revision. Know the key differentiating features and move on."
+    }
+  },
+  wk5: {
+    id: "wk5",
+    number: 5,
+    title: "Lower GI Surgery",
+    rotation: "Colorectal rotation",
+    handbookWeek: "Handbook Week 3",
+    totalLectureMinutes: 53,
+    lectures: [
+      { number: 1, title: "RIF Pain", tag: "CORE", durationMinutes: 12 },
+      { number: 2, title: "Bowel Obstruction", tag: "CORE", durationMinutes: 14 },
+      { number: 3, title: "Diverticular Disease", tag: "CORE", durationMinutes: 14 },
+      { number: 4, title: "Lower GI Bleeding", tag: "CORE", durationMinutes: 13 }
+    ],
+    overarchingPrinciples: [
+      "Preparing patients for surgery: perioperative fasting (ERAS protocols, Sip-til-send)",
+      "VTE prophylaxis",
+      "Surgical antimicrobial prophylaxis",
+      "Preparation for theatre: informed consent, emergency bookings",
+      "Fever and infections in post-surgical patients (also tutorial topic)",
+      "Aseptic techniques and sterility"
+    ],
+    tutorialsAndPodcasts: [
+      { type: "tutorial", title: "Tutorial: Fever in the Postoperative Patient (Wk 3)" }
+    ],
+    curriculum: {
+      acuteConditions: [
+        "Acute appendicitis",
+        "Bowel obstruction — small and large",
+        "Bowel ischaemia including mesenteric ischaemia",
+        "Sigmoid volvulus"
+      ],
+      specialtyTopics: [
+        { category: "Colorectal Conditions", topics: [
+          "Colon and rectal cancer (and benign polyps)",
+          "Inflammatory bowel disease (IBD)",
+          "Diverticular disease and complications",
+          "Anorectal disease — fissures, abscesses, haemorrhoids"
+        ]},
+        { category: "On the Wards — Clinical Competencies", topics: [
+          "Assessment of acute abdominal pain: clinical history and examination; investigations; key differentiating symptoms/signs; indications for surgery",
+          "Patient with acute peritonitis: recognise clinical signs; differential diagnoses; acute management (pain relief); investigations; surgical interventions",
+          "Per rectal bleeding: causes of chronic and large-volume bleeding; acute management and investigations; red flags",
+          "Non-surgical management of bowel obstruction: fluid resuscitation/replacement and electrolyte management; quantifying losses; when to consider surgery",
+          "Surgical treatment of bowel cancer: different operations; screening and surveillance; ERAS pathways"
+        ]}
+      ],
+      onTheWards: []
+    },
+    effortAllocation: {
+      examWeightPercent: 15,
+      examWeightLabel: "15% (GI Surgery — shared with Upper GI)",
+      recommendedEffortPercent: 15,
+      note: "Lower GI lectures (RIF Pain, Bowel Obstruction, Diverticular Disease, Lower GI Bleeding) cover this specialty reasonably well. Critical gaps: Acute appendicitis has no dedicated lecture (covered implicitly in RIF Pain), bowel ischaemia/mesenteric ischaemia has no lecture, IBD has no lecture, anorectal disease has no lecture. Colon cancer (screening, ERAS, operations) is covered only via 'On the Wards' competencies. These are all must-read handbook topics. GI surgery is 15% of the exam combined — do not underinvest here."
+    }
+  },
+  wk6: {
+    id: "wk6",
+    number: 6,
+    title: "Upper GI Surgery + Urology & Transplant",
+    rotation: "Colorectal rotation",
+    handbookWeek: "Handbook Weeks 4 & 5",
+    totalLectureMinutes: 48,
+    lectures: [
+      { number: 1, title: "Biliary Obstruction", tag: "UPPER GI", durationMinutes: 14 },
+      { number: 2, title: "Transplantation", tag: "UROLOGY", durationMinutes: 14 },
+      { number: 3, title: "Prostate Cancer", tag: "UROLOGY", durationMinutes: 20 }
+    ],
+    overarchingPrinciples: [
+      "Management of common perioperative complications: HAP, MI, delirium, urinary retention, ileus, DVT/PE, post-op bleeding/anaemia",
+      "Management of medications in the perioperative setting: antiglycaemics, anticoagulants, analgesics",
+      "Management of post-surgical voiding issues",
+      "Post-operative anaemia, bleeding and massive transfusions"
+    ],
+    tutorialsAndPodcasts: [
+      { type: "tutorial", title: "Tutorial: Bleeding and Breathing After Surgery (Wk 4)" },
+      { type: "tutorial", title: "Tutorial: Anti-thrombotic Medications in Surgery (Wk 5)" },
+      { type: "podcast", title: "Podcast: Postoperative Bleeding" },
+      { type: "podcast", title: "Podcast: Chest Pain" },
+      { type: "podcast", title: "Podcast: Urinary Retention" }
+    ],
+    curriculum: {
+      acuteConditions: [
+        "Acute pancreatitis",
+        "Acute cholecystitis / cholangitis",
+        "Peptic ulcer perforation and bleeding",
+        "Incarcerated / strangulated hernia",
+        "Renal colic (urolithiasis)",
+        "Urinary obstruction and hydronephrosis",
+        "Testicular torsion"
+      ],
+      specialtyTopics: [
+        { category: "Gastro-oesophageal Disease", topics: [
+          "Oesophageal stricture",
+          "Oesophageal and gastric cancer (including Barrett's oesophagitis)"
+        ]},
+        { category: "Disorders of the Pancreas", topics: [
+          "Pancreatic cancer",
+          "Chronic pancreatitis (including pseudocysts)"
+        ]},
+        { category: "Liver, Gallbladder & Biliary Tree", topics: [
+          "Cholelithiasis and choledocholithiasis",
+          "Cholecystitis and Cholangitis",
+          "Cholangiocarcinoma",
+          "Benign and malignant liver tumours"
+        ]},
+        { category: "Hernias", topics: [
+          "Femoral hernia",
+          "Inguinal hernia — direct and indirect",
+          "Abdominal wall hernia",
+          "Hiatus hernias"
+        ]},
+        { category: "On the Wards — Upper GI", topics: [
+          "Interpretation of abdominal / chest x-rays (perforated viscus, bowel obstruction)",
+          "Acute cholecystitis / cholangitis: antimicrobials; investigations; gall bladder surgery indications and timing",
+          "Obstructive jaundice: clinical history and examination; LFTs and coagulation/INR; imaging",
+          "Pancreatitis: risk factors; fluid resuscitation; acute pain management; staging/severity; long-term sequelae",
+          "Groin hernia: anatomical location; strangulation/incarceration complications; surgical options and timing"
+        ]},
+        { category: "Prostate, Testes & Scrotum", topics: [
+          "Prostate cancer",
+          "Benign prostatic hypertrophy (BPH)",
+          "Hydrocele / epididymitis / varicocele",
+          "Testicular cancer"
+        ]},
+        { category: "Kidney, Bladder & Voiding", topics: [
+          "Urinary incontinence and obstruction",
+          "Urethral stricture",
+          "Bladder cancer",
+          "Renal cancer",
+          "Renal calculi",
+          "Adrenal masses"
+        ]},
+        { category: "Transplant Surgery", topics: [
+          "Solid organ transplantation — kidney, liver, pancreas",
+          "Organ donation and matching (cadaveric vs living donors)"
+        ]},
+        { category: "On the Wards — Urology", topics: [
+          "Renal colic: diagnosis; imaging; acute pain management; ureteric decompression (stenting/nephrostomy)",
+          "Urinary retention and catheters: bladder scans; catheterisation indications; complications (haematuria, clots, infection)",
+          "Prostate cancer: screening and surveillance; treatment complications (voiding, erectile dysfunction)",
+          "Voiding dysfunction: differentiate obstructive vs overactive incontinence",
+          "Transplant patient: risks of immunosuppression; organ donation pathways"
+        ]}
+      ],
+      onTheWards: []
+    },
+    effortAllocation: {
+      examWeightPercent: 25,
+      examWeightLabel: "10% Urology/Transplant + 15% GI Surgery (Upper GI component)",
+      recommendedEffortPercent: 25,
+      note: "This is the most lecture-sparse week for curriculum density. Biliary Obstruction is the only Upper GI lecture — pancreatitis, oesophageal/gastric cancer, peptic ulcer disease, hernias, and cholecystitis/cholangitis all require handbook self-study. Prostate Cancer and Transplantation are covered. For Urology: renal colic, urinary retention/obstruction, testicular torsion, BPH, bladder cancer, and renal cancer all lack lectures. Two tutorials this week (bleeding/breathing and antithrombotic medications) are high-yield Overarching Principles content — prioritise these."
+    }
+  },
+  wk7: {
+    id: "wk7",
+    number: 7,
+    title: "Breast Surgery · ENT · Head & Neck · Post-op Pain",
+    rotation: "Colorectal rotation",
+    handbookWeek: "Handbook Week 6",
+    totalLectureMinutes: 54,
+    lectures: [
+      { number: 1, title: "Breast Surgery", tag: "BREAST/H&N", durationMinutes: 21 },
+      { number: 2, title: "Thyroid Surgery", tag: "BREAST/H&N", durationMinutes: 14 },
+      { number: 3, title: "Chronic Post-operative Pain", tag: "PERIOP", durationMinutes: 19 }
+    ],
+    overarchingPrinciples: [
+      "Management of post-surgical pain — acute and chronic (Chronic Post-op Pain lecture maps here directly)",
+      "Management of postoperative pain: appropriate escalation of analgesics; modalities (oral, PCA, IV infusions, regional blocks); recognising common side-effects; safe prescribing practices",
+      "Role of other specialties / models of care: acute surgical teams, orthogeriatrics/surgical geriatrics, anaesthesia, acute and chronic pain teams, ICU, rehabilitation medicine, allied health",
+      "Perioperative nutrition: nutritional requirements; malnutrition risk; enteral vs parenteral feeding",
+      "Preparing a patient for discharge: rehabilitation; discharge medications and analgesia; wound care plans; surgical follow-up; GP liaison"
+    ],
+    tutorialsAndPodcasts: [
+      { type: "tutorial", title: "Tutorial: Perioperative Care — DM, Pain, Nutrition (Wk 6)" },
+      { type: "podcast", title: "Podcast: Post-operative Pain" }
+    ],
+    curriculum: {
+      acuteConditions: [
+        "Epistaxis",
+        "Airway obstruction"
+      ],
+      specialtyTopics: [
+        { category: "Breast Surgery", topics: [
+          "Breast cancer",
+          "Benign breast disease — cysts, fibroadenoma"
+        ]},
+        { category: "Neck Surgery", topics: [
+          "Multinodular goitre",
+          "Thyroid cancer",
+          "Lymphadenopathy",
+          "Thyroglossal cysts",
+          "Branchial cysts"
+        ]},
+        { category: "ENT Surgery", topics: [
+          "Surgical management of otitis media",
+          "Surgical management of hearing loss (including cochlear implants)",
+          "Sinus surgery",
+          "Tonsillectomy / Adenoidectomy",
+          "Disorders of the larynx — epiglottitis, vocal cord dysfunction"
+        ]},
+        { category: "On the Wards — Breast/ENT/H&N", topics: [
+          "Potential airway obstruction: signs (stridor, drooling, angioedema, neck haematoma); approach to acute airway management",
+          "Patient presenting with a neck mass: clinical history and examination; differential diagnoses (benign and malignant)",
+          "Surgical treatment for breast cancer: triple-testing; patient-centred treatment; MDT involvement; resection and reconstructive options"
+        ]},
+        { category: "Note: Lecture gaps", topics: [
+          "ENT surgery topics (otitis media, hearing loss, sinus, tonsillectomy, larynx disorders) have no lecture coverage — handbook-only",
+          "Benign breast disease has no lecture — handbook-only",
+          "Epistaxis and airway obstruction (acute) — handbook-only"
+        ]}
+      ],
+      onTheWards: []
+    },
+    effortAllocation: {
+      examWeightPercent: 5,
+      examWeightLabel: "5% (ENT/Head/Neck/Breast)",
+      recommendedEffortPercent: 5,
+      note: "Breast Surgery and Thyroid Surgery lectures are solid. ENT topics (otitis media, cochlear implants, sinus, tonsillectomy, larynx disorders) have absolutely no lecture coverage and are often low-yield for the clinical exam — but know the key acute presentations (airway obstruction, epistaxis). The Chronic Post-op Pain lecture (19 min) is the single most important Overarching Principles lecture you have — it integrates pain management across all specialties and is worth treating as a principles resource, not just a specialty one."
+    }
+  }
+};
+
+const SCHEMA_VERSION = "1.1.0";
+const SECTION = "surgery";
+
+function getExportDate() {
+  return new Date().toISOString();
+}
+
+function generateWeekJson(weekId) {
+  const data = WEEK_DATA[weekId];
+  if (!data) return null;
+
+  // Map to generalized schema v1.1.0 - matches surgery_master_reference.html exactly
+  const exportObj = {
+    schemaVersion: SCHEMA_VERSION,
+    exportDate: getExportDate(),
+    section: SECTION,
+    week: {
+      id: data.id,
+      number: data.number,
+      title: data.title,
+      rotation: data.rotation,
+      handbookWeek: data.handbookWeek,
+      totalLectureMinutes: data.totalLectureMinutes,
+      lectures: data.lectures,
+      learningResources: data.tutorialsAndPodcasts,
+      crossCuttingThemes: data.overarchingPrinciples,
+      curriculum: {
+        acuteConditions: data.curriculum.acuteConditions,
+        specialtyTopics: data.curriculum.specialtyTopics
+      },
+      clinicalCompetencies: data.curriculum.onTheWards,
+      effortAllocation: {
+        examWeightPercent: data.effortAllocation.examWeightPercent,
+        examWeightLabel: data.effortAllocation.examWeightLabel,
+        recommendedEffortPercent: data.effortAllocation.recommendedEffortPercent,
+        note: data.effortAllocation.note
+      }
+    }
+  };
+
+  return JSON.stringify(exportObj, null, 2);
+}
+
+function generateWeekMarkdown(weekId) {
+  const data = WEEK_DATA[weekId];
+  if (!data) return null;
+
+  let md = `# Week ${data.number}: ${data.title}\n\n`;
+  md += `- **ID**: ${data.id}\n`;
+  md += `- **Rotation**: ${data.rotation}\n`;
+  md += `- **Handbook Week**: ${data.handbookWeek}\n`;
+  md += `- **Total Lecture Time**: ${data.totalLectureMinutes} minutes\n`;
+  md += `- **Section**: ${SECTION}\n`;
+  md += `- **Schema Version**: ${SCHEMA_VERSION}\n`;
+  md += `- **Exported**: ${getExportDate()}\n\n`;
+
+  // Lectures
+  md += `## Lectures\n\n`;
+  md += `| # | Title | Tag | Duration |\n`;
+  md += `|---|-------|-----|----------|\n`;
+  for (const lec of data.lectures) {
+    md += `| ${lec.number} | ${lec.title} | ${lec.tag} | ${lec.durationMinutes} min |\n`;
+  }
+  md += `\n`;
+
+  // Cross-Cutting Themes (mapped from Overarching Principles for surgery)
+  if (data.overarchingPrinciples && data.overarchingPrinciples.length > 0) {
+    md += `## Cross-Cutting Themes\n\n`;
+    md += `*Rotation-specific principles that apply across all weeks*\n\n`;
+    for (const principle of data.overarchingPrinciples) {
+      md += `- ${principle}\n`;
+    }
+    md += `\n`;
+  }
+
+  // Learning Resources (Tutorials & Podcasts)
+  if (data.tutorialsAndPodcasts && data.tutorialsAndPodcasts.length > 0) {
+    const tutorials = data.tutorialsAndPodcasts.filter(tp => tp.type === "tutorial");
+    const podcasts = data.tutorialsAndPodcasts.filter(tp => tp.type === "podcast");
+
+    md += `## Learning Resources\n\n`;
+    if (tutorials.length > 0) {
+      md += `**Tutorials:**\n`;
+      for (const tut of tutorials) {
+        md += `- ${tut.title}\n`;
+      }
+      md += `\n`;
+    }
+    if (podcasts.length > 0) {
+      md += `**Podcasts:**\n`;
+      for (const pod of podcasts) {
+        md += `- ${pod.title}\n`;
+      }
+      md += `\n`;
+    }
+  }
+
+  // Curriculum
+  md += `## Curriculum\n\n`;
+
+  if (data.curriculum.acuteConditions && data.curriculum.acuteConditions.length > 0) {
+    md += `### ⚡ Acute Conditions\n`;
+    for (const condition of data.curriculum.acuteConditions) {
+      md += `- ${condition}\n`;
+    }
+    md += `\n`;
+  }
+
+  for (const topic of data.curriculum.specialtyTopics) {
+    md += `### ${topic.category}\n`;
+    for (const item of topic.topics) {
+      md += `- ${item}\n`;
+    }
+    md += `\n`;
+  }
+
+  // Clinical Competencies (On the Wards)
+  const wardTopics = data.curriculum.specialtyTopics.find(t => t.category.includes("On the Wards"));
+  const hasWardCompetencies = (data.curriculum.onTheWards && data.curriculum.onTheWards.length > 0) || wardTopics;
+
+  if (hasWardCompetencies) {
+    md += `### Clinical Competencies\n`;
+    const allWards = [...(data.curriculum.onTheWards || [])];
+    if (wardTopics) {
+      allWards.push(...wardTopics.topics);
+    }
+    for (const ward of allWards) {
+      md += `- ${ward}\n`;
+    }
+    md += `\n`;
+  }
+
+  // Effort Allocation
+  md += `## Effort Allocation\n\n`;
+  md += `- **Exam Weight**: ${data.effortAllocation.examWeightLabel}\n`;
+  md += `- **Recommended Effort**: ${data.effortAllocation.recommendedEffortPercent}%\n\n`;
+  md += `### Guidance\n${data.effortAllocation.note}\n`;
+
+  return md;
+}
+
+// ============================================================
+// AI OUTPUT PARSER
+// ============================================================
+function parseAIOutput(text) {
+  // Try to parse as JSON first (new schema v2.0.0)
+  try {
+    const json = JSON.parse(text);
+    if (json.schemaVersion === '2.0.0' && Array.isArray(json.sections)) {
+      return parseJSONOutput(json);
+    }
+  } catch (e) {
+    // Not valid JSON, fall through to legacy markdown parser
+  }
+  
+  // Legacy markdown parser for backward compatibility
+  return parseLegacyMarkdownOutput(text);
+}
+
+function parseJSONOutput(json) {
+  const topics = [];
+  
+  for (const section of json.sections || []) {
+    for (const topic of section.topics || []) {
+      const quiz = {
+        title: topic.title,
+        topic: section.title,
+        originalContent: ''
+      };
+      
+      // Convert descriptors to originalContent format
+      if (Array.isArray(topic.descriptors)) {
+        for (const desc of topic.descriptors) {
+          if (desc.label && desc.specifics) {
+            quiz.originalContent += `${desc.label}: ${desc.specifics}\n`;
+          }
+        }
+      }
+      
+      topics.push({
+        name: section.title,
+        quizzes: [quiz]
+      });
+    }
+  }
+  
+  return topics;
+}
+
+function parseLegacyMarkdownOutput(text) {
+  const topics = [];
+  let currentTopic = null;
+  let currentQuiz = null;
+  
+  const lines = text.split('\n');
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    
+    // Match second level first (double asterisk) - must check before single
+    // Allow leading whitespace since quiz lines are indented: "    ** Quiz Name"
+    const quizMatch = trimmed.match(/^\*\*\s+(.+)$/);
+    if (quizMatch && currentTopic) {
+      currentQuiz = {
+        title: quizMatch[1].trim(),
+        topic: currentTopic.name,
+        originalContent: ''
+      };
+      currentTopic.quizzes.push(currentQuiz);
+      continue;
+    }
+    
+    // Match first level (single asterisk at start of line, not indented)
+    // Also handles bold markdown format: * **Topic Name**
+    const topicMatch = trimmed.match(/^\*\s+\*\*(.+?)\*\*$/) || trimmed.match(/^\*\s+(.+)$/);
+    if (topicMatch) {
+      currentTopic = {
+        name: topicMatch[1].trim(),
+        quizzes: []
+      };
+      topics.push(currentTopic);
+      currentQuiz = null;
+      continue;
+    }
+    
+    // Match descriptor lines (indented with asterisk)
+    // Use trimmed and check it starts with "* " (but not "** " which is a quiz)
+    const descMatch = trimmed.match(/^\*(?!\*)\s+(.+)$/);
+    if (descMatch && currentQuiz && !quizMatch) {
+      currentQuiz.originalContent += descMatch[1] + '\n';
+    }
+  }
+  
+  return topics;
+}
+
+// ============================================================
+// MUTATIONS
+// ============================================================
+function importRawWeek(weekId, section, format) {
+  const data = WEEK_DATA[weekId];
+  if (!data) { alert('Week not found.'); return; }
+  
+  const rawData = format === 'json' ? generateWeekJson(weekId) : generateWeekMarkdown(weekId);
+  
+  const topicCount = data.curriculum.acuteConditions.length + 
+    data.curriculum.specialtyTopics.reduce((sum, t) => sum + t.topics.length, 0);
+  
+  const rawWeek = {
+    id: crypto.randomUUID(),
+    source: format,
+    weekId: data.id,
+    rawData: rawData,
+    metadata: {
+      weekNumber: data.number,
+      title: data.title,
+      rotation: data.rotation,
+      section: section,
+      totalLectureMinutes: data.totalLectureMinutes,
+      lectureCount: Math.ceil(data.totalLectureMinutes / 15),
+      topicCount: topicCount
+    },
+    processedAt: null,
+    expandedOutput: ''
+  };
+  
+  setState({ rawWeeks: [...state.rawWeeks, rawWeek] });
+}
+
+function deleteRawWeek(rawWeekId) {
+  if (!confirm('Delete this raw week? You can re-import it later.')) return;
+  const newRawWeeks = state.rawWeeks.filter(r => r.id !== rawWeekId);
+  const updates = { rawWeeks: newRawWeeks };
+  if (state.activeRawWeekId === rawWeekId) {
+    updates.activeRawWeekId = null;
+  }
+  setState(updates);
+}
+
+function undoProcessRawWeek(rawWeekId) {
+  if (!confirm('Undo processing? This will delete the generated topics and return the week to unprocessed state.')) return;
+  
+  // Remove the generated week from state.weeks
+  const newWeeks = state.weeks.filter(w => w.rawWeekId !== rawWeekId);
+  
+  // Clear processedAt and expandedOutput from the raw week
+  const newRawWeeks = state.rawWeeks.map(r => 
+    r.id === rawWeekId ? { ...r, processedAt: null, expandedOutput: '' } : r
+  );
+  
+  setState({
+    weeks: newWeeks,
+    rawWeeks: newRawWeeks
+  });
+}
+
+function processRawWeek(rawWeekId, aiOutput) {
+  const rawWeek = findRawWeek(rawWeekId);
+  if (!rawWeek) { alert('Raw week not found.'); return; }
+  
+  const parsedTopics = parseAIOutput(aiOutput);
+  if (!parsedTopics.length) { alert('No topics found in AI output. Check the format.'); return; }
+  
+  // Flatten quizzes from all topics
+  const topics = [];
+  for (const topicGroup of parsedTopics) {
+    for (const quiz of topicGroup.quizzes) {
+      topics.push({
+        id: crypto.randomUUID(),
+        title: quiz.title,
+        topic: quiz.topic,
+        category: rawWeek.metadata.section,  // Store section as category for reference
+        originalContent: quiz.originalContent.trim(),
+        completedSteps: { expand: false, notes: false, upload: false, questions: false, studied: false },
+        expandedOutcomes: '',
+        notes: ''
+      });
+    }
+  }
+  
+  const week = {
+    id: crypto.randomUUID(),
+    name: `Week ${rawWeek.metadata.weekNumber}: ${rawWeek.metadata.title}`,
+    section: rawWeek.metadata.section,
+    rawWeekId: rawWeekId,
+    topics: topics
+  };
+  
+  // Mark raw week as processed
+  const updatedRawWeeks = state.rawWeeks.map(r => 
+    r.id === rawWeekId ? { ...r, processedAt: new Date().toISOString(), expandedOutput: aiOutput } : r
+  );
+  
+  setState({
+    weeks: [...state.weeks, week],
+    rawWeeks: updatedRawWeeks,
+    activeTab: 'topics',
+    activeRawWeekId: null
+  });
+}
+
+function deleteWeek(weekId) {
+  if (!confirm('Delete this week and all its topics? This cannot be undone.')) return;
+  const newWeeks = state.weeks.filter(w => w.id !== weekId);
+  const updates = { weeks: newWeeks };
+  if (state.activeTopicId && !newWeeks.flatMap(w => w.topics).find(t => t.id === state.activeTopicId)) {
+    updates.activeTopicId = null;
+  }
+  setState(updates);
+}
+
+function mutateTopic(topicId, patch) {
+  const weeks = state.weeks.map(w => ({
+    ...w,
+    topics: w.topics.map(t => t.id === topicId ? Object.assign({}, t, patch) : t)
+  }));
+  state.weeks = weeks;
+  persist();
+}
+
+function mutateTopicRender(topicId, patch) {
+  mutateTopic(topicId, patch);
+  render();
+}
+
+function markDone(topicId, stepId) {
+  const topic = findTopic(topicId);
+  if (!topic) return;
+  const newSteps = Object.assign({}, topic.completedSteps, { [stepId]: true });
+  const nextIdx = STEP_IDS.indexOf(stepId) + 1;
+  const nextId = nextIdx < STEP_IDS.length ? STEP_IDS[nextIdx] : null;
+  mutateTopicRender(topicId, { completedSteps: newSteps });
+  if (nextId) setTimeout(() => { setState({ openStepId: nextId }); }, 50);
+}
+
+function markUndone(topicId, stepId) {
+  const topic = findTopic(topicId);
+  if (!topic) return;
+  const idx = STEP_IDS.indexOf(stepId);
+  const newSteps = Object.assign({}, topic.completedSteps);
+  for (let i = idx; i < STEP_IDS.length; i++) newSteps[STEP_IDS[i]] = false;
+  mutateTopicRender(topicId, { completedSteps: newSteps });
+}
+
+// ============================================================
+// PROMPT GENERATION
+// ============================================================
+function rawWeekDataForPrompt(rawWeek) {
+  const raw = rawWeek && rawWeek.rawData != null ? String(rawWeek.rawData) : '';
+  if (raw.trim() !== '') return raw;
+  return String(rawWeek.curriculumMarkdown || '');
+}
+
+function buildCurriculumExpansionPrompt(rawWeek) {
+  const payload = rawWeekDataForPrompt(rawWeek);
+  let tpl = state.promptTemplates.curriculumExpansion;
+  tpl = tpl.replace(/\{\{RAW_WEEK_DATA\}\}/g, payload);
+  tpl = tpl.replace(/\{\{RAW_CURRICULUM_DATA\}\}/g, payload);
+  return tpl;
+}
+
+function buildExpansionPrompt(topic) {
+  return state.promptTemplates.expansion
+    .replace('{{TITLE}}', topic.title)
+    .replace('{{CATEGORY}}', topic.topic || 'General')
+    .replace('{{CONTENT}}', topic.originalContent);
+}
+
+function buildNotesPrompt(topic) {
+  const outcomes = topic.expandedOutcomes
+    ? topic.expandedOutcomes
+    : '[⚠️ Complete Step 1 first — paste your expanded outcomes there, then return here]';
+  return state.promptTemplates.notes
+    .replace('{{TITLE}}', topic.title)
+    .replace('{{CATEGORY}}', topic.topic || 'General')
+    .replace('{{EXPANDED_OUTCOMES}}', outcomes);
+}
+
+function buildMCQPrompt(topic) {
+  return `Generate 15 high-yield MCQs for the following topic.\n\nTopic: ${topic.title}\nCategory: ${topic.topic || 'General'}\n\n${state.promptTemplates.mcqStyleGuide}`;
+}
+
+function promptForStep(stepId, topic) {
+  switch(stepId) {
+    case 'expand':    return buildExpansionPrompt(topic);
+    case 'notes':     return buildNotesPrompt(topic);
+    case 'questions': return buildMCQPrompt(topic);
+    default: return '';
+  }
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  document.getElementById('app').innerHTML = buildApp();
+}
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function buildApp() {
+  return `<div class="main-content fade-up">${buildHeader()}${buildTabContent()}<div class="made-by">Surgery Study OS &bull; made by Zi Lin</div></div>`;
+}
+
+function buildHeader() {
+  const tabs = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'import',    label: 'Import Raw' },
+    { id: 'process',   label: 'Process' },
+    { id: 'topics',    label: 'Topics' },
+    { id: 'workflow',  label: 'Workflow' },
+    { id: 'templates', label: 'Templates' },
+    { id: 'cloud',     label: 'Cloud' }
+  ];
+  const authEmail = pmxUser && pmxUser.email ? esc(pmxUser.email) : '';
+  const authBlock = pmxUser
+    ? `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+         <span style="font-size:.78rem;color:var(--text-3);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${authEmail}</span>
+         ${pmxIsAdmin ? '<span class="badge badge-notes" style="font-size:.62rem;">Admin</span>' : ''}
+         <button type="button" class="btn btn-ghost btn-sm" onclick="signOutPmx()">Sign out</button>
+       </div>`
+    : `<button type="button" class="btn btn-primary btn-sm" onclick="signInPmxGoogle()">Sign in with Google</button>`;
+  return `
+    <header class="app-header">
+      <div class="app-title">${SECTIONS[state.selectedSection]?.icon || '🔪'} ${SECTIONS[state.selectedSection]?.label || 'Surgery'} <span>Study OS</span></div>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        ${authBlock}
+        <nav class="tab-nav">
+          ${tabs.map(t => `<button class="tab-btn ${state.activeTab === t.id ? 'active' : ''}" onclick="setTab('${t.id}')">${t.label}</button>`).join('')}
+        </nav>
+      </div>
+    </header>`;
+}
+
+function buildTabContent() {
+  switch(state.activeTab) {
+    case 'dashboard': return buildDashboard();
+    case 'import':    return buildImportTab();
+    case 'process':   return buildProcessTab();
+    case 'topics':    return buildTopicsTab();
+    case 'workflow':  return buildWorkflowTab();
+    case 'templates': return buildTemplatesTab();
+    case 'cloud':     return buildCloudTab();
+    default: return buildDashboard();
+  }
+}
+
+function buildCloudTab() {
+  const adminSeed = pmxIsAdmin
+    ? `<div class="card" style="padding:20px;margin-bottom:16px;">
+         <div class="section-title" style="font-size:1.05rem;margin-bottom:10px;">Admin — seed catalog</div>
+         <p style="font-size:.86rem;color:var(--text-2);line-height:1.55;margin-bottom:14px;">
+           Writes default <code style="font-family:var(--font-mono);font-size:.78rem;">pmx_*</code> documents (sections, templates, step types, <code>default_study</code> workflow).
+           See <strong>SCHEMA_PROMPTMX_FIRESTORE.md</strong> in the repo.
+         </p>
+         <div style="display:flex;flex-wrap:wrap;gap:8px;">
+           <button type="button" class="btn btn-primary btn-sm" onclick="seedPmxFirestoreDefaults()">Seed Firestore defaults</button>
+           <button type="button" class="btn btn-ghost btn-sm" onclick="reloadPromptMxFromFirestore()">Reload catalog from Firestore</button>
+         </div>
+       </div>`
+    : `<div class="format-hint" style="margin-bottom:16px;">
+         Admin-only actions (seed / reload catalog) appear here when signed in with an account in <code>admins/{email}</code>.
+       </div>`;
+
+  return `
+    <div class="fade-up">
+      <div class="section-title" style="margin-bottom:12px;">Cloud sync</div>
+      <p style="font-size:.88rem;color:var(--text-2);line-height:1.6;margin-bottom:20px;">
+        Signed-in users: study data syncs to <code style="font-family:var(--font-mono);font-size:.78rem;">pmx_userStudyOsState/{uid}</code> (debounced after local saves).
+        Prompt templates and workflow steps can be loaded from Firestore when catalog documents exist.
+      </p>
+
+      ${!pmxUser ? `<div class="card" style="padding:24px;"><p style="margin-bottom:14px;color:var(--text-2);">Sign in to enable cloud backup and to pull shared templates.</p></div>` : `
+        <div class="card" style="padding:20px;margin-bottom:16px;">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="pushUserStateToFirestore()">Save now to cloud</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="pullUserStateFromFirestore()">Load my data from cloud</button>
+          </div>
+          <p style="font-size:.78rem;color:var(--text-3);margin-top:12px;">
+            Loading from cloud overwrites this browser’s weeks, raw weeks, UI tab state, and any per-user template overrides stored in the cloud doc.
+          </p>
+        </div>
+      `}
+
+      ${adminSeed}
+    </div>`;
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function buildDashboard() {
+  const s = dashStats();
+  const hasTopics = s.total > 0;
+  const hasRaw = s.raw > 0;
+
+  const statItems = [
+    { label: 'Topics', value: s.total, color: 'var(--text)' },
+    { label: 'Raw Pending', value: s.raw, color: 'var(--step3)' },
+    { label: 'Expanded', value: s.expanded, color: 'var(--step1)' },
+    { label: 'Notes', value: s.notes, color: 'var(--step2)' },
+    { label: 'Studied', value: s.studied, color: 'var(--step5)' }
+  ];
+
+  return `
+    <div>
+      <div class="stats-grid">
+        ${statItems.map(i => `
+          <div class="stat-card">
+            <div class="stat-number" style="color:${i.color}">${i.value}</div>
+            <div class="stat-label">${i.label}</div>
+          </div>`).join('')}
+      </div>
+
+      ${hasTopics ? `
+        <div class="section-title">Progress by Week</div>
+        <div class="week-cards-grid">
+          ${state.weeks.map(w => {
+            const total = w.topics.length;
+            const studied = w.topics.filter(t => t.completedSteps.studied).length;
+            const pct = total > 0 ? Math.round((studied/total)*100) : 0;
+            return `
+              <div class="week-card" onclick="goToWeek('${w.id}')">
+                <div class="week-card-title">${esc(w.name)}</div>
+                <div class="progress-bar"><div class="progress-fill ${studied===total&&total>0?'complete':''}" style="width:${pct}%"></div></div>
+                <div class="week-meta"><span>${studied}/${total} studied</span><span>${pct}% complete</span></div>
+              </div>`;
+          }).join('')}
+        </div>
+      ` : hasRaw ? `
+        <div class="card">
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <div class="empty-title">${s.raw} Raw Week${s.raw > 1 ? 's' : ''} Pending</div>
+            <div class="empty-body">You have raw weeks waiting to be processed with AI.<br>Go to the Process tab to expand them into study topics.</div>
+            <button class="btn btn-primary" onclick="setTab('process')">Process Weeks →</button>
+          </div>
+        </div>
+      ` : `
+        <div class="card">
+          <div class="empty-state">
+            <div class="empty-icon">🏥</div>
+            <div class="empty-title">Welcome to Study OS</div>
+            <div class="empty-body">Import your first week's curriculum to start building your study pipeline.<br>Each topic gets its own 5-step workflow.</div>
+            <button class="btn btn-primary" onclick="setTab('import')">Import First Week →</button>
+          </div>
+        </div>`}
+    </div>`;
+}
+
+// ============================================================
+// IMPORT TAB
+// ============================================================
+function buildImportTab() {
+  const sectionButtons = Object.entries(SECTIONS).map(([key, {label, icon}]) => `
+    <button class="section-btn ${state.selectedSection === key ? 'active' : ''}" onclick="setSection('${key}')">
+      <span class="icon">${icon}</span>${label}
+    </button>
+  `).join('');
+  
+  const weekOptions = Object.entries(WEEK_DATA).map(([key, data]) => `
+    <option value="${key}">Week ${data.number}: ${data.title}</option>
+  `).join('');
+  
+  return `
+    <div class="fade-up">
+      <div class="import-section">
+        <div class="section-title" style="font-size:1.15rem; margin-bottom:18px;">Import Raw Week Data</div>
+        
+        <label class="input-label">Section</label>
+        <div class="section-selector">
+          ${sectionButtons}
+        </div>
+        
+        <div class="import-grid" style="margin-top:16px;">
+          <div>
+            <label class="input-label">Select Week</label>
+            <select id="importWeekId" onchange="updateImportPreview()">
+              <option value="">-- Select a week --</option>
+              ${weekOptions}
+            </select>
+            
+            <label class="input-label" style="margin-top:16px;">Format</label>
+            <div style="display:flex; gap:8px;">
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="radio" name="importFormat" value="json" checked onchange="updateImportPreview()"> JSON
+              </label>
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="radio" name="importFormat" value="markdown" onchange="updateImportPreview()"> Markdown
+              </label>
+            </div>
+          </div>
+          
+          <div>
+            <label class="input-label">Preview (Raw Data)</label>
+            <div id="importPreview" class="import-preview">
+              Select a week to see preview...
+            </div>
+          </div>
+        </div>
+        
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;">
+          <button class="btn btn-primary" onclick="handleRawImport()">Store Raw Week Data</button>
+        </div>
+        
+        <div class="format-hint" style="margin-top:20px;">
+          <strong>How this works:</strong><br>
+          1. Select the <strong>Section</strong> (Surgery/GP/Medicine) this week belongs to<br>
+          2. Select a <strong>Week</strong> from the master curriculum reference<br>
+          3. Choose <strong>JSON</strong> (structured) or <strong>Markdown</strong> (readable) format<br>
+          4. Click <strong>Store</strong> to save the raw data without processing<br>
+          5. Go to <strong>Process</strong> tab to expand with AI
+        </div>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// PROCESS TAB
+// ============================================================
+function buildProcessTab() {
+  const pendingRaw = state.rawWeeks.filter(r => !r.processedAt);
+  const processedRaw = state.rawWeeks.filter(r => r.processedAt);
+  
+  if (pendingRaw.length === 0 && processedRaw.length === 0) {
+    return `<div class="card"><div class="empty-state">
+      <div class="empty-icon">📥</div>
+      <div class="empty-title">No Raw Weeks</div>
+      <div class="empty-body">Import raw week data from the Import tab first.</div>
+      <button class="btn btn-primary" onclick="setTab('import')">Go to Import →</button>
+    </div></div>`;
+  }
+  
+  const activeRaw = state.activeRawWeekId ? findRawWeek(state.activeRawWeekId) : null;
+  
+  return `
+    <div class="process-layout fade-up">
+      <div class="process-sidebar">
+        <div class="sidebar-week-title">Pending Raw Weeks (${pendingRaw.length})</div>
+        ${pendingRaw.length === 0 ? `
+          <div style="padding:20px; text-align:center; color:var(--text-3); font-size:0.85rem;">
+            No pending weeks.<br>All raw data has been processed!
+          </div>
+        ` : pendingRaw.map(r => `
+          <div class="raw-week-card ${activeRaw?.id === r.id ? 'active' : ''}" onclick="selectRawWeek('${r.id}')">
+            <div class="raw-week-title">${esc(r.metadata.title)}</div>
+            <div class="raw-week-meta">
+              ${SECTIONS[r.metadata.section]?.icon || '🔪'} ${SECTIONS[r.metadata.section]?.label || r.metadata.section} · 
+              ${r.metadata.topicCount} topics · 
+              ${r.metadata.totalLectureMinutes} min lectures
+            </div>
+          </div>
+        `).join('')}
+        
+        ${processedRaw.length > 0 ? `
+          <div class="sidebar-week-title" style="margin-top:12px;">Processed</div>
+          ${processedRaw.map(r => `
+            <div class="raw-week-card processed" onclick="selectRawWeek('${r.id}')">
+              <div class="raw-week-title">${esc(r.metadata.title)} ✓</div>
+              <div class="raw-week-meta">Processed ${new Date(r.processedAt).toLocaleDateString()}</div>
+            </div>
+          `).join('')}
+        ` : ''}
+      </div>
+      
+      <div>
+        ${activeRaw ? buildAIPanel(activeRaw) : `
+          <div class="card"><div class="empty-state">
+            <div class="empty-icon">⚡</div>
+            <div class="empty-title">Select a raw week</div>
+            <div class="empty-body">Choose a pending week from the sidebar to process it with AI.</div>
+          </div></div>`}
+      </div>
+    </div>`;
+}
+
+function buildAIPanel(rawWeek) {
+  const prompt = buildCurriculumExpansionPrompt(rawWeek);
+  const isProcessed = !!rawWeek.processedAt;
+  
+  return `
+    <div class="ai-panel fade-up">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+        <div>
+          <h2 style="font-family:var(--font-serif); font-size:1.3rem; margin-bottom:4px;">${esc(rawWeek.metadata.title)}</h2>
+          <div style="font-size:0.85rem; color:var(--text-3);">
+            ${SECTIONS[rawWeek.metadata.section]?.icon || '🔪'} ${SECTIONS[rawWeek.metadata.section]?.label || rawWeek.metadata.section} · 
+            Week ${rawWeek.metadata.weekNumber}
+          </div>
+        </div>
+        ${isProcessed ? `
+          <span class="badge badge-studied">✓ Processed</span>
+          <button class="btn btn-ghost btn-sm" onclick="deleteRawWeek('${rawWeek.id}')" style="color:#dc2626; border-color:#fca5a5; margin-left:8px;">Remove</button>
+        ` : `
+          <button class="btn btn-ghost btn-sm" onclick="deleteRawWeek('${rawWeek.id}')" style="color:#dc2626; border-color:#fca5a5;">Remove</button>
+        `}
+      </div>
+      
+      ${!isProcessed ? `
+        <div class="prompt-combined-block">
+          <div class="prompt-combined-header">
+            <span class="prompt-combined-label">Prompt + Curriculum Data → Paste into Claude</span>
+            <button class="btn btn-ghost btn-sm"
+                    style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15);font-size:.76rem;"
+                    onclick="copyCurriculumPrompt(this)">📋 Copy</button>
+          </div>
+          <div class="prompt-combined-content" id="curriculumPromptContent">${esc(prompt)}</div>
+        </div>
+        
+        <div class="ai-instructions">
+          <ol>
+            <li><strong>Copy</strong> the prompt above (template + <strong>verbatim</strong> raw week JSON — no intermediate processing)</li>
+            <li>Open <strong>Claude</strong> (claude.ai) in a new tab</li>
+            <li><strong>Paste</strong> the prompt and wait for the JSON curriculum output</li>
+            <li><strong>Copy</strong> Claude's JSON response and paste it below (must include <code>&quot;schemaVersion&quot;: &quot;2.0.0&quot;</code>)</li>
+            <li>Click <strong>Generate Topics</strong> to parse into study cards</li>
+          </ol>
+        </div>
+        
+        <div style="margin-bottom:16px;">
+          <label class="input-label">Paste AI Output Here (JSON)</label>
+          <textarea id="aiOutputText" style="min-height:300px; font-family:var(--font-mono); font-size:0.8rem;" 
+            placeholder="Paste Claude's JSON response here...\n\nExpected format:\n{\n  &quot;schemaVersion&quot;: &quot;2.0.0&quot;,\n  &quot;generatedDate&quot;: &quot;...&quot;,\n  &quot;weekId&quot;: &quot;...&quot;,\n  &quot;weekTitle&quot;: &quot;...&quot;,\n  &quot;sections&quot;: [\n    {\n      &quot;id&quot;: &quot;vascular-surgery&quot;,\n      &quot;title&quot;: &quot;Vascular Surgery&quot;,\n      &quot;topics&quot;: [\n        {\n          &quot;id&quot;: &quot;abdominal-aortic-aneurysm&quot;,\n          &quot;title&quot;: &quot;Abdominal aortic aneurysm&quot;,\n          &quot;descriptors&quot;: [...]\n        }\n      ]\n    }\n  ],\n  &quot;educationalResources&quot;: [...]\n}"></textarea>
+        </div>
+        
+        <div style="display:flex; justify-content:flex-end;">
+          <button class="btn btn-success" onclick="handleProcessRawWeek('${rawWeek.id}')">Generate Topics ✓</button>
+        </div>
+      ` : `
+        <div class="format-hint" style="background:var(--correct-bg); border-left:3px solid var(--correct);">
+          <strong>✓ This week has been processed</strong><br>
+          ${state.weeks.find(w => w.rawWeekId === rawWeek.id)?.topics.length || 0} topics were created.<br>
+          Go to the <strong>Topics</strong> or <strong>Workflow</strong> tab to study them.
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
+          <button class="btn btn-ghost" onclick="undoProcessRawWeek('${rawWeek.id}')" style="color:#666; border-color:var(--border);">Undo Process</button>
+          <button class="btn btn-primary" onclick="setTab('topics')">View Topics →</button>
+        </div>
+      `}
+    </div>`;
+}
+
+// ============================================================
+// TOPICS TAB
+// ============================================================
+function buildTopicsTab() {
+  if (state.weeks.length === 0) {
+    return `<div class="card"><div class="empty-state">
+      <div class="empty-icon">📚</div>
+      <div class="empty-title">No Topics Yet</div>
+      <div class="empty-body">Import and process raw week data to create topics.<br>Go to Import tab to get started.</div>
+      <button class="btn btn-primary" onclick="setTab('import')">Import Raw Week →</button>
+    </div></div>`;
+  }
+  
+  return `
+    <div>
+      <div class="section-title">All Topics</div>
+      ${state.weeks.map(w => buildWeekSection(w)).join('')}
+    </div>`;
+}
+
+function buildWeekSection(w) {
+  const total = w.topics.length;
+  const studied = w.topics.filter(t => t.completedSteps.studied).length;
+  
+  // Group topics by their 'topic' field (the parent category)
+  const grouped = {};
+  for (const t of w.topics) {
+    const key = t.topic || 'General';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(t);
+  }
+  
+  return `
+    <div class="week-section fade-up">
+      <div class="week-section-header">
+        <div class="week-section-title">${esc(w.name)}</div>
+        ${buildBadge(studied===total&&total>0 ? 'studied' : 'pending', `${studied}/${total} done`)}
+        <span style="flex:1"></span>
+        <button class="btn btn-ghost btn-sm" style="font-size:.76rem;color:#dc2626;border-color:#fca5a5;" onclick="deleteWeek('${w.id}')">Remove Week</button>
+      </div>
+      
+      ${Object.entries(grouped).map(([topicName, topics]) => `
+        <div style="margin-bottom:16px;">
+          <div style="font-family:var(--font-mono); font-size:0.7rem; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:0.05em; padding:8px 12px; background:var(--surface-2); border-radius:var(--radius) var(--radius) 0 0; border:1.5px solid var(--border); border-bottom:none;">
+            ${esc(topicName)}
+          </div>
+          <table class="topic-table" style="border-radius:0 0 var(--radius-lg) var(--radius-lg);">
+            <thead>
+              <tr>
+                <th>Quiz Name</th>
+                <th>Status</th>
+                <th>Steps</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${topics.map(t => `
+                <tr onclick="openWorkflow('${t.id}')">
+                  <td><div class="topic-name">${esc(t.title)}</div></td>
+                  <td>${buildBadge(topicStatus(t))}</td>
+                  <td>
+                    <div class="step-dots">
+                      ${STEPS.map(s => `<div class="step-dot ${t.completedSteps[s.id]?'done':''}" title="${s.title}"></div>`).join('')}
+                    </div>
+                  </td>
+                  <td style="text-align:right"><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openWorkflow('${t.id}')">Open →</button></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function buildBadge(status, label) {
+  const labels = { pending:'Pending', expanded:'Expanded', notes:'Notes Ready', uploaded:'Uploaded', questions:'Questions Done', studied:'Studied', raw:'Raw' };
+  return `<span class="badge badge-${status}">${label || labels[status] || status}</span>`;
+}
+
+// ============================================================
+// WORKFLOW TAB
+// ============================================================
+function buildWorkflowTab() {
+  const topics = allTopics();
+  if (!topics.length) {
+    return `<div class="card"><div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <div class="empty-title">No topics yet</div>
+      <div class="empty-body">Import and process raw week data in the Import and Process tabs first.</div>
+      <button class="btn btn-primary" onclick="setTab('import')">Go to Import →</button>
+    </div></div>`;
+  }
+
+  const active = state.activeTopicId ? findTopic(state.activeTopicId) : null;
+
+  return `
+    <div class="workflow-layout fade-up">
+      <div class="workflow-sidebar">
+        ${state.weeks.map(w => {
+          // Group by topic for sidebar display
+          const grouped = {};
+          for (const t of w.topics) {
+            const key = t.topic || 'General';
+            if (!grouped[key]) grouped[key] = [];
+            grouped[key].push(t);
+          }
+          
+          return `
+            <div>
+              <div class="sidebar-week-title">${esc(w.name)}</div>
+              ${Object.entries(grouped).map(([topicName, topicQuizzes]) => `
+                <div>
+                  <div class="sidebar-topic-header">${esc(topicName)}</div>
+                  ${topicQuizzes.map(t => {
+                    const isActive = active && t.id === active.id;
+                    return `<div class="sidebar-topic ${isActive?'active':''}" data-topic-id="${t.id}" onclick="selectTopic('${t.id}')">
+                      <span class="sidebar-topic-name">${esc(t.title)}</span>
+                      ${buildBadge(topicStatus(t))}
+                    </div>`;
+                  }).join('')}
+                </div>
+              `).join('')}
+            </div>`;
+        }).join('')}
+      </div>
+      <div>
+        ${active ? buildPipeline(active) : `
+          <div class="card"><div class="empty-state">
+            <div class="empty-icon">⚡</div>
+            <div class="empty-title">Select a topic</div>
+            <div class="empty-body">Choose any topic from the sidebar to view or continue its pipeline.</div>
+          </div></div>`}
+      </div>
+    </div>`;
+}
+
+function buildPipeline(topic) {
+  const ns = nextStep(topic);
+  const status = topicStatus(topic);
+
+  return `
+    <div>
+      <div class="topic-workflow-header">
+        <div>
+          <div class="topic-workflow-title">${esc(topic.title)}</div>
+          <div class="topic-workflow-subtitle">${esc(topic.topic || '')} · ${esc(topic.category || '')}</div>
+        </div>
+        ${buildBadge(status)}
+      </div>
+      <div class="steps-container">
+        ${STEPS.map(step => buildStepCard(step, topic, ns)).join('')}
+      </div>
+    </div>`;
+}
+
+function buildStepCard(step, topic, nextStepId) {
+  const done    = topic.completedSteps[step.id];
+  const isNext  = step.id === nextStepId;
+  const isOpen  = state.openStepId === step.id || (isNext && state.openStepId === null);
+
+  let numClass = 'pending';
+  if (done)   numClass = 'done';
+  else if (isNext) numClass = 'next';
+
+  const prompt = step.hasPrompt ? promptForStep(step.id, topic) : null;
+  const resultVal = step.hasResult ? (topic[step.resultKey] || '') : '';
+
+  return `
+    <div class="step-card ${done?'done':''} ${isNext&&!done?'next':''}" id="sc-${step.id}">
+      <div class="step-header" onclick="toggleStep('${step.id}')">
+        <div class="step-num ${numClass}">${done ? '✓' : step.num}</div>
+        <div class="step-title-wrap">
+          <div class="step-title">${step.icon} ${step.title}</div>
+          <div class="step-subtitle">${step.subtitle}</div>
+        </div>
+        ${done ? `<button class="btn btn-ghost btn-sm" style="font-size:.76rem;" onclick="event.stopPropagation();markUndone('${topic.id}','${step.id}')">↩ Undo</button>` : ''}
+        <span class="step-chevron">${isOpen ? '▲' : '▼'}</span>
+      </div>
+
+      <div class="step-body ${isOpen ? 'open' : ''}">
+        <div class="step-instructions">
+          <ol>${step.instructions.map(i => `<li>${i}</li>`).join('')}</ol>
+        </div>
+
+        ${prompt ? `
+          <div class="prompt-block">
+            <div class="prompt-block-header">
+              <span class="prompt-block-label">Prompt → paste into ${step.promptTarget}</span>
+              <button class="btn btn-ghost btn-sm"
+                      style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15);font-size:.76rem;"
+                      onclick="copyPrompt('${step.id}','${topic.id}',this)">📋 Copy</button>
+            </div>
+            <div class="prompt-block-content">${esc(prompt)}</div>
+          </div>` : ''}
+
+        ${step.hasResult ? `
+          <div class="result-section">
+            <label class="input-label">${step.resultLabel}</label>
+            <textarea style="min-height:110px" placeholder="Paste the AI response here..."
+              oninput="saveResult('${topic.id}','${step.resultKey}',this.value)">${esc(resultVal)}</textarea>
+          </div>` : ''}
+
+        <div class="step-footer">
+          ${done
+            ? `<span class="step-complete-label">✓ Completed</span>`
+            : `<button class="btn btn-success btn-sm" onclick="markDone('${topic.id}','${step.id}')">✓ Mark as Done</button>`}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// TEMPLATES TAB
+// ============================================================
+function buildTemplatesTab() {
+  const tpls = [
+    {
+      key: 'curriculumExpansion', title: 'Curriculum Expansion Prompt (AI → Topics)',
+      desc: 'Sent to Claude to expand the raw week export into structured * / ** hierarchy for quiz creation.',
+      placeholders: ['{{RAW_WEEK_DATA}}', '{{RAW_CURRICULUM_DATA}} (legacy)'],
+      val: state.promptTemplates.curriculumExpansion
+    },
+    {
+      key: 'expansion', title: 'Step 1 — Topic Expansion Prompt',
+      desc: 'Sent to Claude to expand a single topic into high-yield learning outcomes.',
+      placeholders: ['{{TITLE}}', '{{CATEGORY}}', '{{CONTENT}}'],
+      val: state.promptTemplates.expansion
+    },
+    {
+      key: 'notes', title: 'Step 2 — Notes Prompt',
+      desc: 'Sent to Claude to generate structured study notes from the expanded outcomes.',
+      placeholders: ['{{TITLE}}', '{{CATEGORY}}', '{{EXPANDED_OUTCOMES}}'],
+      val: state.promptTemplates.notes
+    },
+    {
+      key: 'mcqStyleGuide', title: 'Step 4 — MCQ Style Guide',
+      desc: 'Appended to every MCQ generation prompt in NotebookLM.',
+      placeholders: [],
+      val: state.promptTemplates.mcqStyleGuide
+    }
+  ];
+
+  return `
+    <div class="fade-up">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
+        <div class="section-title" style="margin-bottom:0">Prompt Templates</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="resetTemplates()">↩ Reset to defaults</button>
+          <button class="btn btn-primary btn-sm" onclick="saveTemplates()">Save Templates</button>
+        </div>
+      </div>
+      <p style="font-size:.86rem;color:var(--text-2);margin-bottom:24px;line-height:1.6;">
+        Edit these templates to customise what Claude receives for each workflow step.<br>
+        Placeholders in <code style="background:var(--surface-2);padding:1px 5px;border-radius:4px;font-family:var(--font-mono);font-size:.78rem;">{{CAPS}}</code> are replaced automatically with the topic's data.
+      </p>
+      <div class="templates-stack">
+        ${tpls.map(t => `
+          <div class="template-card">
+            <div class="template-card-header">
+              <div>
+                <div class="template-card-title">${t.title}</div>
+                <div class="template-card-desc">${t.desc}</div>
+              </div>
+            </div>
+            <div class="template-card-body">
+              ${t.placeholders.length ? `
+                <div class="placeholder-hint">
+                  ${t.placeholders.map(p => `<span class="placeholder-tag">${p}</span>`).join('')}
+                </div>` : ''}
+              <textarea class="mono" id="tpl-${t.key}" style="min-height:200px">${esc(t.val)}</textarea>
+            </div>
+          </div>`).join('')}
+        <div style="display:flex;justify-content:flex-end;gap:8px;padding-bottom:8px;">
+          <button class="btn btn-ghost btn-sm" onclick="resetTemplates()">↩ Reset to defaults</button>
+          <button class="btn btn-primary" onclick="saveTemplates()">Save Templates</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// HANDLERS
+// ============================================================
+function setTab(id) { setState({ activeTab: id, openStepId: null }); }
+
+function setSection(section) { setState({ selectedSection: section }); }
+
+function updateImportPreview() {
+  const weekId = document.getElementById('importWeekId')?.value;
+  const format = document.querySelector('input[name="importFormat"]:checked')?.value || 'json';
+  const previewEl = document.getElementById('importPreview');
+  
+  if (!weekId) {
+    previewEl.textContent = 'Select a week to see preview...';
+    return;
+  }
+  
+  const content = format === 'json' ? generateWeekJson(weekId) : generateWeekMarkdown(weekId);
+  previewEl.textContent = content || 'Error generating preview';
+}
+
+function handleRawImport() {
+  const weekId = document.getElementById('importWeekId')?.value;
+  const format = document.querySelector('input[name="importFormat"]:checked')?.value || 'json';
+  
+  if (!weekId) { alert('Select a week first.'); return; }
+  
+  importRawWeek(weekId, state.selectedSection, format);
+  document.getElementById('importWeekId').value = '';
+  document.getElementById('importPreview').textContent = 'Select a week to see preview...';
+}
+
+function selectRawWeek(rawWeekId) {
+  setState({ activeRawWeekId: rawWeekId });
+}
+
+function copyCurriculumPrompt(btn) {
+  const content = document.getElementById('curriculumPromptContent')?.textContent;
+  if (!content) return;
+  
+  navigator.clipboard.writeText(content).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅ Copied!';
+    btn.style.color = '#4ade80';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
+  });
+}
+
+function handleProcessRawWeek(rawWeekId) {
+  const aiOutput = document.getElementById('aiOutputText')?.value || '';
+  if (!aiOutput.trim()) { alert('Paste the AI output first.'); return; }
+  
+  processRawWeek(rawWeekId, aiOutput);
+}
+
+function goToWeek(weekId) {
+  const w = state.weeks.find(w => w.id === weekId);
+  if (!w || !w.topics.length) return;
+  const t = w.topics.find(t => topicStatus(t) !== 'studied') || w.topics[0];
+  setState({ activeTab: 'workflow', activeTopicId: t.id, openStepId: null });
+}
+
+function openWorkflow(topicId) {
+  setState({ activeTab: 'workflow', activeTopicId: topicId, openStepId: null });
+}
+
+function selectTopic(topicId) {
+  // Fast update: don't re-render entire UI, just update sidebar active state and swap pipeline
+  const prevActiveId = state.activeTopicId;
+  if (prevActiveId === topicId) return;
+
+  // Update state without triggering full render
+  state.activeTopicId = topicId;
+  state.openStepId = null;
+  persist();
+
+  // Update sidebar: remove active from previous, add to new
+  const sidebar = document.querySelector('.workflow-sidebar');
+  if (sidebar) {
+    const prevEl = sidebar.querySelector(`.sidebar-topic[data-topic-id="${prevActiveId}"]`) ||
+                   sidebar.querySelector('.sidebar-topic.active');
+    const newEl = sidebar.querySelector(`.sidebar-topic[data-topic-id="${topicId}"]`);
+    if (prevEl) prevEl.classList.remove('active');
+    if (newEl) newEl.classList.add('active');
+  }
+
+  // Update pipeline content only
+  const topic = findTopic(topicId);
+  const pipelineContainer = document.querySelector('.workflow-layout > div:last-child');
+  if (pipelineContainer && topic) {
+    pipelineContainer.innerHTML = buildPipeline(topic);
+  }
+}
+
+function toggleStep(stepId) {
+  setState({ openStepId: state.openStepId === stepId ? null : stepId });
+}
+
+function saveResult(topicId, key, value) {
+  mutateTopic(topicId, { [key]: value });
+}
+
+function copyPrompt(stepId, topicId, btn) {
+  const topic = findTopic(topicId);
+  if (!topic) return;
+  navigator.clipboard.writeText(promptForStep(stepId, topic)).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅ Copied!';
+    btn.style.color = '#4ade80';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
+  });
+}
+
+function saveTemplates() {
+  const get = id => (document.getElementById(id) || {}).value || '';
+  setState({
+    promptTemplates: {
+      curriculumExpansion: get('tpl-curriculumExpansion'),
+      expansion:    get('tpl-expansion'),
+      notes:        get('tpl-notes'),
+      mcqStyleGuide: get('tpl-mcqStyleGuide')
+    }
+  });
+  const btns = document.querySelectorAll('.btn-primary');
+  btns.forEach(b => { if (b.textContent.includes('Save')) { const o=b.innerHTML; b.innerHTML='✅ Saved!'; setTimeout(()=>{b.innerHTML=o;},1500); }});
+}
+
+function resetTemplates() {
+  if (!confirm('Reset all templates to defaults? Your edits will be lost.')) return;
+  setState({
+    promptTemplates: {
+      curriculumExpansion: DEFAULT_CURRICULUM_EXPANSION,
+      expansion:    DEFAULT_EXPANSION,
+      notes:        DEFAULT_NOTES,
+      mcqStyleGuide: DEFAULT_MCQ_STYLE_GUIDE
+    }
+  });
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+render();
+</script>
+</body>
+</html>

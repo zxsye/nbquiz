@@ -47,5 +47,32 @@ service cloud.firestore {
     match /{path=**}/notes/{docId} {
       allow read, write: if isAdmin();
     }
+
+    // PromptMX / Study OS — catalog (templates, workflow, sections)
+    match /pmx_sections/{docId} {
+      allow read:  if request.auth != null;
+      allow write: if isAdmin();
+    }
+    match /pmx_promptTemplates/{docId} {
+      allow read:  if request.auth != null;
+      allow write: if isAdmin();
+    }
+    match /pmx_workflowStepTypes/{docId} {
+      allow read:  if request.auth != null;
+      allow write: if isAdmin();
+    }
+    match /pmx_workflowDefinitions/{docId} {
+      allow read:  if request.auth != null;
+      allow write: if isAdmin();
+    }
+    match /pmx_weekMasterData/{docId} {
+      allow read:  if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // PromptMX — per-user Study OS state (single doc per uid)
+    match /pmx_userStudyOsState/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
   }
 }
