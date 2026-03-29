@@ -1538,6 +1538,12 @@ function updateTopicSelectionBar() {
   const bar = document.getElementById('topicSelectionBar');
   const textEl = document.getElementById('topicSelectionBarText');
   if (!bar || !textEl) return;
+  // Hide selection bar on quiz.html (single-quiz interface); only show on index.html (main overview)
+  if (QUESTIONS && QUESTIONS.length > 0) {
+    bar.classList.remove('visible');
+    document.body.classList.remove('has-topic-selection-bar');
+    return;
+  }
   const n = topicFilterSelected.size;
   if (n === 0 || topicFilterSearchActive) {
     bar.classList.remove('visible');
