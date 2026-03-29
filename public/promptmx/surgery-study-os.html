@@ -464,6 +464,31 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
   overflow-y: auto;
 }
 .result-section { margin-bottom: 16px; }
+
+/* === NOTES RESULT BOX === */
+.notes-result-box { background: #1e1b16; border-radius: var(--radius); overflow: hidden; border: 1px solid rgba(255,255,255,.07); }
+.notes-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.02);
+}
+.notes-result-label { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: .08em; }
+.notes-result-content {
+  width: 100%;
+  border: none;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  line-height: 1.65;
+  color: rgba(255,255,255,.82);
+  background: transparent;
+  resize: vertical;
+}
+.notes-result-content:focus { outline: none; }
+
 .step-footer { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding-top: 4px; }
 .step-complete-label { color: var(--correct); font-size: 0.85rem; font-weight: 600; }
 
@@ -855,44 +880,96 @@ Produce the output JSON object now. Output valid JSON only — no markdown fence
 {{RAW_WEEK_DATA}}
 \`\`\``;
 
-const DEFAULT_EXPANSION = `You are helping a final-year medical student prepare fora clinical assessments in surgery.
+const DEFAULT_NOTES = `You are an expert medical educator creating clinical notes for a final year medical student preparing for their surgical rotation. The goal is for the student to be "intern safe" — able to recognise, assess, and initiate management of surgical conditions independently, and know when to escalate.
 
-Topic: {{TITLE}}
-Category: {{CATEGORY}}
+You will be given a topic title and a set of descriptors. The descriptors provide contextual scaffolding — use them to guide the focus and emphasis of your notes, but go beyond them using your full clinical knowledge to produce comprehensive, detailed notes.
 
-Curriculum content:
-{{CONTENT}}
+Map all descriptor content into the 6 pillars below. Do not create separate sections for individual descriptors — integrate their content naturally into whichever pillar it belongs to.
 
-Expand this topic into a detailed list of high-yield learning outcomes for a final-year medical student. Structure your response as a clear numbered list covering:
+---
 
-1. Definition & classification (brief)
-2. Pathophysiology (clinically relevant only)
-3. Clinical features — key history, examination findings, red flags
-4. Investigations — what to order, what to expect, and why
-5. Management — acute stabilisation and definitive treatment
-6. Surgical aspects — indications, overview of approach, post-op care
-7. Complications — important ones, recognition, and management
-8. Key clinical pearls & exam traps
+## INPUT FORMAT
 
-Keep each point concise and high-yield. Avoid basic science that isn't directly clinically actionable. Pitch at final-year level — beyond introductory, not subspecialty depth.`;
+You will receive a topic in this structure:
 
-const DEFAULT_NOTES = `You are generating structured study notes for a final-year medical student preparing for surgery assessments.
+- title: {{TITLE}}
+- descriptors: a list of label/specifics pairs providing clinical context and emphasis
 
-Topic: {{TITLE}}
-Category: {{CATEGORY}}
+{{DESCRIPTORS}}
 
-High-yield learning outcomes to cover:
-{{EXPANDED_OUTCOMES}}
+---
 
-Generate comprehensive, well-structured notes covering all the above points. Use clear H2/H3 headings.
+## OUTPUT FORMAT
 
-Label important items clearly:
-🔑 Clinical pearl
-📊 Key number or threshold to memorise
-⚠️ Exam trap or common pitfall
-🚨 Don't-miss finding that changes management
+Generate structured notes in plain markdown using the 6 pillars below. Always generate all 6 pillars, even if a pillar requires adaptation to fit the topic (e.g., for a neurosurgical topic, reframe "Surgical Management" around operative and interventional decisions relevant to that specialty).
 
-Write at final-year level. Aim for notes you could use for last-minute revision. Be specific — include actual numbers, named criteria, and decision thresholds where relevant.`;
+---
+
+### 1. PROVISIONAL DIAGNOSIS
+- Classic and atypical presentations
+- Key features from the history that point toward this diagnosis
+- Anatomical localisation and its significance
+- Red flag symptoms that demand urgent review
+- Differentials to consider and how to distinguish between them (use a table where helpful)
+
+---
+
+### 2. APPROPRIATE INVESTIGATIONS
+Structure investigations in tiers:
+- **Bedside/Immediate:** obs, ECG, BSL, urine dipstick, pregnancy test where relevant
+- **Bloods:** specify which tests and explain WHY each is ordered
+- **Imaging:** specify the correct modality, when to use it, and what you are looking for (CXR, AXR, USS, CT, CT angiography, MRI — indications for each)
+- **Additional:** endoscopy, biopsy, functional tests, grading tools, scoring systems where relevant
+
+---
+
+### 3. MANAGING COMMON EMERGENCIES
+- Immediate resuscitation steps (use ABCDE framework where relevant)
+- Time-critical actions and their deadlines where applicable
+- IV access, fluids, NBM, analgesia, specific medications — specify each with rationale
+- When to call the surgical or specialty registrar
+- Recognise the haemodynamically or neurologically unstable patient and act accordingly
+
+---
+
+### 4. NEXT BEST STEP REASONING
+- Is the patient stable or unstable? — this determines the entire pathway
+- Resuscitation always precedes investigation in the unstable patient
+- When the next step is a specialist consult vs further investigation vs self-managed
+- Dispel common clinical myths relevant to this condition
+- When to escalate and to whom
+
+---
+
+### 5. PRINCIPLES OF MANAGEMENT
+- Conservative vs operative/interventional decision making
+- Definitive treatment options and how the choice is made (e.g., patient grade, anatomy, timing)
+- Perioperative or periprocedural care where applicable: fasting, VTE prophylaxis, consent, monitoring
+- Complication prevention and targeted management
+- Post-operative or post-procedure complications by timeline:
+    * Early (hours–day 2): haemorrhage, instability, immediate deterioration
+    * Intermediate (day 3–5): infections, systemic complications, ileus
+    * Late (day 5+): condition-specific complications (e.g., vasospasm, anastomotic leak, DVT/PE)
+
+---
+
+### 6. SURGERY vs INVESTIGATION vs MEDICAL MANAGEMENT
+Clearly state which pathway applies and why:
+- **INTERVENE NOW:** define the conditions that mandate immediate theatre, procedural intervention, or emergency treatment
+- **INVESTIGATE FIRST:** define when imaging or further workup changes management
+- **MEDICAL MANAGEMENT:** define when conservative treatment is appropriate and what it entails
+Always ask: Will this investigation change my management? Is this patient stable enough for imaging?
+
+---
+
+## FORMATTING RULES
+- Use clear headings for each pillar
+- Use tables where comparisons are needed (e.g., differentials, investigation tiers, grading scales)
+- Flag time-critical points with ⚠️
+- Flag escalation points with 🔺
+- Keep language clinical but accessible — written for a final year student, not a consultant
+- Prioritise common presentations and conditions over rare ones
+- End with a **Key Takeaways** section of no more than 5 bullet points`;
 
 const DEFAULT_MCQ_STYLE_GUIDE = `# Medical MCQ Style Guide
 *Single-best-answer questions for final-year medical students*
@@ -975,47 +1052,33 @@ Frame around a clinical consequence. Distractors are nearby anatomical structure
 function cloneDefaultSteps() {
   return [
   {
-    id: 'expand', num: 1, icon: '📖', title: 'Expand Learning Outcomes',
-    subtitle: 'Use Claude to turn the curriculum topic into structured high-yield outcomes',
+    id: 'notes', num: 1, icon: '📝', title: 'Generate Structured Notes',
+    subtitle: 'Generate comprehensive clinical notes from topic descriptors',
     instructions: [
       'Copy the prompt below using the <strong>Copy</strong> button',
-      'Open <strong>Claude</strong> in a new conversation',
-      'Paste the prompt and send — Claude will expand the topic into detailed learning outcomes',
-      'Read through the response and check it looks clinically accurate',
-      'Paste the full response into the <strong>Result</strong> box below',
-      'Click <strong>Mark as Done</strong> to continue to the next step'
-    ],
-    hasPrompt: true, promptTarget: 'Claude',
-    hasResult: true, resultKey: 'expandedOutcomes', resultLabel: 'Paste Expanded Outcomes from Claude'
-  },
-  {
-    id: 'notes', num: 2, icon: '📝', title: 'Generate Structured Notes',
-    subtitle: 'Turn the expanded outcomes into revision-ready notes',
-    instructions: [
-      'The prompt below <strong>already includes your Step 1 outcomes</strong> — complete Step 1 first if the box below looks empty',
-      'Copy the prompt and paste it into <strong>Claude</strong>',
+      'Paste it into <strong>Claude</strong>',
       'Review the generated notes — check specific numbers, drug doses, and named criteria for accuracy',
-      'Paste the notes into the <strong>Result</strong> box below (for reference and NotebookLM upload)',
-      'Click <strong>Mark as Done</strong>'
+      'The notes will appear in the box below for copying to NotebookLM',
+      'Click <strong>Mark as Done</strong> to continue'
     ],
     hasPrompt: true, promptTarget: 'Claude',
-    hasResult: true, resultKey: 'notes', resultLabel: 'Paste Generated Notes from Claude'
+    hasResult: true, resultKey: 'notes', resultLabel: 'Generated Notes (ready to copy)'
   },
   {
-    id: 'upload', num: 3, icon: '☁️', title: 'Upload to NotebookLM',
+    id: 'upload', num: 2, icon: '☁️', title: 'Upload to NotebookLM',
     subtitle: 'Create a notebook and add your notes as a source',
     instructions: [
       'Go to <strong>notebooklm.google.com</strong> and create a new notebook',
       'Name the notebook after this topic (e.g. <em>"Appendicitis"</em>)',
       'Click <strong>Add source</strong> → <em>Copied text</em>',
-      'Copy your notes from the Step 2 result box and paste them in',
+      'Copy your notes from the Step 1 result box and paste them in',
       'Wait for NotebookLM to process the source (usually 10–30 seconds)',
       'Click <strong>Mark as Done</strong>'
     ],
     hasPrompt: false, hasResult: false
   },
   {
-    id: 'questions', num: 4, icon: '❓', title: 'Generate MCQs in NotebookLM',
+    id: 'questions', num: 3, icon: '❓', title: 'Generate MCQs in NotebookLM',
     subtitle: 'Use the MCQ style guide to generate questions grounded in your notes',
     instructions: [
       'Open the NotebookLM notebook you created for this topic',
@@ -1029,7 +1092,7 @@ function cloneDefaultSteps() {
     hasResult: false
   },
   {
-    id: 'studied', num: 5, icon: '🧠', title: 'Active Recall Session',
+    id: 'studied', num: 4, icon: '🧠', title: 'Active Recall Session',
     subtitle: 'Work through the questions and flag weak areas',
     instructions: [
       'Load the exported questions into your quiz app',
@@ -1058,7 +1121,6 @@ function mkDefaultState() {
     rawWeeks: [],
     promptTemplates: {
       curriculumExpansion: DEFAULT_CURRICULUM_EXPANSION,
-      expansion: DEFAULT_EXPANSION,
       notes: DEFAULT_NOTES,
       mcqStyleGuide: DEFAULT_MCQ_STYLE_GUIDE
     },
@@ -1080,7 +1142,6 @@ function migrateLegacyData() {
         weeks: parsed.weeks || [],
         promptTemplates: {
           curriculumExpansion: DEFAULT_CURRICULUM_EXPANSION,
-          expansion: parsed.promptTemplates?.expansion || DEFAULT_EXPANSION,
           notes: parsed.promptTemplates?.notes || DEFAULT_NOTES,
           mcqStyleGuide: parsed.promptTemplates?.mcqStyleGuide || DEFAULT_MCQ_STYLE_GUIDE
         }
@@ -1182,7 +1243,6 @@ function firestoreStepToAppStep(stepId, d, index) {
 
 const PMX_TEMPLATE_STATE_KEYS = {
   curriculum_expansion: 'curriculumExpansion',
-  topic_expansion: 'expansion',
   study_notes: 'notes',
   mcq_style_guide: 'mcqStyleGuide',
 };
@@ -1329,29 +1389,20 @@ async function seedPmxFirestoreDefaults() {
     {
       id: 'curriculum_expansion',
       name: 'Curriculum expansion',
-      description: 'Raw week → structured * /** outline',
+      description: 'Raw week → structured sections/topics with descriptors',
       content: DEFAULT_CURRICULUM_EXPANSION,
       placeholders: ['{{RAW_WEEK_DATA}}', '{{RAW_CURRICULUM_DATA}}'],
       stateKey: 'curriculumExpansion',
       version: 1,
     },
     {
-      id: 'topic_expansion',
-      name: 'Topic expansion',
-      description: 'Single topic learning outcomes',
-      content: DEFAULT_EXPANSION,
-      placeholders: ['{{TITLE}}', '{{CATEGORY}}', '{{CONTENT}}'],
-      stateKey: 'expansion',
-      version: 1,
-    },
-    {
       id: 'study_notes',
       name: 'Study notes',
-      description: 'Notes from expanded outcomes',
+      description: 'Clinical notes from topic descriptors (6 pillars format)',
       content: DEFAULT_NOTES,
-      placeholders: ['{{TITLE}}', '{{CATEGORY}}', '{{EXPANDED_OUTCOMES}}'],
+      placeholders: ['{{TITLE}}', '{{DESCRIPTORS}}'],
       stateKey: 'notes',
-      version: 1,
+      version: 2,
     },
     {
       id: 'mcq_style_guide',
@@ -1381,7 +1432,7 @@ async function seedPmxFirestoreDefaults() {
     );
   }
 
-  const stepIds = ['expand', 'notes', 'upload', 'questions', 'studied'];
+  const stepIds = ['notes', 'upload', 'questions', 'studied'];
   const defaultSteps = cloneDefaultSteps();
   for (let i = 0; i < stepIds.length; i++) {
     const sid = stepIds[i];
@@ -1410,7 +1461,7 @@ async function seedPmxFirestoreDefaults() {
     pmxDb.collection('pmx_workflowDefinitions').doc('default_study'),
     {
       name: 'Default study pipeline',
-      description: 'Expand → notes → NotebookLM → MCQs → studied',
+      description: 'Notes → NotebookLM → MCQs → studied (4 steps)',
       sectionId: 'surgery',
       stepIds,
       isActive: true,
@@ -1440,7 +1491,6 @@ async function reloadPromptMxFromFirestore() {
   const base = mkDefaultState();
   state.promptTemplates = Object.assign({}, base.promptTemplates, {
     curriculumExpansion: DEFAULT_CURRICULUM_EXPANSION,
-    expansion: DEFAULT_EXPANSION,
     notes: DEFAULT_NOTES,
     mcqStyleGuide: DEFAULT_MCQ_STYLE_GUIDE,
   });
@@ -1522,7 +1572,6 @@ function topicStatus(topic) {
   if (c.questions) return 'questions';
   if (c.upload)    return 'uploaded';
   if (c.notes)     return 'notes';
-  if (c.expand)    return 'expanded';
   return 'pending';
 }
 
@@ -1539,7 +1588,6 @@ function dashStats() {
   return {
     total:     all.length,
     raw:       rawCount,
-    expanded:  all.filter(t => t.completedSteps.expand).length,
     notes:     all.filter(t => t.completedSteps.notes).length,
     questions: all.filter(t => t.completedSteps.questions).length,
     studied:   all.filter(t => t.completedSteps.studied).length
@@ -2191,7 +2239,8 @@ function parseJSONOutput(json) {
         originalContent: ''
       };
       
-      // Convert descriptors to originalContent format
+      // Store structured descriptors and also convert to originalContent format
+      quiz.descriptors = topic.descriptors || [];
       if (Array.isArray(topic.descriptors)) {
         for (const desc of topic.descriptors) {
           if (desc.label && desc.specifics) {
@@ -2334,8 +2383,8 @@ function processRawWeek(rawWeekId, aiOutput) {
         topic: quiz.topic,
         category: rawWeek.metadata.section,  // Store section as category for reference
         originalContent: quiz.originalContent.trim(),
-        completedSteps: { expand: false, notes: false, upload: false, questions: false, studied: false },
-        expandedOutcomes: '',
+        descriptors: quiz.descriptors || [],  // Store structured descriptors from AI output
+        completedSteps: { notes: false, upload: false, questions: false, studied: false },
         notes: ''
       });
     }
@@ -2389,11 +2438,49 @@ function mutateTopicRender(topicId, patch) {
 function markDone(topicId, stepId) {
   const topic = findTopic(topicId);
   if (!topic) return;
-  const newSteps = Object.assign({}, topic.completedSteps, { [stepId]: true });
-  const nextIdx = STEP_IDS.indexOf(stepId) + 1;
+  const idx = STEP_IDS.indexOf(stepId);
+  const newSteps = Object.assign({}, topic.completedSteps);
+
+  // Mark current step and all previous steps as done
+  for (let i = 0; i <= idx; i++) newSteps[STEP_IDS[i]] = true;
+
+  const nextIdx = idx + 1;
   const nextId = nextIdx < STEP_IDS.length ? STEP_IDS[nextIdx] : null;
-  mutateTopicRender(topicId, { completedSteps: newSteps });
-  if (nextId) setTimeout(() => { setState({ openStepId: nextId }); }, 50);
+
+  // Update state without full render
+  mutateTopic(topicId, { completedSteps: newSteps });
+
+  // Surgical DOM updates for current and all previous steps (mark done + close cards)
+  for (let i = 0; i <= idx; i++) {
+    const currentStepId = STEP_IDS[i];
+    updateStepCardVisuals(topicId, currentStepId, true);
+
+    // Close all done step cards (previous and current)
+    const card = document.getElementById(`sc-${currentStepId}`);
+    if (card) {
+      const stepBody = card.querySelector('.step-body');
+      if (stepBody) stepBody.classList.remove('open');
+      const chevron = card.querySelector('.step-chevron');
+      if (chevron) chevron.textContent = '▼';
+    }
+  }
+  updateSidebarBadge(topicId);
+
+  // Expand next step — update state silently, then manipulate DOM only
+  if (nextId) {
+    state.openStepId = nextId;
+    persist();
+    const nextCard = document.getElementById(`sc-${nextId}`);
+    if (nextCard) {
+      const stepBody = nextCard.querySelector('.step-body');
+      if (stepBody) stepBody.classList.add('open');
+      const chevron = nextCard.querySelector('.step-chevron');
+      if (chevron) chevron.textContent = '▲';
+    }
+  } else {
+    state.openStepId = null;
+    persist();
+  }
 }
 
 function markUndone(topicId, stepId) {
@@ -2402,7 +2489,96 @@ function markUndone(topicId, stepId) {
   const idx = STEP_IDS.indexOf(stepId);
   const newSteps = Object.assign({}, topic.completedSteps);
   for (let i = idx; i < STEP_IDS.length; i++) newSteps[STEP_IDS[i]] = false;
-  mutateTopicRender(topicId, { completedSteps: newSteps });
+
+  // Update state without full render
+  mutateTopic(topicId, { completedSteps: newSteps });
+
+  // Surgical DOM updates for all affected steps, and open them all
+  for (let i = idx; i < STEP_IDS.length; i++) {
+    updateStepCardVisuals(topicId, STEP_IDS[i], false);
+    const card = document.getElementById(`sc-${STEP_IDS[i]}`);
+    if (card) {
+      const stepBody = card.querySelector('.step-body');
+      if (stepBody) stepBody.classList.add('open');
+      const chevron = card.querySelector('.step-chevron');
+      if (chevron) chevron.textContent = '▲';
+    }
+  }
+  updateSidebarBadge(topicId);
+  state.openStepId = STEP_IDS[idx];
+  persist();
+}
+
+function updateStepCardVisuals(topicId, stepId, done) {
+  const card = document.getElementById(`sc-${stepId}`);
+  if (!card) return;
+
+  const topic = findTopic(topicId);
+  if (!topic) return;
+
+  const ns = nextStep(topic);
+  const isNext = stepId === ns;
+  const step = STEPS.find(s => s.id === stepId);
+  if (!step) return;
+
+  // Update card classes
+  if (done) {
+    card.classList.add('done');
+    card.classList.remove('next');
+  } else {
+    card.classList.remove('done');
+    if (isNext) card.classList.add('next');
+  }
+
+  // Update step number/checkmark
+  const numEl = card.querySelector('.step-num');
+  if (numEl) {
+    numEl.textContent = done ? '✓' : step.num;
+    numEl.className = `step-num ${done ? 'done' : (isNext ? 'next' : 'pending')}`;
+  }
+
+  // Update footer button
+  const footer = card.querySelector('.step-footer');
+  if (footer) {
+    // Preserve admin button if present
+    const adminBtn = footer.querySelector('a[href="/admin/"]');
+    let adminHtml = adminBtn ? adminBtn.outerHTML : '';
+
+    if (done) {
+      footer.innerHTML = adminHtml + `<span class="step-complete-label">✓ Completed</span>`;
+    } else {
+      footer.innerHTML = adminHtml + `<button class="btn btn-success btn-sm" onclick="markDone('${topicId}','${stepId}')">✓ Mark as Done</button>`;
+    }
+  }
+
+  // Update undo button in header
+  const header = card.querySelector('.step-header');
+  if (header) {
+    const existingUndo = header.querySelector('button[onclick*="markUndone"]');
+    if (done && !existingUndo) {
+      const chevron = header.querySelector('.step-chevron');
+      const undoBtn = document.createElement('button');
+      undoBtn.className = 'btn btn-ghost btn-sm';
+      undoBtn.style.cssText = 'font-size:.76rem;';
+      undoBtn.textContent = '↩ Undo';
+      undoBtn.onclick = (e) => { e.stopPropagation(); markUndone(topicId, stepId); };
+      header.insertBefore(undoBtn, chevron);
+    } else if (!done && existingUndo) {
+      existingUndo.remove();
+    }
+  }
+}
+
+function updateSidebarBadge(topicId) {
+  const topic = findTopic(topicId);
+  if (!topic) return;
+  const status = topicStatus(topic);
+  const badgeEl = document.querySelector(`.workflow-sidebar .sidebar-topic[data-topic-id="${topicId}"] .badge`);
+  if (badgeEl) {
+    const labels = { pending:'Pending', expanded:'Expanded', notes:'Notes Ready', uploaded:'Uploaded', questions:'Questions Done', studied:'Studied', raw:'Raw' };
+    badgeEl.className = `badge badge-${status}`;
+    badgeEl.textContent = labels[status] || status;
+  }
 }
 
 // ============================================================
@@ -2422,21 +2598,25 @@ function buildCurriculumExpansionPrompt(rawWeek) {
   return tpl;
 }
 
-function buildExpansionPrompt(topic) {
-  return state.promptTemplates.expansion
-    .replace('{{TITLE}}', topic.title)
-    .replace('{{CATEGORY}}', topic.topic || 'General')
-    .replace('{{CONTENT}}', topic.originalContent);
-}
-
 function buildNotesPrompt(topic) {
-  const outcomes = topic.expandedOutcomes
-    ? topic.expandedOutcomes
-    : '[⚠️ Complete Step 1 first — paste your expanded outcomes there, then return here]';
+  // Format descriptors as a list of label: specifics pairs
+  let descriptorsText = '';
+  if (topic.descriptors && topic.descriptors.length > 0) {
+    for (const desc of topic.descriptors) {
+      if (desc.label && desc.specifics) {
+        descriptorsText += `- ${desc.label}: ${desc.specifics}\n`;
+      }
+    }
+  } else if (topic.originalContent) {
+    // Fallback to originalContent if descriptors not available (legacy data)
+    descriptorsText = topic.originalContent;
+  } else {
+    descriptorsText = '[⚠️ No descriptors available for this topic]';
+  }
+
   return state.promptTemplates.notes
     .replace('{{TITLE}}', topic.title)
-    .replace('{{CATEGORY}}', topic.topic || 'General')
-    .replace('{{EXPANDED_OUTCOMES}}', outcomes);
+    .replace('{{DESCRIPTORS}}', descriptorsText);
 }
 
 function buildMCQPrompt(topic) {
@@ -2445,7 +2625,6 @@ function buildMCQPrompt(topic) {
 
 function promptForStep(stepId, topic) {
   switch(stepId) {
-    case 'expand':    return buildExpansionPrompt(topic);
     case 'notes':     return buildNotesPrompt(topic);
     case 'questions': return buildMCQPrompt(topic);
     default: return '';
@@ -2489,10 +2668,12 @@ function buildHeader() {
          <button type="button" class="btn btn-ghost btn-sm" onclick="signOutPmx()">Sign out</button>
        </div>`
     : `<button type="button" class="btn btn-primary btn-sm" onclick="signInPmxGoogle()">Sign in with Google</button>`;
+  const nbQuizLink = `<a href="/" style="font-size:.78rem;color:var(--accent);text-decoration:none;font-weight:500;white-space:nowrap;">← Back to NB Quiz</a>`;
   return `
     <header class="app-header">
       <div class="app-title">${SECTIONS[state.selectedSection]?.icon || '🔪'} ${SECTIONS[state.selectedSection]?.label || 'Surgery'} <span>Study OS</span></div>
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        ${nbQuizLink}
         ${authBlock}
         <nav class="tab-nav">
           ${tabs.map(t => `<button class="tab-btn ${state.activeTab === t.id ? 'active' : ''}" onclick="setTab('${t.id}')">${t.label}</button>`).join('')}
@@ -2565,10 +2746,10 @@ function buildDashboard() {
 
   const statItems = [
     { label: 'Topics', value: s.total, color: 'var(--text)' },
-    { label: 'Raw Pending', value: s.raw, color: 'var(--step3)' },
-    { label: 'Expanded', value: s.expanded, color: 'var(--step1)' },
-    { label: 'Notes', value: s.notes, color: 'var(--step2)' },
-    { label: 'Studied', value: s.studied, color: 'var(--step5)' }
+    { label: 'Raw Pending', value: s.raw, color: 'var(--step2)' },
+    { label: 'Notes Ready', value: s.notes, color: 'var(--step1)' },
+    { label: 'Questions', value: s.questions, color: 'var(--step3)' },
+    { label: 'Studied', value: s.studied, color: 'var(--step4)' }
   ];
 
   return `
@@ -3004,14 +3185,43 @@ function buildStepCard(step, topic, nextStepId) {
             <div class="prompt-block-content">${esc(prompt)}</div>
           </div>` : ''}
 
-        ${step.hasResult ? `
+        ${step.hasResult ? (step.id === 'notes' ? `
+          <div class="result-section">
+            <label class="input-label">${step.resultLabel}</label>
+            <div class="notes-result-box">
+              <div class="notes-result-header">
+                <span class="notes-result-label">AI Generated Notes</span>
+                <button class="btn btn-ghost btn-sm"
+                        style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15);font-size:.76rem;"
+                        onclick="copyNotesResult('${topic.id}',this)">📋 Copy</button>
+              </div>
+              <textarea class="notes-result-content" style="min-height:200px" placeholder="Paste the AI response here..."
+                oninput="saveResult('${topic.id}','${step.resultKey}',this.value)">${esc(resultVal)}</textarea>
+            </div>
+          </div>` : `
           <div class="result-section">
             <label class="input-label">${step.resultLabel}</label>
             <textarea style="min-height:110px" placeholder="Paste the AI response here..."
               oninput="saveResult('${topic.id}','${step.resultKey}',this.value)">${esc(resultVal)}</textarea>
+          </div>`) : ''}
+
+        ${step.id === 'upload' && topic.notes ? `
+          <div class="result-section">
+            <label class="input-label">Notes from Step 1 (ready to copy)</label>
+            <div class="notes-result-box">
+              <div class="notes-result-header">
+                <span class="notes-result-label">Generated Notes</span>
+                <button class="btn btn-ghost btn-sm"
+                        style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15);font-size:.76rem;"
+                        onclick="copyNotesResult('${topic.id}',this)">📋 Copy</button>
+              </div>
+              <div class="notes-result-content" style="white-space:pre-wrap;min-height:120px;max-height:300px;overflow-y:auto;">${esc(topic.notes)}</div>
+            </div>
           </div>` : ''}
 
         <div class="step-footer">
+          ${step.id === 'questions' && pmxIsAdmin ? `
+            <a href="/admin/" target="_blank" class="btn btn-primary btn-sm" style="text-decoration:none;">Open Admin Panel →</a>` : ''}
           ${done
             ? `<span class="step-complete-label">✓ Completed</span>`
             : `<button class="btn btn-success btn-sm" onclick="markDone('${topic.id}','${step.id}')">✓ Mark as Done</button>`}
@@ -3027,24 +3237,18 @@ function buildTemplatesTab() {
   const tpls = [
     {
       key: 'curriculumExpansion', title: 'Curriculum Expansion Prompt (AI → Topics)',
-      desc: 'Sent to Claude to expand the raw week export into structured * / ** hierarchy for quiz creation.',
+      desc: 'Sent to Claude to expand the raw week export into structured sections/topics with descriptors.',
       placeholders: ['{{RAW_WEEK_DATA}}', '{{RAW_CURRICULUM_DATA}} (legacy)'],
       val: state.promptTemplates.curriculumExpansion
     },
     {
-      key: 'expansion', title: 'Step 1 — Topic Expansion Prompt',
-      desc: 'Sent to Claude to expand a single topic into high-yield learning outcomes.',
-      placeholders: ['{{TITLE}}', '{{CATEGORY}}', '{{CONTENT}}'],
-      val: state.promptTemplates.expansion
-    },
-    {
-      key: 'notes', title: 'Step 2 — Notes Prompt',
-      desc: 'Sent to Claude to generate structured study notes from the expanded outcomes.',
-      placeholders: ['{{TITLE}}', '{{CATEGORY}}', '{{EXPANDED_OUTCOMES}}'],
+      key: 'notes', title: 'Step 1 — Generate Structured Notes Prompt',
+      desc: 'Sent to Claude to generate comprehensive clinical notes from topic descriptors (6 pillars format).',
+      placeholders: ['{{TITLE}}', '{{DESCRIPTORS}}'],
       val: state.promptTemplates.notes
     },
     {
-      key: 'mcqStyleGuide', title: 'Step 4 — MCQ Style Guide',
+      key: 'mcqStyleGuide', title: 'Step 3 — MCQ Style Guide',
       desc: 'Appended to every MCQ generation prompt in NotebookLM.',
       placeholders: [],
       val: state.promptTemplates.mcqStyleGuide
@@ -3184,7 +3388,31 @@ function selectTopic(topicId) {
 }
 
 function toggleStep(stepId) {
-  setState({ openStepId: state.openStepId === stepId ? null : stepId });
+  // Check actual DOM state, not state.openStepId (which may be stale)
+  const card = document.getElementById(`sc-${stepId}`);
+  if (!card) return;
+
+  const stepBody = card.querySelector('.step-body');
+  const chevron = card.querySelector('.step-chevron');
+
+  // Check if this specific card is currently open
+  const isOpen = stepBody && stepBody.classList.contains('open');
+
+  // Toggle this card
+  if (stepBody) {
+    if (isOpen) {
+      stepBody.classList.remove('open');
+    } else {
+      stepBody.classList.add('open');
+    }
+  }
+  if (chevron) {
+    chevron.textContent = isOpen ? '▼' : '▲';
+  }
+
+  // Update state to track the currently open step (or null if closing)
+  state.openStepId = isOpen ? null : stepId;
+  persist();
 }
 
 function saveResult(topicId, key, value) {
@@ -3202,12 +3430,27 @@ function copyPrompt(stepId, topicId, btn) {
   });
 }
 
+function copyNotesResult(topicId, btn) {
+  const topic = findTopic(topicId);
+  if (!topic) return;
+  const notes = topic.notes || '';
+  if (!notes.trim()) {
+    alert('No notes to copy. Paste the AI response into the notes box first.');
+    return;
+  }
+  navigator.clipboard.writeText(notes).then(() => {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅ Copied!';
+    btn.style.color = '#4ade80';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
+  });
+}
+
 function saveTemplates() {
   const get = id => (document.getElementById(id) || {}).value || '';
   setState({
     promptTemplates: {
       curriculumExpansion: get('tpl-curriculumExpansion'),
-      expansion:    get('tpl-expansion'),
       notes:        get('tpl-notes'),
       mcqStyleGuide: get('tpl-mcqStyleGuide')
     }
@@ -3221,7 +3464,6 @@ function resetTemplates() {
   setState({
     promptTemplates: {
       curriculumExpansion: DEFAULT_CURRICULUM_EXPANSION,
-      expansion:    DEFAULT_EXPANSION,
       notes:        DEFAULT_NOTES,
       mcqStyleGuide: DEFAULT_MCQ_STYLE_GUIDE
     }
