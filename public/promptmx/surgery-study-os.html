@@ -1330,35 +1330,33 @@ async function loadUserStudyOsStateFromFirestore() {
 }
 
 async function saveUserStudyOsStateToFirestore() {
-  if (!pmxDb || !pmxUser) return;
-  try {
-    await pmxDb.collection('pmx_userStudyOsState').doc(pmxUser.uid).set(
-      {
-        schemaVersion: 1,
-        weeks: state.weeks,
-        rawWeeks: state.rawWeeks,
-        promptTemplates: state.promptTemplates,
-        ui: {
-          activeTab: state.activeTab,
-          activeTopicId: state.activeTopicId,
-          activeRawWeekId: state.activeRawWeekId,
-          selectedSection: state.selectedSection,
-          openStepId: state.openStepId,
-        },
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  if (!pmxDb || !pmxUser) throw new Error('Not authenticated');
+  await pmxDb.collection('pmx_userStudyOsState').doc(pmxUser.uid).set(
+    {
+      schemaVersion: 1,
+      weeks: state.weeks,
+      rawWeeks: state.rawWeeks,
+      promptTemplates: state.promptTemplates,
+      ui: {
+        activeTab: state.activeTab,
+        activeTopicId: state.activeTopicId,
+        activeRawWeekId: state.activeRawWeekId,
+        selectedSection: state.selectedSection,
+        openStepId: state.openStepId,
       },
-      { merge: true }
-    );
-  } catch (e) {
-    console.warn('pmx user state save failed', e);
-  }
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
 }
 
 function schedulePmxCloudSave() {
   if (!pmxDb || !pmxUser) return;
   clearTimeout(pmxCloudSaveTimer);
   pmxCloudSaveTimer = setTimeout(() => {
-    saveUserStudyOsStateToFirestore();
+    saveUserStudyOsStateToFirestore().catch(e => {
+      console.warn('Background cloud save failed:', e);
+    });
   }, 2000);
 }
 
@@ -1527,8 +1525,13 @@ async function pushUserStateToFirestore() {
     alert('Sign in first.');
     return;
   }
-  await saveUserStudyOsStateToFirestore();
-  alert('Saved to Firestore.');
+  try {
+    await saveUserStudyOsStateToFirestore();
+    alert('Saved to Firestore.');
+  } catch (e) {
+    console.error('Push to Firestore failed:', e);
+    alert('Failed to save to Firestore: ' + (e.message || 'Unknown error'));
+  }
 }
 
 if (pmxAuth) {
@@ -2713,10 +2716,10 @@ function buildTabContent() {
 function buildCloudTab() {
   const adminSeed = pmxIsAdmin
     ? `<div class="card" style="padding:20px;margin-bottom:16px;">
-         <div class="section-title" style="font-size:1.05rem;margin-bottom:10px;">Admin — seed catalog</div>
+         <div class="section-title" style="font-size:1.05rem;margin-bottom:10px;">Admin — Share Templates With Users</div>
          <p style="font-size:.86rem;color:var(--text-2);line-height:1.55;margin-bottom:14px;">
-           Writes default <code style="font-family:var(--font-mono);font-size:.78rem;">pmx_*</code> documents (sections, templates, step types, <code>default_study</code> workflow).
-           See <strong>SCHEMA_PROMPTMX_FIRESTORE.md</strong> in the repo.
+           <strong>"Seed Firestore"</strong> publishes the built-in prompt templates to the cloud so other users can download them.<br>
+           <strong>"Reload from Firestore"</strong> pulls the latest shared templates from the cloud into your current session.
          </p>
          <div style="display:flex;flex-wrap:wrap;gap:8px;">
            <button type="button" class="btn btn-primary btn-sm" onclick="seedPmxFirestoreDefaults()">Seed Firestore defaults</button>
@@ -2724,15 +2727,15 @@ function buildCloudTab() {
          </div>
        </div>`
     : `<div class="format-hint" style="margin-bottom:16px;">
-         Admin-only actions (seed / reload catalog) appear here when signed in with an account in <code>admins/{email}</code>.
+         Only admins can publish shared templates. Regular users can download shared templates by clicking "Reload from Firestore".
        </div>`;
 
   return `
     <div class="fade-up">
       <div class="section-title" style="margin-bottom:12px;">Cloud sync</div>
       <p style="font-size:.88rem;color:var(--text-2);line-height:1.6;margin-bottom:20px;">
-        Signed-in users: study data syncs to <code style="font-family:var(--font-mono);font-size:.78rem;">pmx_userStudyOsState/{uid}</code> (debounced after local saves).
-        Prompt templates and workflow steps can be loaded from Firestore when catalog documents exist.
+        <strong>Auto-sync:</strong> Your study data saves to your browser immediately and syncs to the cloud within 2 seconds when you're signed in.<br>
+        Prompt templates and workflow steps can also be loaded from the shared cloud catalog when available.
       </p>
 
       ${!pmxUser ? `<div class="card" style="padding:24px;"><p style="margin-bottom:14px;color:var(--text-2);">Sign in to enable cloud backup and to pull shared templates.</p></div>` : `
@@ -3275,21 +3278,28 @@ function buildTemplatesTab() {
       <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
         <div class="section-title" style="margin-bottom:0">Prompt Templates</div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost btn-sm" onclick="resetTemplates()">↩ Reset to defaults</button>
-          <button class="btn btn-primary btn-sm" onclick="saveTemplates()">Save Templates</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetTemplates()">↩ Factory Reset</button>
+          <button class="btn btn-primary btn-sm" onclick="saveTemplates()">Save All Templates</button>
         </div>
       </div>
-      <p style="font-size:.86rem;color:var(--text-2);margin-bottom:24px;line-height:1.6;">
+      <p style="font-size:.86rem;color:var(--text-2);margin-bottom:12px;line-height:1.6;">
         Edit these templates to customise what Claude receives for each workflow step.<br>
         Placeholders in <code style="background:var(--surface-2);padding:1px 5px;border-radius:4px;font-family:var(--font-mono);font-size:.78rem;">{{CAPS}}</code> are replaced automatically with the topic's data.
       </p>
+      <p style="font-size:.78rem;color:var(--text-3);margin-bottom:24px;line-height:1.5;">
+        <strong>Auto-sync:</strong> Changes save to your browser immediately and sync to cloud within 2 seconds when signed in.
+      </p>
       <div class="templates-stack">
         ${tpls.map(t => `
-          <div class="template-card">
-            <div class="template-card-header">
+          <div class="template-card" id="template-card-${t.key}">
+            <div class="template-card-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
               <div>
                 <div class="template-card-title">${t.title}</div>
                 <div class="template-card-desc">${t.desc}</div>
+              </div>
+              <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+                <span class="save-status" id="status-${t.key}" style="font-size:.78rem;color:var(--text-3);opacity:0;transition:opacity 0.3s;min-width:120px;text-align:right;"></span>
+                <button class="btn btn-primary btn-sm" onclick="saveTemplate('${t.key}')">Save</button>
               </div>
             </div>
             <div class="template-card-body">
@@ -3298,11 +3308,12 @@ function buildTemplatesTab() {
                   ${t.placeholders.map(p => `<span class="placeholder-tag">${p}</span>`).join('')}
                 </div>` : ''}
               <textarea class="mono" id="tpl-${t.key}" style="min-height:200px">${esc(t.val)}</textarea>
+              <div class="diff-display" id="diff-${t.key}" style="display:none;margin-top:12px;padding:12px;background:var(--surface-2);border-radius:8px;font-size:.78rem;font-family:var(--font-mono);white-space:pre-wrap;max-height:200px;overflow-y:auto;"></div>
             </div>
           </div>`).join('')}
         <div style="display:flex;justify-content:flex-end;gap:8px;padding-bottom:8px;">
-          <button class="btn btn-ghost btn-sm" onclick="resetTemplates()">↩ Reset to defaults</button>
-          <button class="btn btn-primary" onclick="saveTemplates()">Save Templates</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetTemplates()">↩ Factory Reset</button>
+          <button class="btn btn-primary" onclick="saveTemplates()">Save All Templates</button>
         </div>
       </div>
     </div>`;
@@ -3461,27 +3472,160 @@ function copyNotesResult(topicId, btn) {
   });
 }
 
-function saveTemplates() {
-  const get = id => (document.getElementById(id) || {}).value || '';
-  setState({
+function computeDiff(oldText, newText) {
+  const oldLines = oldText.split('\n');
+  const newLines = newText.split('\n');
+  const added = [];
+  const removed = [];
+  
+  // Simple line-based diff
+  for (let i = 0; i < Math.max(oldLines.length, newLines.length); i++) {
+    const oldLine = oldLines[i] || '';
+    const newLine = newLines[i] || '';
+    if (oldLine !== newLine) {
+      if (oldLine) removed.push('- ' + oldLine);
+      if (newLine) added.push('+ ' + newLine);
+    }
+  }
+  
+  if (added.length === 0 && removed.length === 0) return 'No changes detected';
+  return [...removed, ...added].slice(0, 50).join('\n') + (removed.length + added.length > 50 ? '\n... (truncated)' : '');
+}
+
+function showTemplateStatus(key, message, type = 'info', diff = null) {
+  const statusEl = document.getElementById('status-' + key);
+  const diffEl = document.getElementById('diff-' + key);
+  
+  if (statusEl) {
+    statusEl.textContent = message;
+    statusEl.style.opacity = '1';
+    if (type === 'success') statusEl.style.color = 'var(--success, #22c55e)';
+    else if (type === 'error') statusEl.style.color = 'var(--error, #ef4444)';
+    else statusEl.style.color = 'var(--text-3)';
+    
+    // Fade out status after delay (but keep diff visible)
+    setTimeout(() => { statusEl.style.opacity = '0'; }, 3000);
+  }
+  
+  // Diff persists until next save (no auto-hide)
+  if (diffEl) {
+    if (diff) {
+      diffEl.textContent = diff;
+      diffEl.style.display = 'block';
+    }
+    // If no diff provided, keep existing diff visible (don't hide it)
+  }
+}
+
+async function saveTemplate(key) {
+  const textarea = document.getElementById('tpl-' + key);
+  const val = (textarea || {}).value || '';
+  const oldVal = state.promptTemplates?.[key] || '';
+  
+  // Calculate diff before saving
+  const diff = computeDiff(oldVal, val);
+  
+  // Save without triggering full render
+  const current = state.promptTemplates || {};
+  setStateNoRender({
     promptTemplates: {
-      curriculumExpansion: get('tpl-curriculumExpansion'),
-      notes:        get('tpl-notes'),
-      mcqStyleGuide: get('tpl-mcqStyleGuide')
+      ...current,
+      [key]: val
     }
   });
+  
+  // Show local save success with diff
+  showTemplateStatus(key, '✓ Saved locally', 'success', diff);
+  
+  // Handle cloud sync
+  if (!pmxDb || !pmxUser) {
+    showTemplateStatus(key, 'Sign in to sync to cloud', 'info');
+    return;
+  }
+  
+  // Clear any pending cloud save timer and force immediate save
+  clearTimeout(pmxCloudSaveTimer);
+  
+  try {
+    await saveUserStudyOsStateToFirestore();
+    showTemplateStatus(key, '✓ Synced to cloud', 'success');
+  } catch (e) {
+    console.error('Cloud save failed:', e);
+    showTemplateStatus(key, '✗ Cloud sync failed - saved locally', 'error');
+  }
+}
+
+async function saveTemplates() {
+  const get = id => (document.getElementById(id) || {}).value || '';
+  const keys = ['curriculumExpansion', 'notes', 'mcqStyleGuide'];
+  const oldTemplates = { ...state.promptTemplates };
+  
+  const newTemplates = {
+    curriculumExpansion: get('tpl-curriculumExpansion'),
+    notes: get('tpl-notes'),
+    mcqStyleGuide: get('tpl-mcqStyleGuide')
+  };
+  
+  // Save without triggering full render
+  setStateNoRender({ promptTemplates: newTemplates });
+  
+  // Show status for each template with diffs
+  for (const key of keys) {
+    const diff = computeDiff(oldTemplates[key] || '', newTemplates[key] || '');
+    if (diff !== 'No changes detected') {
+      showTemplateStatus(key, '✓ Saved locally', 'success', diff);
+    } else {
+      showTemplateStatus(key, 'No changes', 'info');
+    }
+  }
+  
+  // Handle cloud sync
+  if (!pmxDb || !pmxUser) {
+    keys.forEach(key => showTemplateStatus(key, 'Sign in to sync to cloud', 'info'));
+    return;
+  }
+  
+  // Clear any pending cloud save timer and force immediate save
+  clearTimeout(pmxCloudSaveTimer);
+  
+  try {
+    await saveUserStudyOsStateToFirestore();
+    keys.forEach(key => {
+      const diff = computeDiff(oldTemplates[key] || '', newTemplates[key] || '');
+      if (diff !== 'No changes detected') {
+        showTemplateStatus(key, '✓ Synced to cloud', 'success');
+      }
+    });
+  } catch (e) {
+    console.error('Cloud save failed:', e);
+    keys.forEach(key => showTemplateStatus(key, '✗ Cloud sync failed - saved locally', 'error'));
+  }
+  
+  // Button feedback
   const btns = document.querySelectorAll('.btn-primary');
-  btns.forEach(b => { if (b.textContent.includes('Save')) { const o=b.innerHTML; b.innerHTML='✅ Saved!'; setTimeout(()=>{b.innerHTML=o;},1500); }});
+  btns.forEach(b => { if (b.textContent.includes('Save All')) { const o=b.innerHTML; b.innerHTML='✅ Saved All!'; setTimeout(()=>{b.innerHTML=o;},1500); }});
 }
 
 function resetTemplates() {
-  if (!confirm('Reset all templates to defaults? Your edits will be lost.')) return;
-  setState({
-    promptTemplates: {
-      curriculumExpansion: DEFAULT_CURRICULUM_EXPANSION,
-      notes:        DEFAULT_NOTES,
-      mcqStyleGuide: DEFAULT_MCQ_STYLE_GUIDE
-    }
+  if (!confirm('Factory reset all templates? This will restore the original built-in prompts and discard your edits.')) return;
+  
+  const keys = ['curriculumExpansion', 'notes', 'mcqStyleGuide'];
+  const oldTemplates = { ...state.promptTemplates };
+  const newTemplates = {
+    curriculumExpansion: DEFAULT_CURRICULUM_EXPANSION,
+    notes: DEFAULT_NOTES,
+    mcqStyleGuide: DEFAULT_MCQ_STYLE_GUIDE
+  };
+  
+  // Save without triggering full render
+  setStateNoRender({ promptTemplates: newTemplates });
+  
+  // Update textareas directly and show diffs
+  keys.forEach(key => {
+    const textarea = document.getElementById('tpl-' + key);
+    if (textarea) textarea.value = newTemplates[key];
+    const diff = computeDiff(oldTemplates[key] || '', newTemplates[key]);
+    showTemplateStatus(key, '✓ Factory reset complete', 'success', diff);
   });
 }
 
