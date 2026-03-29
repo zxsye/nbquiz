@@ -1532,9 +1532,22 @@ async function pushUserStateToFirestore() {
 }
 
 if (pmxAuth) {
+  // Track initial auth state to avoid re-rendering on token refreshes
+  let initialAuthChecked = false;
+  let previousUserId = null;
+
   pmxAuth.onAuthStateChanged(async user => {
+    const userId = user ? user.uid : null;
+
+    // Skip if this is just a token refresh (same user, already initialized)
+    if (initialAuthChecked && userId === previousUserId) {
+      return;
+    }
+
+    previousUserId = userId;
     pmxUser = user;
     pmxIsAdmin = false;
+
     if (user) {
       pmxIsAdmin = await pmxCheckAdmin(user.email);
       await loadPromptMxConfigFromFirestore();
@@ -1547,6 +1560,8 @@ if (pmxAuth) {
       STEP_IDS = STEPS.map(s => s.id);
       SECTIONS = Object.assign({}, SECTIONS_DEFAULT);
     }
+
+    initialAuthChecked = true;
     render();
   });
 }
