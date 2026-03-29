@@ -3,7 +3,7 @@
 ## Cursor Cloud specific instructions
 
 ### Product overview
-NB Quiz is a client-side web application (medical study quiz platform) hosted on **Firebase Hosting**, with **Gen2 callables** used from the admin UI: **topic tags** per quiz (`generateTopicTagsOpenAI` / `generateTopicTagsGemini`, models `gpt-4o-mini` / `gemini-2.5-flash`) and **week parent pills** (`regenerateWeekParentPillsOpenAI` / `regenerateWeekParentPillsGemini`) that cluster child topic pills across all quizzes in the same section+week. Parent docs live in Firestore `weekParentPills/{section}__{WEEK}` (week normalized uppercase, `/` → `_`). Topic generation **also** refreshes that week’s parent pill doc (best-effort; failures are logged). The admin picks the LLM provider per run from the Manage tab. The `public/` app has no build step and no root `package.json`; quiz UI dependencies (Firebase SDK, KaTeX, Google Fonts) load via CDN `<script>` tags. Cloud Functions live under [`functions/`](functions/) with their own `package.json`.
+NB Quiz is a client-side web application (medical study quiz platform) hosted on **Firebase Hosting**, with **Gen2 callables** used from the admin UI: **topic tags** per quiz (`generateTopicTagsOpenAI` / `generateTopicTagsGemini`, models `gpt-4o-mini` / `gemini-2.5-flash`) and **week parent pills** (`regenerateWeekParentPillsOpenAI` / `regenerateWeekParentPillsGemini`) that cluster child topic pills across all quizzes in the same section+week. Each quiz document stores stable **`sectionId`** (slug, e.g. `surgery` / `gp` / `medicine`), **`weekId`**, and **`topicId`**, with human-readable **`section`**, **`week`**, and **`topic`** labels that can be renamed without breaking grouping or parent data. Parent docs live in Firestore `weekParentPills/{sectionId}__{weekId}` (legacy reads may still use older `{sectionLabel}__…` doc ids). Topic generation **also** refreshes that week’s parent pill doc (best-effort; failures are logged). The admin picks the LLM provider per run from the Manage tab. The `public/` app has no build step and no root `package.json`; quiz UI dependencies (Firebase SDK, KaTeX, Google Fonts) load via CDN `<script>` tags. Cloud Functions live under [`functions/`](functions/) with their own `package.json`.
 
 ### Running the dev server
 Serve the `public/` directory with any static HTTP server:
@@ -16,9 +16,9 @@ Then open `http://localhost:8080/` in a browser.
 The app requires Google sign-in via Firebase Auth. Without a valid Google account, you will only see the login screen. The Firebase project is `nbquiz-6faf9` with API keys hardcoded in the HTML files (standard for client-side Firebase apps; security is enforced via Firestore rules).
 
 ### Key pages
-- `/` — Main quiz list (index.html) with section tabs (Surgery, GP, Medicine); each week may show **parent pill** links when `weekParentPills` exists
+- `/` — Main quiz list (index.html) with section tabs; URL hash uses **sectionId** (`#surgery`, `#gp`, `#medicine`; legacy `#Surgery` / `#GP` / `#Medicine` redirect once to the slug form). Each week may show **parent pill** links when `weekParentPills` exists
 - `/quiz.html?id=<quiz_id>` — Single-quiz interface
-- `/quiz.html?mode=parent&section=…&week=…&parentSlug=…` — Combined quiz over questions from member quizzes; progress/notes/flags read and write the **underlying** per-quiz `quizSessions` docs
+- `/quiz.html?mode=parent&section=…&week=…&parentSlug=…` — Combined quiz over questions from member quizzes; `section` in the query is a **sectionId** slug (or legacy display label, resolved server-side in the client). Progress/notes/flags read and write the **underlying** per-quiz `quizSessions` docs
 - `/admin/` — Admin portal for uploading/managing quizzes (Manage → **Parent topics** per week, same provider dropdown as topic tags)
 
 ### Lint / Test / Build

@@ -266,15 +266,45 @@ function safePillsMap(pillsMap) {
 }
 
 // ── Week parent pills (cluster child topic pills across quizzes in one week) ──
+// Stable key: weekParentPills/{sectionId}__{weekId} (sectionId = slug, e.g. surgery).
+// Legacy: {sectionDisplay}__{NORMALIZED_WEEK} without weekId, or {sectionDisplay}__{weekId} before migration.
 
-function weekParentFirestoreDocId(section, week) {
-  const sec = String(section || 'Surgery').trim() || 'Surgery';
-  const w =
+function normalizeWeekKey(week) {
+  return (
     String(week || 'Unknown')
       .trim()
       .replace(/\//g, '_')
-      .toUpperCase() || 'UNKNOWN';
-  return `${sec}__${w}`;
+      .toUpperCase() || 'UNKNOWN'
+  );
+}
+
+/** Slug for known sections; otherwise a safe slug from the label. */
+function canonicalSectionIdFromLabel(sectionDisplay) {
+  const s = String(sectionDisplay || 'Surgery')
+    .trim()
+    .toLowerCase();
+  if (s === 'surgery') return 'surgery';
+  if (s === 'gp') return 'gp';
+  if (s === 'medicine') return 'medicine';
+  return (
+    s
+      .replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48) || 'unknown'
+  );
+}
+
+function weekParentPillsDocIdLegacy(sectionDisplay, week) {
+  const sec = String(sectionDisplay || 'Surgery').trim() || 'Surgery';
+  return `${sec}__${normalizeWeekKey(week)}`;
+}
+
+/** Current format: sectionId + weekId (both stable). */
+function weekParentPillsDocId(sectionId, weekId) {
+  const sid = String(sectionId || '').trim();
+  const wid = String(weekId || '').trim();
+  if (!sid || !wid) return weekParentPillsDocIdLegacy('Surgery', 'Unknown');
+  return `${sid}__${wid}`;
 }
 
 function topicCanonLabel(s) {
@@ -345,6 +375,31 @@ function slugifyParentLabel(label) {
   return s.slice(0, 48) || 'parent';
 }
 
+/**
+ * Map model-returned `quizId::label` strings to canonical keys in validKeysSet.
+ * Handles · vs . in the label and stray whitespace without dropping keys.
+ */
+function resolveCanonicalChildKey(raw, validKeysSet) {
+  const s = String(raw || '').trim();
+  if (!s) return null;
+  if (validKeysSet.has(s)) return s;
+  const sep = '::';
+  const idx = s.indexOf(sep);
+  if (idx === -1) return null;
+  const qid = s.slice(0, idx).trim();
+  const labelPart = s.slice(idx + sep.length);
+  if (!qid) return null;
+  const canonFromModel = topicCanonLabel(labelPart.trim());
+  const candidate = `${qid}::${canonFromModel}`;
+  if (validKeysSet.has(candidate)) return candidate;
+  for (const k of validKeysSet) {
+    if (!k.startsWith(qid + sep)) continue;
+    const rest = k.slice(qid.length + sep.length);
+    if (topicCanonLabel(rest) === canonFromModel) return k;
+  }
+  return null;
+}
+
 function parseWeekGroupsFromModel(parsed, validKeysSet) {
   const raw = Array.isArray(parsed.groups)
     ? parsed.groups
@@ -361,7 +416,13 @@ function parseWeekGroupsFromModel(parsed, validKeysSet) {
         ? g.keys
         : [];
     if (!label || label.length < 2 || label.length > 100) continue;
-    const childKeys = keys.map((k) => String(k).trim()).filter((k) => validKeysSet.has(k));
+    const childKeys = [
+      ...new Set(
+        keys
+          .map((k) => resolveCanonicalChildKey(k, validKeysSet))
+          .filter(Boolean)
+      ),
+    ];
     if (!childKeys.length) continue;
     groups.push({ label, childKeys: [...new Set(childKeys)] });
   }
@@ -398,6 +459,22 @@ function validateWeekGroups(groups, allKeysSet) {
     if (!assigned.has(k)) return { ok: false, reason: `missing key ${k}` };
   }
   return { ok: true };
+}
+
+/** If the model omitted child keys, attach them to the first parent so validation can pass. */
+function repairMissingChildKeys(groups, validSet) {
+  const assigned = new Set();
+  for (const g of groups) {
+    for (const k of g.childKeys) assigned.add(k);
+  }
+  const missing = [...validSet].filter((k) => !assigned.has(k));
+  if (!missing.length) return groups;
+  const out = groups.map((g) => ({ label: g.label, childKeys: [...g.childKeys] }));
+  if (out.length) {
+    out[0].childKeys.push(...missing);
+    return out;
+  }
+  return [{ label: 'Topics', childKeys: missing }];
 }
 
 function buildMembersFromGroups(groups, keyToEntry) {
@@ -462,7 +539,7 @@ ${constraint}
 
 Rules:
 - Parent labels must be distinct and clinically meaningful.
-- Do not drop or invent keys; only use keys from the input.
+- Do not drop or invent keys; only use keys from the input (copy each \`key\` field exactly).
 - Each child key must appear in exactly one group — never list the same key in more than one group.
 - Respond with JSON only of this shape:
 {"groups":[{"label":"string","childKeys":["quizId::Label",...]}]}
@@ -472,26 +549,48 @@ ${payload}`;
 }
 
 /**
- * Rebuild weekParentPills/{section}__{week} from all quizzes in that section+week with topicTags.
+ * Rebuild weekParentPills for one teaching week. Uses sectionId + weekId for doc id when weekId set.
+ * Otherwise matches quizzes by normalized week label (legacy) and legacy doc id.
  * Deletes the doc if no child pills exist.
  */
-async function regenerateWeekParentPillsInternal(section, week, provider) {
+async function regenerateWeekParentPillsInternal(
+  sectionDisplay,
+  week,
+  provider,
+  weekIdOpt,
+  sectionIdOpt
+) {
   const db = admin.firestore();
-  const sec = String(section || 'Surgery').trim() || 'Surgery';
-  const wk =
-    String(week || 'Unknown')
-      .trim()
-      .replace(/\//g, '_')
-      .toUpperCase() || 'UNKNOWN';
+  const secDisplay = String(sectionDisplay || 'Surgery').trim() || 'Surgery';
+  const weekId = weekIdOpt && String(weekIdOpt).trim();
+  let sectionId = sectionIdOpt && String(sectionIdOpt).trim();
 
-  const snap = await db.collection('quizzes').where('section', '==', sec).get();
-  const docs = snap.docs.filter(
-    (d) =>
-      String(d.data().week || 'Unknown')
-        .trim()
-        .replace(/\//g, '_')
-        .toUpperCase() === wk
-  );
+  let snap;
+  if (sectionId) {
+    snap = await db.collection('quizzes').where('sectionId', '==', sectionId).get();
+  }
+  if (!sectionId || snap.empty) {
+    snap = await db.collection('quizzes').where('section', '==', secDisplay).get();
+  }
+
+  if (snap.docs.length && !sectionId) {
+    const sid0 = snap.docs[0].data().sectionId;
+    if (sid0 && String(sid0).trim()) sectionId = String(sid0).trim();
+  }
+  if (!sectionId) sectionId = canonicalSectionIdFromLabel(secDisplay);
+
+  let docs = snap.docs;
+  let wk;
+  if (weekId) {
+    docs = docs.filter((d) => String(d.data().weekId || '').trim() === weekId);
+    wk =
+      docs.length > 0
+        ? normalizeWeekKey(docs[0].data().week)
+        : normalizeWeekKey(week);
+  } else {
+    wk = normalizeWeekKey(week);
+    docs = docs.filter((d) => normalizeWeekKey(d.data().week) === wk);
+  }
 
   const allEntries = [];
   for (const doc of docs) {
@@ -508,7 +607,11 @@ async function regenerateWeekParentPillsInternal(section, week, provider) {
     allEntries.push(...entries);
   }
 
-  const docRef = db.collection('weekParentPills').doc(weekParentFirestoreDocId(sec, wk));
+  const docRef = db.collection('weekParentPills').doc(
+    weekId
+      ? weekParentPillsDocId(sectionId, weekId)
+      : weekParentPillsDocIdLegacy(secDisplay, week)
+  );
 
   if (!allEntries.length) {
     await docRef.delete().catch(() => {});
@@ -545,6 +648,7 @@ async function regenerateWeekParentPillsInternal(section, week, provider) {
     }
     const validSet = new Set(childKeys);
     let groups = dedupeWeekGroupsFirstWins(parseWeekGroupsFromModel(parsed, validSet));
+    groups = repairMissingChildKeys(groups, validSet);
     const p = groups.length;
     if (c >= 2 && (p < 1 || p >= c)) {
       lastError = `Need between 1 and ${c - 1} parent groups; got ${p}`;
@@ -564,8 +668,11 @@ async function regenerateWeekParentPillsInternal(section, week, provider) {
     }
     const parents = buildMembersFromGroups(groups, keyToEntry);
     const modelId = provider === 'gemini' ? GEMINI_MODEL : OPENAI_MODEL;
-    await docRef.set({
-      section: sec,
+    const labelSection =
+      docs.length > 0 ? String(docs[0].data().section || secDisplay).trim() || secDisplay : secDisplay;
+    const payload = {
+      section: labelSection,
+      sectionId,
       week: wk,
       parents,
       childKeys,
@@ -573,7 +680,9 @@ async function regenerateWeekParentPillsInternal(section, week, provider) {
       provider,
       model: modelId,
       generatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    };
+    if (weekId) payload.weekId = weekId;
+    await docRef.set(payload);
     return { ok: true, parentCount: parents.length, childCount: c };
   }
   throw callableError(lastError);
@@ -590,10 +699,32 @@ async function regenerateWeekParentPillsCore(request, provider) {
   }
   const section = request.data?.section;
   const week = request.data?.week;
-  if (!section || typeof section !== 'string' || !week || typeof week !== 'string') {
-    throw new HttpsError('invalid-argument', 'section and week are required strings.');
+  const weekId = request.data?.weekId && String(request.data.weekId).trim();
+  const sectionId = request.data?.sectionId && String(request.data.sectionId).trim();
+  const sectionStr =
+    section && typeof section === 'string' ? section.trim() : '';
+  if (!sectionStr && !sectionId) {
+    throw new HttpsError('invalid-argument', 'section or sectionId is required.');
   }
-  return regenerateWeekParentPillsInternal(section.trim(), week.trim(), provider);
+  if (weekId) {
+    return regenerateWeekParentPillsInternal(
+      sectionStr || 'Surgery',
+      week && typeof week === 'string' ? week.trim() : 'Unknown',
+      provider,
+      weekId,
+      sectionId || null
+    );
+  }
+  if (!week || typeof week !== 'string') {
+    throw new HttpsError('invalid-argument', 'week or weekId is required.');
+  }
+  return regenerateWeekParentPillsInternal(
+    sectionStr || 'Surgery',
+    week.trim(),
+    provider,
+    null,
+    sectionId || null
+  );
 }
 
 async function generateTopicTagsCore(request, provider) {
@@ -723,8 +854,16 @@ ${payload}`;
     const meta = metaSnap.data() || {};
     const weekSection = meta.section || 'Surgery';
     const weekLabel = meta.week || 'Unknown';
+    const metaWeekId = meta.weekId && String(meta.weekId).trim();
+    const metaSectionId = meta.sectionId && String(meta.sectionId).trim();
     try {
-      await regenerateWeekParentPillsInternal(weekSection, weekLabel, provider);
+      await regenerateWeekParentPillsInternal(
+        weekSection,
+        weekLabel,
+        provider,
+        metaWeekId || null,
+        metaSectionId || null
+      );
     } catch (e) {
       logger.warn('regenerateWeekParentPillsInternal after topicTags', e);
     }

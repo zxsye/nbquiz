@@ -434,7 +434,7 @@ const functions = firebase.app().functions('us-central1');
 const provider = new firebase.auth.GoogleAuthProvider();
 
 // ── State ──────────────────────────────────────────────────────────────────────
-let allMeta     = []; // { id, section, week, topic, name, questionCount }
+let allMeta     = []; // { id, section, sectionId?, week, weekId?, topic, topicId?, name, questionCount }
 let newVals     = { week: '', topic: '' };
 let editNewVals = { week: '', topic: '' };
 let pendingDel  = null;
@@ -472,6 +472,10 @@ auth.onAuthStateChanged(async user => {
   document.getElementById('userEmail').textContent = user.email;
   show('sAdmin');
   await loadAllMeta();
+  await ensureSectionIds();
+  await ensureWeekIdsAndMigrateParentPills();
+  await ensureTopicIds();
+  await migrateWeekParentPillsToSectionId();
   loadManage();
 });
 
@@ -479,6 +483,164 @@ auth.onAuthStateChanged(async user => {
 async function loadAllMeta() {
   const snap = await db.collection('quizzes').get();
   allMeta = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+}
+
+function normalizeWeekKey(w) {
+  return String(w || 'Unknown').trim().replace(/\//g, '_').toUpperCase() || 'UNKNOWN';
+}
+
+function normalizeTopicKey(t) {
+  return String(t || 'General').trim().toUpperCase();
+}
+
+/** Align with Cloud Functions `canonicalSectionIdFromLabel`. */
+function canonicalSectionIdFromLabel(sectionDisplay) {
+  const s = String(sectionDisplay || 'Surgery')
+    .trim()
+    .toLowerCase();
+  if (s === 'surgery') return 'surgery';
+  if (s === 'gp') return 'gp';
+  if (s === 'medicine') return 'medicine';
+  return (
+    s
+      .replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48) || 'unknown'
+  );
+}
+
+async function ensureSectionIds() {
+  const snap = await db.collection('quizzes').get();
+  let batch = db.batch();
+  let ops = 0;
+  for (const doc of snap.docs) {
+    const m = doc.data();
+    if (m.sectionId && String(m.sectionId).trim()) continue;
+    batch.update(doc.ref, { sectionId: canonicalSectionIdFromLabel(m.section) });
+    ops++;
+    if (ops >= 400) {
+      await batch.commit();
+      batch = db.batch();
+      ops = 0;
+    }
+  }
+  if (ops) await batch.commit();
+  await loadAllMeta();
+}
+
+/** One-time per quiz: assign stable weekId; copy weekParentPills to {sectionId}__{weekId}. */
+async function ensureWeekIdsAndMigrateParentPills() {
+  const snap = await db.collection('quizzes').get();
+  const need = [];
+  for (const doc of snap.docs) {
+    const m = doc.data();
+    if (m.weekId && String(m.weekId).trim()) continue;
+    const sectionDisplay = String(m.section || 'Surgery').trim() || 'Surgery';
+    const sectionId =
+      (m.sectionId && String(m.sectionId).trim()) || canonicalSectionIdFromLabel(m.section);
+    const norm = normalizeWeekKey(m.week);
+    need.push({ ref: doc.ref, sectionDisplay, sectionId, norm });
+  }
+  if (!need.length) return;
+
+  const groupMap = new Map();
+  for (const item of need) {
+    const gk = `${item.sectionId}::${item.norm}`;
+    if (!groupMap.has(gk)) {
+      groupMap.set(gk, {
+        refs: [],
+        sectionDisplay: item.sectionDisplay,
+        sectionId: item.sectionId,
+        norm: item.norm,
+      });
+    }
+    groupMap.get(gk).refs.push(item.ref);
+  }
+
+  for (const [, g] of groupMap) {
+    const newWeekId = db.collection('quizzes').doc().id;
+    const refs = g.refs;
+    for (let i = 0; i < refs.length; i += 400) {
+      const batch = db.batch();
+      refs.slice(i, i + 400).forEach((ref) => batch.update(ref, { weekId: newWeekId }));
+      await batch.commit();
+    }
+
+    const oldPid = `${g.sectionDisplay}__${g.norm}`;
+    const newPid = `${g.sectionId}__${newWeekId}`;
+    const oldRef = db.collection('weekParentPills').doc(oldPid);
+    const newRef = db.collection('weekParentPills').doc(newPid);
+    const oldSnap = await oldRef.get();
+    if (oldSnap.exists) {
+      const newSnap = await newRef.get();
+      if (!newSnap.exists) {
+        await newRef.set({
+          ...oldSnap.data(),
+          weekId: newWeekId,
+          sectionId: g.sectionId,
+        });
+      }
+    }
+  }
+
+  await loadAllMeta();
+}
+
+async function ensureTopicIds() {
+  const snap = await db.collection('quizzes').get();
+  const need = [];
+  for (const doc of snap.docs) {
+    const m = doc.data();
+    if (m.topicId && String(m.topicId).trim()) continue;
+    const sectionId =
+      (m.sectionId && String(m.sectionId).trim()) || canonicalSectionIdFromLabel(m.section);
+    const weekId = m.weekId && String(m.weekId).trim() ? String(m.weekId).trim() : '';
+    const tk = normalizeTopicKey(m.topic);
+    need.push({ ref: doc.ref, sectionId, weekId, tk });
+  }
+  if (!need.length) return;
+
+  const groupMap = new Map();
+  for (const item of need) {
+    const wkPart = item.weekId || `noweek:${item.sectionId}`;
+    const gk = `${item.sectionId}::${wkPart}::${item.tk}`;
+    if (!groupMap.has(gk)) groupMap.set(gk, { refs: [] });
+    groupMap.get(gk).refs.push(item.ref);
+  }
+
+  for (const [, g] of groupMap) {
+    const topicId = db.collection('quizzes').doc().id;
+    const refs = g.refs;
+    for (let i = 0; i < refs.length; i += 400) {
+      const batch = db.batch();
+      refs.slice(i, i + 400).forEach((ref) => batch.update(ref, { topicId }));
+      await batch.commit();
+    }
+  }
+
+  await loadAllMeta();
+}
+
+/** Copy weekParentPills docs from legacy section label prefix (e.g. Surgery__) to sectionId prefix (surgery__). */
+async function migrateWeekParentPillsToSectionId() {
+  const labelToSlug = { Surgery: 'surgery', GP: 'gp', Medicine: 'medicine' };
+  const snap = await db.collection('weekParentPills').get();
+  for (const doc of snap.docs) {
+    const id = doc.id;
+    const sep = id.indexOf('__');
+    if (sep === -1) continue;
+    const prefix = id.slice(0, sep);
+    const rest = id.slice(sep + 2);
+    if (['surgery', 'gp', 'medicine'].includes(prefix)) continue;
+    const slug = labelToSlug[prefix] || canonicalSectionIdFromLabel(prefix);
+    if (slug === prefix) continue;
+    const newId = `${slug}__${rest}`;
+    const newRef = db.collection('weekParentPills').doc(newId);
+    const newSnap = await newRef.get();
+    if (!newSnap.exists) {
+      await newRef.set({ ...doc.data(), sectionId: slug });
+    }
+  }
 }
 
 // ── Upload tab ────────────────────────────────────────────────────────────────
@@ -499,7 +661,8 @@ function onSectionChange() {
     tSel.innerHTML = '<option value="">— select week first —</option>';
     checkReady(); return;
   }
-  const weeks = [...new Set(allMeta.filter(q => q.section === section).map(q => q.week))]
+  const sid = canonicalSectionIdFromLabel(section);
+  const weeks = [...new Set(allMeta.filter(q => (q.sectionId || canonicalSectionIdFromLabel(q.section)) === sid).map(q => q.week))]
     .sort((a, b) => weekSortKey(a) - weekSortKey(b));
   wSel.innerHTML = '<option value="">— select —</option>';
   weeks.forEach(w => wSel.innerHTML += `<option value="${w}">${w}</option>`);
@@ -512,7 +675,8 @@ function onWeekChange() {
   tSel.disabled = true;
   document.getElementById('txtName').disabled = true;
   if (!week) { tSel.innerHTML = '<option value="">— select week first —</option>'; checkReady(); return; }
-  const topics = [...new Set(allMeta.filter(q => q.section === section && q.week === week).map(q => q.topic))].sort();
+  const sid = canonicalSectionIdFromLabel(section);
+  const topics = [...new Set(allMeta.filter(q => (q.sectionId || canonicalSectionIdFromLabel(q.section)) === sid && q.week === week).map(q => q.topic))].sort();
   tSel.innerHTML = '<option value="">— select —</option>';
   topics.forEach(t => tSel.innerHTML += `<option value="${t}">${t}</option>`);
   tSel.disabled = false;
@@ -684,10 +848,39 @@ async function doUpload() {
 
   try {
     // Create quiz doc with autoId — no compound key
+    const sectionId = canonicalSectionIdFromLabel(section);
+    const existingWeek = allMeta.find(
+      (m) =>
+        (m.sectionId || canonicalSectionIdFromLabel(m.section)) === sectionId &&
+        m.week === week &&
+        m.weekId &&
+        String(m.weekId).trim()
+    );
+    const weekId =
+      existingWeek && existingWeek.weekId
+        ? String(existingWeek.weekId).trim()
+        : db.collection('quizzes').doc().id;
+
+    const existingTopic = allMeta.find(
+      (m) =>
+        (m.sectionId || canonicalSectionIdFromLabel(m.section)) === sectionId &&
+        m.week === week &&
+        m.topic === topic &&
+        m.topicId &&
+        String(m.topicId).trim()
+    );
+    const topicId =
+      existingTopic && existingTopic.topicId
+        ? String(existingTopic.topicId).trim()
+        : db.collection('quizzes').doc().id;
+
     const quizRef = await db.collection('quizzes').add({
       section,
+      sectionId,
       week,
+      weekId,
       topic,
+      topicId,
       name,
       title,
       questionCount: extractedQuestions.length,
@@ -713,7 +906,17 @@ async function doUpload() {
       `✅ Saved "${title}" (${extractedQuestions.length} questions) — ID: ${quizRef.id}${topicMsg}`);
 
     // Update local cache
-    allMeta.push({ id: quizRef.id, section, week, topic, name, questionCount: extractedQuestions.length });
+    allMeta.push({
+      id: quizRef.id,
+      section,
+      sectionId,
+      week,
+      weekId,
+      topic,
+      topicId,
+      name,
+      questionCount: extractedQuestions.length,
+    });
 
     // Reset form
     extractedQuestions = null;
@@ -827,37 +1030,45 @@ function formatAiPillsLine(id, topicMeta) {
   return `<div class="quiz-row-ai"${titleAttr} data-quiz-ai="${escAttr(id)}"><span class="ai-pill-count">${topicMeta.pillCount}</span> AI pill${topicMeta.pillCount === 1 ? '' : 's'} · ${whenHtml} · ${modelHtml}</div>`;
 }
 
-/** Must match Cloud Functions `weekParentFirestoreDocId`. */
-function weekParentFirestoreDocId(section, week) {
-  const sec = String(section || 'Surgery').trim() || 'Surgery';
-  const w =
-    String(week || 'Unknown')
-      .trim()
-      .replace(/\//g, '_')
-      .toUpperCase() || 'UNKNOWN';
-  return `${sec}__${w}`;
+/** Must match Cloud Functions: stable id = {sectionId}__{weekId}. */
+function weekParentPillsDocId(sectionId, weekId) {
+  const sid = String(sectionId || '').trim();
+  const wid = String(weekId || '').trim();
+  if (!sid || !wid) return weekParentPillsDocIdLegacy('Surgery', 'Unknown');
+  return `${sid}__${wid}`;
 }
 
-async function fetchWeekParentMetaByWeek(section, weekKeys) {
+function weekParentPillsDocIdLegacy(sectionDisplay, week) {
+  const sec = String(sectionDisplay || 'Surgery').trim() || 'Surgery';
+  return `${sec}__${normalizeWeekKey(week)}`;
+}
+
+async function fetchWeekParentMetaByWeek(sectionIdSlug, sectionLabel, weekEntries) {
   const meta = {};
   await Promise.all(
-    weekKeys.map(async (wk) => {
+    weekEntries.map(async ({ gid, label, weekId }) => {
       try {
-        const snap = await db.collection('weekParentPills').doc(weekParentFirestoreDocId(section, wk)).get();
+        const docId = weekId
+          ? weekParentPillsDocId(sectionIdSlug, weekId)
+          : weekParentPillsDocIdLegacy(sectionLabel, label);
+        let snap = await db.collection('weekParentPills').doc(docId).get();
+        if (!snap.exists && weekId) {
+          snap = await db.collection('weekParentPills').doc(weekParentPillsDocIdLegacy(sectionLabel, label)).get();
+        }
         if (!snap.exists) {
-          meta[wk] = null;
+          meta[gid] = null;
           return;
         }
         const d = snap.data();
         const n = Array.isArray(d.parents) ? d.parents.length : 0;
         if (!n) {
-          meta[wk] = null;
+          meta[gid] = null;
           return;
         }
         let genDate = null;
         const ga = d.generatedAt;
         if (ga && typeof ga.toDate === 'function') genDate = ga.toDate();
-        meta[wk] = {
+        meta[gid] = {
           parentCount: n,
           childCount: typeof d.childCount === 'number' ? d.childCount : null,
           genDate,
@@ -865,8 +1076,8 @@ async function fetchWeekParentMetaByWeek(section, weekKeys) {
           provider: d.provider,
         };
       } catch (e) {
-        console.error('weekParentPills read', wk, e);
-        meta[wk] = null;
+        console.error('weekParentPills read', gid, e);
+        meta[gid] = null;
       }
     })
   );
@@ -896,8 +1107,10 @@ function formatWeekParentLine(weekKey, wp) {
 
 async function renderManageList() {
   const container = document.getElementById('quizList');
-  // Filter to current section, fallback Surgery for legacy docs without section field
-  const filtered = allMeta.filter(q => (q.section || 'Surgery') === currentManageSection);
+  const manageSid = canonicalSectionIdFromLabel(currentManageSection);
+  const filtered = allMeta.filter(
+    (q) => (q.sectionId || canonicalSectionIdFromLabel(q.section)) === manageSid
+  );
 
   if (!filtered.length) {
     container.innerHTML = `<div class="empty">No ${currentManageSection} quizzes yet.</div>`;
@@ -906,40 +1119,58 @@ async function renderManageList() {
 
   const topicMetaById = await fetchTopicTagsMetaByQuizId(filtered.map(q => q.id));
 
-  // Group by week → topic
+  // Group by stable weekId → topicId (or legacy keys)
   const groups = {};
-  filtered.forEach(d => {
-    const w = d.week  || 'Unknown';
-    const t = d.topic || 'General';
-    if (!groups[w])    groups[w]    = {};
-    if (!groups[w][t]) groups[w][t] = [];
-    groups[w][t].push(d);
+  filtered.forEach((d) => {
+    const wkDisplay = d.week || 'Unknown';
+    const wid = d.weekId && String(d.weekId).trim() ? String(d.weekId).trim() : '';
+    const gid = wid || `legacy:${normalizeWeekKey(wkDisplay)}`;
+    if (!groups[gid]) groups[gid] = { label: wkDisplay, weekId: wid, topics: {} };
+    groups[gid].label = wkDisplay;
+    if (wid) groups[gid].weekId = wid;
+    const tid = d.topicId && String(d.topicId).trim() ? String(d.topicId).trim() : '';
+    const topicKey = tid || `legacy:${normalizeTopicKey(d.topic)}`;
+    if (!groups[gid].topics[topicKey]) groups[gid].topics[topicKey] = { label: d.topic || 'General', rows: [] };
+    groups[gid].topics[topicKey].label = d.topic || 'General';
+    groups[gid].topics[topicKey].rows.push(d);
   });
 
-  const weekKeysSorted = Object.keys(groups).sort((a, b) => weekSortKey(a) - weekSortKey(b));
-  const weekParentMeta = await fetchWeekParentMetaByWeek(currentManageSection, weekKeysSorted);
+  const weekGidsSorted = Object.keys(groups).sort(
+    (a, b) => weekSortKey(groups[a].label) - weekSortKey(groups[b].label)
+  );
+  const weekEntries = weekGidsSorted.map((gid) => ({
+    gid,
+    label: groups[gid].label,
+    weekId: groups[gid].weekId,
+  }));
+  const weekParentMeta = await fetchWeekParentMetaByWeek(manageSid, currentManageSection, weekEntries);
 
   let html = '';
-  weekKeysSorted.forEach(week => {
-      const wpLine = formatWeekParentLine(week, weekParentMeta[week]);
+  weekGidsSorted.forEach((gid) => {
+      const g = groups[gid];
+      const week = g.label;
+      const wpLine = formatWeekParentLine(week, weekParentMeta[gid]);
       html += `<div class="week-block">
         <div class="week-head">
           <span>${escHtml(week)}</span>
           <div class="week-head-actions">
-            <button type="button" class="btn btn-ghost btn-sm btn-topic-gen btn-week-parent-gen" onclick="runWeekParentGen(this,'${escAttr(week)}')">Parent topics</button>
+            <button type="button" class="btn btn-ghost btn-sm btn-topic-gen btn-week-parent-gen" onclick="runWeekParentGen(this,'${escAttr(week)}','${escAttr(g.weekId || '')}')">Parent topics</button>
             <button class="edit-icon-btn" onclick="openRenameModal('week','${escAttr(week)}','')">✏ Rename week</button>
           </div>
         </div>
         ${wpLine}
         <div class="topic-block">`;
 
-      Object.keys(groups[week]).sort().forEach(topic => {
+      Object.keys(g.topics)
+        .sort((a, b) => g.topics[a].label.localeCompare(g.topics[b].label))
+        .forEach((topicKey) => {
+        const topicLabel = g.topics[topicKey].label;
         html += `<div class="topic-head">
-          <span>${escHtml(topic)}</span>
-          <button class="edit-icon-btn" onclick="openRenameModal('topic','${escAttr(week)}','${escAttr(topic)}')">✏ Rename topic</button>
+          <span>${escHtml(topicLabel)}</span>
+          <button class="edit-icon-btn" onclick="openRenameModal('topic','${escAttr(week)}','${escAttr(topicLabel)}')">✏ Rename topic</button>
         </div>`;
 
-        groups[week][topic]
+        g.topics[topicKey].rows
           .sort((a, b) => a.name.localeCompare(b.name))
           .forEach(({ id, name, questionCount }) => {
             const aiLine = formatAiPillsLine(id, topicMetaById[id]);
@@ -955,7 +1186,7 @@ async function renderManageList() {
               </div>
               <div class="quiz-row-actions">
                 <button type="button" class="btn btn-ghost btn-sm btn-topic-gen" onclick="runTopicGenForQuiz(this,'${escAttr(id)}')">🏷 Topics</button>
-                <button class="btn btn-warn btn-sm" onclick="openEditModal('${escAttr(id)}','${escAttr(currentManageSection)}','${escAttr(week)}','${escAttr(topic)}','${escAttr(name)}')">✏ Edit</button>
+                <button class="btn btn-warn btn-sm" onclick="openEditModal('${escAttr(id)}','${escAttr(currentManageSection)}','${escAttr(week)}','${escAttr(topicLabel)}','${escAttr(name)}')">✏ Edit</button>
                 <button class="btn btn-danger btn-sm" onclick="confirmDel('${escAttr(id)}','${escAttr(name)}')">Delete</button>
               </div>
             </div>`;
@@ -967,7 +1198,7 @@ async function renderManageList() {
   container.innerHTML = html;
 }
 
-async function runWeekParentGen(btn, weekKey) {
+async function runWeekParentGen(btn, weekKey, weekId) {
   if (!weekKey || btn.classList.contains('btn-topics-generating')) return;
   const provider = document.getElementById('selTopicProviderManage').value;
   const fnName =
@@ -979,7 +1210,13 @@ async function runWeekParentGen(btn, weekKey) {
   btn.classList.add('btn-topics-generating');
   setStatus('manageStatus', 'inf', 'Regenerating week parent pills…');
   try {
-    const res = await fn({ section: currentManageSection, week: weekKey });
+    const payload = {
+      section: currentManageSection,
+      sectionId: canonicalSectionIdFromLabel(currentManageSection),
+      week: weekKey,
+    };
+    if (weekId && String(weekId).trim()) payload.weekId = String(weekId).trim();
+    const res = await fn(payload);
     const pc = res.data && res.data.parentCount;
     setStatus(
       'manageStatus',
@@ -1075,9 +1312,17 @@ async function executeRename() {
 
   const { type, week, topic } = renameTarget;
   const isTopic = type === 'topic';
+  const sid = canonicalSectionIdFromLabel(currentManageSection);
   const affected = isTopic
-    ? allMeta.filter(m => m.week === week && m.topic === topic && (m.section||'Surgery') === currentManageSection)
-    : allMeta.filter(m => m.week === week && (m.section||'Surgery') === currentManageSection);
+    ? allMeta.filter(
+        (m) =>
+          m.week === week &&
+          m.topic === topic &&
+          (m.sectionId || canonicalSectionIdFromLabel(m.section)) === sid
+      )
+    : allMeta.filter(
+        (m) => m.week === week && (m.sectionId || canonicalSectionIdFromLabel(m.section)) === sid
+      );
 
   if (!affected.length || (isTopic ? newVal === topic : newVal === week)) {
     closeRenameModal(); return;
@@ -1136,7 +1381,8 @@ function openEditModal(quizId, section, week, topic, name) {
 
 function populateEditWeekDropdown(section, selectedWeek) {
   const wSel = document.getElementById('editSelWeek');
-  const weeks = [...new Set(allMeta.filter(q => (q.section||'Surgery') === section).map(q => q.week))]
+  const sid = canonicalSectionIdFromLabel(section);
+  const weeks = [...new Set(allMeta.filter(q => (q.sectionId || canonicalSectionIdFromLabel(q.section)) === sid).map(q => q.week))]
     .sort((a, b) => weekSortKey(a) - weekSortKey(b));
   wSel.innerHTML = '';
   weeks.forEach(w => wSel.innerHTML += `<option value="${escHtml(w)}" ${w === selectedWeek ? 'selected':''}>${escHtml(w)}</option>`);
@@ -1147,7 +1393,8 @@ function populateEditWeekDropdown(section, selectedWeek) {
 
 function populateEditTopicDropdown(section, week, selectedTopic) {
   const tSel = document.getElementById('editSelTopic');
-  const topics = [...new Set(allMeta.filter(q => (q.section||'Surgery') === section && q.week === week).map(q => q.topic))].sort();
+  const sid = canonicalSectionIdFromLabel(section);
+  const topics = [...new Set(allMeta.filter(q => (q.sectionId || canonicalSectionIdFromLabel(q.section)) === sid && q.week === week).map(q => q.topic))].sort();
   if (!topics.length) {
     tSel.innerHTML = '<option value="">— add topic below —</option>';
     tSel.disabled = true;
@@ -1209,19 +1456,75 @@ async function saveEditQuiz() {
   setStatus('editStatus', 'inf', 'Saving…');
 
   try {
-    // Simply update fields in place — autoId stays the same, user progress unaffected
+    const prev = allMeta.find((x) => x.id === quizId);
+    const targetSectionId = canonicalSectionIdFromLabel(newSection);
+
+    let targetWeekId =
+      prev && prev.weekId && String(prev.weekId).trim() ? String(prev.weekId).trim() : '';
+    if (
+      !prev ||
+      (prev.section || 'Surgery') !== newSection ||
+      prev.week !== newWeek
+    ) {
+      const cousin = allMeta.find(
+        (x) =>
+          x.id !== quizId &&
+          (x.section || 'Surgery') === newSection &&
+          x.week === newWeek &&
+          x.weekId &&
+          String(x.weekId).trim()
+      );
+      if (cousin) targetWeekId = String(cousin.weekId).trim();
+      else targetWeekId = db.collection('quizzes').doc().id;
+    } else if (!targetWeekId) {
+      targetWeekId = db.collection('quizzes').doc().id;
+    }
+
+    let targetTopicId =
+      prev && prev.topicId && String(prev.topicId).trim() ? String(prev.topicId).trim() : '';
+    if (
+      !prev ||
+      canonicalSectionIdFromLabel(prev.section || 'Surgery') !== targetSectionId ||
+      prev.week !== newWeek ||
+      prev.topic !== newTopic
+    ) {
+      const cousinT = allMeta.find(
+        (x) =>
+          x.id !== quizId &&
+          (x.sectionId || canonicalSectionIdFromLabel(x.section)) === targetSectionId &&
+          x.week === newWeek &&
+          x.topic === newTopic &&
+          x.topicId &&
+          String(x.topicId).trim()
+      );
+      if (cousinT) targetTopicId = String(cousinT.topicId).trim();
+      else targetTopicId = db.collection('quizzes').doc().id;
+    } else if (!targetTopicId) {
+      targetTopicId = db.collection('quizzes').doc().id;
+    }
+
     await db.collection('quizzes').doc(quizId).update({
-      section:   newSection,
-      week:      newWeek,
-      topic:     newTopic,
-      name:      newName,
-      title:     `${newWeek} · ${newTopic} · ${newName}`,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      section:    newSection,
+      sectionId:  targetSectionId,
+      week:       newWeek,
+      weekId:     targetWeekId,
+      topic:      newTopic,
+      topicId:    targetTopicId,
+      name:       newName,
+      title:      `${newWeek} · ${newTopic} · ${newName}`,
+      updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
     });
 
-    // Update local cache
-    const m = allMeta.find(x => x.id === quizId);
-    if (m) { m.section = newSection; m.week = newWeek; m.topic = newTopic; m.name = newName; }
+    const m = allMeta.find((x) => x.id === quizId);
+    if (m) {
+      m.section = newSection;
+      m.sectionId = targetSectionId;
+      m.week = newWeek;
+      m.weekId = targetWeekId;
+      m.topic = newTopic;
+      m.topicId = targetTopicId;
+      m.name = newName;
+    }
 
     setStatus('editStatus', 'ok', '✅ Saved. No user progress was affected.');
     setTimeout(() => { closeEditModal(); void renderManageList(); }, 1200);

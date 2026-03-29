@@ -751,11 +751,104 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
 .topic-suggest-item:hover { background: var(--surface-2); }
 .topic-search-wrap { position: relative; flex: 1; min-width: 120px; }
 .q-grid-item.topic-hidden, .collapsed-q-item.topic-hidden { display: none !important; }
+
+/* Topic multi-select bar (matches index parent-selection-bar) */
+.topic-selection-bar {
+  display: none;
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(760px, calc(100% - 32px));
+  max-width: calc(100% - 32px);
+  margin-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  padding: 12px 16px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  z-index: 900;
+  font-family: var(--font-sans);
+}
+.topic-selection-bar.visible { display: flex; }
+.topic-selection-bar-text {
+  font-size: .85rem;
+  color: var(--text-2);
+  font-family: var(--font-mono);
+}
+.topic-selection-bar-text strong { color: var(--text); font-weight: 600; }
+.topic-selection-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.topic-selection-bar button {
+  font-family: var(--font-sans);
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 99px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-2);
+  transition: border-color 150ms, background 150ms, color 150ms;
+}
+.topic-selection-bar button:hover {
+  border-color: var(--text-3);
+  color: var(--text);
+}
+.topic-selection-bar .topic-selection-start {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+.topic-selection-bar .topic-selection-start:hover {
+  filter: brightness(1.06);
+  color: #fff;
+}
+body.has-topic-selection-bar .main-content {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+/* AI topic chips under question stem (aggregate merged tags) */
+.question-topic-chips-wrap {
+  display: none;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 0 28px 12px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-sans);
+}
+.question-topic-chips-wrap.visible { display: flex; }
+.question-topic-chips-wrap .question-topic-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 99px;
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
 </style>
 </head>
 <body>
 
-
+<div id="topicSelectionBar" class="topic-selection-bar" role="region" aria-label="Selected topic filters">
+  <span class="topic-selection-bar-text" id="topicSelectionBarText"></span>
+  <div class="topic-selection-bar-actions">
+    <button type="button" id="topicSelectionClear">Clear</button>
+    <button type="button" class="topic-selection-start" id="topicSelectionStart">Start review</button>
+  </div>
+</div>
 
 <div id="loginScreen" class="hidden">
   <div class="login-logo">NB <span>Quiz</span></div>
@@ -893,6 +986,7 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
       <span class="part-tag" id="partTag" onclick="this.classList.toggle('expanded')">Part 1</span>
     </div>
     <div class="stem" id="stem"></div>
+    <div class="question-topic-chips-wrap" id="questionTopicChipsWrap" aria-label="AI topic tags for this question"></div>
     <div class="hint-wrap" id="hintWrap">
       <button class="hint-toggle" onclick="toggleHint()">💡 Show hint</button>
       <div class="hint-body" id="hintBody"></div>
@@ -1035,11 +1129,16 @@ const TOPIC_MAX_PILLS = 8;
 const TOPIC_LS_KEY = 'nbquiz_topic_prefs';
 
 let topicPrefs = { showTopics: false, algorithm: 'auto' };
-let topicFilterActive = null;
+/** @type {Set<string>} */
+let topicFilterSelected = new Set();
+/** When true, filter uses topicSearchHitIndices (MiniSearch); mutually exclusive with multi pill select. */
+let topicFilterSearchActive = false;
 let topicPillData = { pills: [], map: new Map() };
 let topicMiniSearch = null;
-/** @type {null | { pills: string[], pillsMap: Record<string, number[]>, model?: string }} */
+/** @type {null | { pills: string[], pillsMap: Record<string, number[]>, model?: string, merged?: boolean }} */
 let topicTagsDoc = null;
+/** Per flat question index, labels from merged AI tags (aggregate only); built from topicTagsDoc. */
+let aggTopicLabelsByFlatIndex = null;
 let topicSearchHitIndices = null;
 let _topicPendingFinish = null;
 let _topicCloseAnimTimer = null;
@@ -1420,6 +1519,37 @@ function topicBuildModel() {
   topicPillData = data;
 }
 
+/** @returns {Set<number> | null} null = show all questions */
+function topicGetActiveFilterIndices() {
+  if (!topicPrefs.showTopics) return null;
+  if (topicFilterSearchActive && topicSearchHitIndices) return topicSearchHitIndices;
+  if (topicFilterSelected.size > 0) {
+    const union = new Set();
+    for (const label of topicFilterSelected) {
+      const s = topicPillData.map.get(label);
+      if (s) s.forEach((idx) => union.add(idx));
+    }
+    return union.size ? union : null;
+  }
+  return null;
+}
+
+function updateTopicSelectionBar() {
+  const bar = document.getElementById('topicSelectionBar');
+  const textEl = document.getElementById('topicSelectionBarText');
+  if (!bar || !textEl) return;
+  const n = topicFilterSelected.size;
+  if (n === 0 || topicFilterSearchActive) {
+    bar.classList.remove('visible');
+    document.body.classList.remove('has-topic-selection-bar');
+    return;
+  }
+  const noun = n === 1 ? 'topic' : 'topics';
+  textEl.innerHTML = `<strong>${n}</strong> ${noun} selected`;
+  bar.classList.add('visible');
+  document.body.classList.add('has-topic-selection-bar');
+}
+
 function topicRenderPills() {
   const row = document.getElementById('topicPillsRow');
   const meta = document.getElementById('topicPillsMeta');
@@ -1433,7 +1563,7 @@ function topicRenderPills() {
     btn.className = 'topic-pill';
     btn.style.setProperty('--topic-pill-i', String(i));
     btn.textContent = label;
-    const pressed = topicFilterActive === label && topicFilterActive !== '__search__';
+    const pressed = topicFilterSelected.has(label) && !topicFilterSearchActive;
     btn.setAttribute('aria-pressed', pressed ? 'true' : 'false');
     btn.onclick = () => topicOnPillClick(label);
     row.appendChild(btn);
@@ -1458,30 +1588,31 @@ function topicRenderPills() {
 
 function topicOnPillClick(label) {
   topicSearchHitIndices = null;
+  topicFilterSearchActive = false;
   const si = document.getElementById('topicSearchInput');
   if (si) si.value = '';
-  if (topicFilterActive === label) {
-    topicFilterActive = null;
-  } else {
-    topicFilterActive = label;
-  }
+  if (topicFilterSelected.has(label)) topicFilterSelected.delete(label);
+  else topicFilterSelected.add(label);
   topicSyncPillPressed();
   topicApplyFilterVisibility();
   topicEnsureCurrentVisible();
+  updateTopicSelectionBar();
 }
 
 function topicClearFilter() {
-  topicFilterActive = null;
+  topicFilterSelected.clear();
+  topicFilterSearchActive = false;
   topicSearchHitIndices = null;
   const si = document.getElementById('topicSearchInput');
   if (si) si.value = '';
   topicSyncPillPressed();
   topicApplyFilterVisibility();
+  updateTopicSelectionBar();
 }
 
 function topicSyncPillPressed() {
   document.querySelectorAll('#topicPillsRow .topic-pill').forEach((btn) => {
-    const pressed = btn.textContent === topicFilterActive && topicFilterActive !== '__search__';
+    const pressed = topicFilterSelected.has(btn.textContent) && !topicFilterSearchActive;
     btn.setAttribute('aria-pressed', pressed ? 'true' : 'false');
   });
 }
@@ -1494,9 +1625,7 @@ function topicApplyFilterVisibility() {
     });
     return;
   }
-  let indices = null;
-  if (topicFilterActive === '__search__' && topicSearchHitIndices) indices = topicSearchHitIndices;
-  else if (topicFilterActive) indices = topicPillData.map.get(topicFilterActive);
+  const indices = topicGetActiveFilterIndices();
   QUESTIONS.forEach((_, i) => {
     const hide = !!(indices && !indices.has(i));
     const a = document.getElementById(`grid-item-${i}`);
@@ -1507,10 +1636,7 @@ function topicApplyFilterVisibility() {
 }
 
 function topicEnsureCurrentVisible() {
-  if (!topicFilterActive) return;
-  let indices;
-  if (topicFilterActive === '__search__' && topicSearchHitIndices) indices = topicSearchHitIndices;
-  else indices = topicPillData.map.get(topicFilterActive);
+  const indices = topicGetActiveFilterIndices();
   if (!indices || indices.size === 0 || indices.has(current)) return;
   const first = Math.min(...indices);
   if (Number.isFinite(first)) jumpTo(first);
@@ -1564,7 +1690,9 @@ function topicApplyPrefsFromState() {
   const wrap = document.getElementById('topicPillsWrap');
   topicSearchHitIndices = null;
   if (!topicPrefs.showTopics) {
-    topicFilterActive = null;
+    topicFilterSelected.clear();
+    topicFilterSearchActive = false;
+    updateTopicSelectionBar();
     topicApplyFilterVisibility();
     topicSyncSidebarTopicToggle();
     if (wrap && wrap.classList.contains('visible') && !wrap.classList.contains('topic-pills-closing')) {
@@ -1572,10 +1700,12 @@ function topicApplyPrefsFromState() {
       const hasPills = row && row.querySelector('.topic-pill');
       if (hasPills && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         topicStartClosePillsAnimation();
+        if (typeof current === 'number' && QUESTIONS && QUESTIONS.length) renderQuestion(current);
         return;
       }
     }
     topicApplyPrefsFromStateImmediateHide();
+    if (typeof current === 'number' && QUESTIONS && QUESTIONS.length) renderQuestion(current);
     return;
   }
   if (_topicCloseAnimTimer) {
@@ -1585,8 +1715,13 @@ function topicApplyPrefsFromState() {
   if (wrap) wrap.classList.remove('topic-pills-closing');
   topicBuildModel();
   topicRenderPills();
+  for (const label of [...topicFilterSelected]) {
+    if (!topicPillData.map.has(label)) topicFilterSelected.delete(label);
+  }
   topicApplyFilterVisibility();
   topicSyncSidebarTopicToggle();
+  updateTopicSelectionBar();
+  if (typeof current === 'number' && QUESTIONS && QUESTIONS.length) renderQuestion(current);
 }
 
 function topicSyncSidebarTopicToggle() {
@@ -1599,7 +1734,8 @@ function topicSyncSidebarTopicToggle() {
 function topicTogglePillsSidebar() {
   topicPrefs.showTopics = !topicPrefs.showTopics;
   topicSavePrefs(topicPrefs);
-  topicFilterActive = null;
+  topicFilterSelected.clear();
+  topicFilterSearchActive = false;
   topicSearchHitIndices = null;
   topicApplyPrefsFromState();
 }
@@ -1649,7 +1785,8 @@ function topicConfirmModal() {
   if (algorithm === 'stored' && !topicAiTagsAvailable()) algorithm = 'tfidf';
   topicPrefs = { showTopics: show, algorithm };
   topicSavePrefs(topicPrefs);
-  topicFilterActive = null;
+  topicFilterSelected.clear();
+  topicFilterSearchActive = false;
   topicApplyPrefsFromState();
   topicCloseModal();
   if (typeof _topicPendingFinish === 'function') {
@@ -1664,7 +1801,8 @@ function topicInitModalHandlers() {
   document.getElementById('topicModalCancel').onclick = () => {
     topicPrefs = { showTopics: false, algorithm: 'auto' };
     topicSavePrefs(topicPrefs);
-    topicFilterActive = null;
+    topicFilterSelected.clear();
+    topicFilterSearchActive = false;
     topicSearchHitIndices = null;
     topicApplyPrefsFromState();
     topicCloseModal();
@@ -1677,6 +1815,10 @@ function topicInitModalHandlers() {
   document.getElementById('topicPillsToggleBtn').onclick = topicTogglePillsSidebar;
   document.getElementById('topicSettingsBtn').onclick = () => topicOpenModal(true, null);
   document.getElementById('topicClearBtn').onclick = topicClearFilter;
+  const topicSelClear = document.getElementById('topicSelectionClear');
+  const topicSelStart = document.getElementById('topicSelectionStart');
+  if (topicSelClear) topicSelClear.onclick = topicClearFilter;
+  if (topicSelStart) topicSelStart.onclick = () => topicEnsureCurrentVisible();
   const ts = document.getElementById('topicSearchInput');
   const sl = document.getElementById('topicSuggestList');
   if (ts && sl) {
@@ -1727,11 +1869,13 @@ function topicFilterFromSearch(query) {
     hits = topicMiniSearch.search(query.trim(), { prefix: true });
   }
   const indices = new Set(hits.map((h) => h.id));
-  topicFilterActive = '__search__';
+  topicFilterSelected.clear();
+  topicFilterSearchActive = true;
   topicSearchHitIndices = indices;
   topicSyncPillPressed();
   topicApplyFilterVisibility();
   topicEnsureCurrentVisible();
+  updateTopicSelectionBar();
 }
 
 function finishQuizLoad(restored) {
@@ -1792,6 +1936,10 @@ async function loadQuiz() {
 
   if (params.get('mode') === 'parent') {
     await loadQuizParentMode(params);
+    return;
+  }
+  if (params.get('mode') === 'multi') {
+    await loadQuizMultiParentMode(params);
     return;
   }
 
@@ -2058,6 +2206,24 @@ function syncAttemptHistoryPanelVisibility() {
 
 /** Serializes writes so an in-flight save from before Restart cannot finish later and overwrite the reset session (last-write-wins). */
 let _saveStateChain = Promise.resolve();
+// #region agent log
+let _agentFlushSeq = 0;
+function _agentDbg(hypothesisId, location, message, data) {
+  fetch('http://127.0.0.1:7242/ingest/57ea87e3-d925-448a-93bc-96d1b74e8911', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'f6c16a' },
+    body: JSON.stringify({
+      sessionId: 'f6c16a',
+      runId: typeof window !== 'undefined' && window.__agentRunId ? window.__agentRunId : 'pre',
+      hypothesisId,
+      location,
+      message,
+      data: data || {},
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+}
+// #endregion
 async function saveState() {
   if (!uid) return;
   _saveStateChain = _saveStateChain
@@ -2102,11 +2268,33 @@ async function flushSaveState() {
     return;
   }
   const snap = snapshotSessionForSave();
+  let _agentSeq = 0;
+  // #region agent log
+  {
+    _agentSeq = ++_agentFlushSeq;
+    const nn = Array.isArray(snap.results) ? snap.results.filter((x) => x != null).length : -1;
+    const ahSlots = Array.isArray(snap.attemptHistory)
+      ? snap.attemptHistory.filter((h) => h && Array.isArray(h.tries) && h.tries.length).length
+      : -1;
+    _agentDbg('H1', 'quiz.html:flushSaveState', 'flush before set', {
+      seq: _agentSeq,
+      nonNullResults: nn,
+      attemptSlotsWithTries: ahSlots,
+      qid: QUIZ_ID,
+    });
+  }
+  // #endregion
   try {
     await sessionRef().set({
       ...snap,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
+    // #region agent log
+    {
+      const nn = Array.isArray(snap.results) ? snap.results.filter((x) => x != null).length : -1;
+      _agentDbg('H4', 'quiz.html:flushSaveState', 'flush after set ok', { seq: _agentSeq, nonNullResults: nn, qid: QUIZ_ID });
+    }
+    // #endregion
   } catch(e) { console.warn('Save failed:', e); }
 }
 
@@ -2120,9 +2308,36 @@ async function loadState() {
     } catch (e) {
       snap = await sessionRef().get();
     }
-    if (!snap.exists) return false;
+    if (!snap.exists) {
+      // #region agent log
+      _agentDbg('H3', 'quiz.html:loadState', 'no session doc', {
+        fromCache: !!(snap.metadata && snap.metadata.fromCache),
+        qid: QUIZ_ID,
+      });
+      // #endregion
+      return false;
+    }
     const d = snap.data();
     const n = QUESTIONS.length;
+    // #region agent log
+    {
+      const dr = d.results;
+      const nn = Array.isArray(dr) ? dr.filter((x) => x != null).length : -1;
+      const ahRaw = d.attemptHistory;
+      const ahSlots = Array.isArray(ahRaw)
+        ? ahRaw.filter((h) => {
+            const tries = h && (Array.isArray(h.tries) ? h.tries : Array.isArray(h) ? h : h.entries);
+            return tries && tries.length;
+          }).length
+        : -1;
+      _agentDbg('H3', 'quiz.html:loadState', 'loaded session', {
+        fromCache: !!(snap.metadata && snap.metadata.fromCache),
+        nonNullResults: nn,
+        attemptSlotsWithData: ahSlots,
+        qid: QUIZ_ID,
+      });
+    }
+    // #endregion
     results = padResultsArray(d.results, n);
     flagged = Array.isArray(d.flagged) ? [...d.flagged] : [];
     while (flagged.length < n) flagged.push(false);
@@ -2385,14 +2600,43 @@ function buildBreadcrumb() {
   return parts.filter(Boolean).join('  ·  ');
 }
 
-function weekParentFirestoreDocId(section, week) {
-  const sec = String(section || 'Surgery').trim() || 'Surgery';
-  const w =
-    String(week || 'Unknown')
-      .trim()
-      .replace(/\//g, '_')
-      .toUpperCase() || 'UNKNOWN';
-  return `${sec}__${w}`;
+function normalizeWeekKey(w) {
+  return String(w || 'Unknown').trim().replace(/\//g, '_').toUpperCase() || 'UNKNOWN';
+}
+
+function canonicalSectionIdFromLabel(sectionDisplay) {
+  const s = String(sectionDisplay || 'Surgery')
+    .trim()
+    .toLowerCase();
+  if (s === 'surgery') return 'surgery';
+  if (s === 'gp') return 'gp';
+  if (s === 'medicine') return 'medicine';
+  return (
+    s
+      .replace(/[^a-z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 48) || 'unknown'
+  );
+}
+
+function legacySectionDisplayFromSectionId(sectionId) {
+  const sid = String(sectionId || '').trim().toLowerCase();
+  if (sid === 'surgery') return 'Surgery';
+  if (sid === 'gp') return 'GP';
+  if (sid === 'medicine') return 'Medicine';
+  return String(sectionId || 'Surgery');
+}
+
+function weekParentPillsDocId(sectionId, weekId) {
+  const sid = String(sectionId || '').trim();
+  const wid = String(weekId || '').trim();
+  if (!sid || !wid) return weekParentPillsDocIdLegacy('Surgery', 'Unknown');
+  return `${sid}__${wid}`;
+}
+
+function weekParentPillsDocIdLegacy(sectionDisplay, week) {
+  const sec = String(sectionDisplay || 'Surgery').trim() || 'Surgery';
+  return `${sec}__${normalizeWeekKey(week)}`;
 }
 
 function syncAggCacheFromFlat() {
@@ -2497,19 +2741,292 @@ async function saveAggState() {
   }
 }
 
-async function loadQuizParentMode(params) {
-  const section = (params.get('section') || '').trim();
-  const weekRaw = (params.get('week') || '').trim();
-  const parentSlug = (params.get('parentSlug') || '').trim();
-  if (!section || !weekRaw || !parentSlug) {
-    showError('Missing section, week, or parentSlug for this combined quiz.');
+const PARENT_MULTI_SESSION_KEY = 'nbquiz_multi_parent_sel';
+
+function makeQuestionCache() {
+  const qCache = new Map();
+  return async function getQuestions(quizId) {
+    if (qCache.has(quizId)) return qCache.get(quizId);
+    const snap = await db.collection('quizzes').doc(quizId).collection('data').doc('questions').get();
+    const qs = snap.exists ? snap.data().questions || [] : [];
+    qCache.set(quizId, qs);
+    return qs;
+  };
+}
+
+/** Appends question rows from one parent theme’s members. Optionally dedupes by quizId:qIndex across themes. */
+async function appendParentMembersToSources(parent, getQuestions, flatQ, sources, seenKeys) {
+  if (!parent || !Array.isArray(parent.members)) return;
+  for (const m of parent.members) {
+    const quizId = m && m.quizId;
+    const indices = m && Array.isArray(m.indices) ? m.indices : [];
+    if (!quizId || !indices.length) continue;
+    const qs = await getQuestions(quizId);
+    for (const qi of indices) {
+      const j = typeof qi === 'number' ? qi : parseInt(qi, 10);
+      if (!Number.isFinite(j) || j < 0 || j >= qs.length) continue;
+      const dedupeKey = `${quizId}:${j}`;
+      if (seenKeys) {
+        if (seenKeys.has(dedupeKey)) continue;
+        seenKeys.add(dedupeKey);
+      }
+      flatQ.push(qs[j]);
+      sources.push({ quizId, qIndex: j });
+    }
+  }
+}
+
+/** Merge per-quiz `topicTags` docs into flat indices for aggregate `QUESTIONS`. */
+async function mergeTopicTagsForAggregate() {
+  if (!AGGREGATE_MODE || !AGG_SOURCES.length || !QUESTIONS.length) return null;
+  const quizIds = [...new Set(AGG_SOURCES.map((x) => x.quizId))];
+  const snaps = await Promise.all(
+    quizIds.map((qid) =>
+      db.collection('quizzes').doc(qid).collection('data').doc('topicTags').get()
+    )
+  );
+  const labelToFlat = new Map();
+  function addLabel(label, flatIdx) {
+    const L = String(label).trim();
+    if (!L) return;
+    if (!labelToFlat.has(L)) labelToFlat.set(L, new Set());
+    labelToFlat.get(L).add(flatIdx);
+  }
+  snaps.forEach((snap, qi) => {
+    const qid = quizIds[qi];
+    if (!snap.exists) return;
+    const data = snap.data();
+    const rawMap =
+      data.pillsMap && typeof data.pillsMap === 'object' && !Array.isArray(data.pillsMap)
+        ? data.pillsMap
+        : {};
+    for (const label of Object.keys(rawMap)) {
+      const arr = rawMap[label];
+      if (!Array.isArray(arr)) continue;
+      for (const qiSrc of arr) {
+        const j = typeof qiSrc === 'number' ? qiSrc : parseInt(qiSrc, 10);
+        if (!Number.isFinite(j)) continue;
+        for (let i = 0; i < AGG_SOURCES.length; i++) {
+          const s = AGG_SOURCES[i];
+          if (s.quizId === qid && s.qIndex === j) addLabel(label, i);
+        }
+      }
+    }
+  });
+  if (!labelToFlat.size) return null;
+  const pills = [...labelToFlat.keys()].sort((a, b) => {
+    const minA = Math.min(...labelToFlat.get(a));
+    const minB = Math.min(...labelToFlat.get(b));
+    return minA - minB || a.localeCompare(b);
+  });
+  const pillsMap = {};
+  for (const label of pills) {
+    pillsMap[label] = [...labelToFlat.get(label)].sort((x, y) => x - y);
+  }
+  return { pills, pillsMap, merged: true };
+}
+
+function rebuildAggTopicStemLabels() {
+  aggTopicLabelsByFlatIndex = null;
+  if (!AGGREGATE_MODE || !topicTagsDoc || !topicTagsDoc.merged || !QUESTIONS.length) return;
+  const data = topicBuildFromStored(topicTagsDoc);
+  const n = QUESTIONS.length;
+  aggTopicLabelsByFlatIndex = Array.from({ length: n }, () => []);
+  for (const label of data.pills) {
+    const set = data.map.get(label);
+    if (!set) continue;
+    for (const fi of set) {
+      if (fi >= 0 && fi < n) aggTopicLabelsByFlatIndex[fi].push(label);
+    }
+  }
+}
+
+function applyAggregateTopicPrefsAfterMerge(merged) {
+  topicTagsDoc = merged || null;
+  const stored = topicGetStoredPrefs();
+  if (merged && topicAiTagsAvailable()) {
+    topicPrefs = stored || { showTopics: true, algorithm: 'stored' };
+  } else {
+    topicPrefs = stored || { showTopics: false, algorithm: 'auto' };
+  }
+  topicFilterSelected = new Set();
+  topicFilterSearchActive = false;
+  topicPillData = { pills: [], map: new Map() };
+  topicMiniSearch = null;
+}
+
+function hashMultiParentSelectionKey(section, items) {
+  const parts = items
+    .map((it) => {
+      const idPart =
+        it.weekId && String(it.weekId).trim()
+          ? String(it.weekId).trim()
+          : String(it.week || '')
+              .trim()
+              .replace(/\//g, '_')
+              .toUpperCase();
+      return `${idPart}::${String(it.parentSlug || '').trim()}`;
+    })
+    .filter(Boolean)
+    .sort();
+  let h = 5381;
+  const s = `${section}|${parts.join('|')}`;
+  for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 2654435761);
+  return (h >>> 0).toString(36);
+}
+
+function base64UrlToJson(sel) {
+  let b64 = String(sel || '').replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4) b64 += '=';
+  const bin = atob(b64);
+  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
+async function loadQuizMultiParentMode(params) {
+  const sectionParam = (params.get('section') || '').trim();
+  if (!sectionParam) {
+    showError('Missing section for this combined quiz.');
     return;
   }
-  const weekNorm = weekRaw.replace(/\//g, '_').toUpperCase();
-  const docId = weekParentFirestoreDocId(section, weekNorm);
+  const sectionIdForDocs = canonicalSectionIdFromLabel(sectionParam);
+  const legacySectionDisplay = legacySectionDisplayFromSectionId(sectionIdForDocs);
+  let items;
+  try {
+    if (params.get('src') === 'session') {
+      const raw = sessionStorage.getItem(PARENT_MULTI_SESSION_KEY);
+      sessionStorage.removeItem(PARENT_MULTI_SESSION_KEY);
+      items = raw ? JSON.parse(raw) : null;
+    } else {
+      const sel = params.get('sel') || '';
+      if (!sel) {
+        showError('Missing theme selection for this combined quiz.');
+        return;
+      }
+      items = JSON.parse(base64UrlToJson(sel));
+    }
+  } catch (e) {
+    showError('Could not read theme selection. Try choosing themes again from the home page.');
+    return;
+  }
+  if (!Array.isArray(items) || !items.length) {
+    showError('No themes in this combined quiz.');
+    return;
+  }
+  const normalized = items
+    .map((it) => ({
+      week: String(it.week || '').trim(),
+      weekId: it.weekId != null ? String(it.weekId).trim() : '',
+      parentSlug: String(it.parentSlug || '').trim(),
+      label: it.label != null ? String(it.label).trim() : '',
+    }))
+    .filter((it) => it.week && it.parentSlug);
+  if (!normalized.length) {
+    showError('Invalid theme selection.');
+    return;
+  }
+
   try {
     document.getElementById('loadingScreen').classList.remove('hidden');
-    const wpSnap = await db.collection('weekParentPills').doc(docId).get();
+    const getQuestions = makeQuestionCache();
+    const flatQ = [];
+    const sources = [];
+    const seenKeys = new Set();
+    const labels = [];
+
+    for (const it of normalized) {
+      const weekNorm = it.week.replace(/\//g, '_').toUpperCase();
+      const docId = it.weekId
+        ? weekParentPillsDocId(sectionIdForDocs, it.weekId)
+        : weekParentPillsDocIdLegacy(legacySectionDisplay, it.week);
+      let wpSnap = await db.collection('weekParentPills').doc(docId).get();
+      if (!wpSnap.exists && it.weekId) {
+        wpSnap = await db
+          .collection('weekParentPills')
+          .doc(weekParentPillsDocIdLegacy(legacySectionDisplay, it.week))
+          .get();
+      }
+      if (!wpSnap.exists) {
+        showError(`Week themes are not available for ${weekNorm}. Ask an admin to generate parent pills in Manage.`);
+        return;
+      }
+      const wp = wpSnap.data();
+      const parents = Array.isArray(wp.parents) ? wp.parents : [];
+      const parent = parents.find((p) => p && p.slug === it.parentSlug);
+      if (!parent || !Array.isArray(parent.members) || !parent.members.length) {
+        showError(`Theme “${it.label || it.parentSlug}” (${weekNorm}) was not found or has no questions.`);
+        return;
+      }
+      labels.push(it.label || parent.label || it.parentSlug);
+      await appendParentMembersToSources(parent, getQuestions, flatQ, sources, seenKeys);
+    }
+
+    if (!flatQ.length) {
+      showError('No questions in this combined set.');
+      return;
+    }
+
+    const h = hashMultiParentSelectionKey(sectionIdForDocs, normalized);
+    AGGREGATE_MODE = true;
+    AGG_SOURCES = sources;
+    AGG_POS_KEY = `nbquiz_agg:multi:${sectionIdForDocs}:${h}`;
+    QUIZ_ID = `agg:multi:${sectionIdForDocs}:${h}`;
+    const titleShort =
+      labels.length <= 2
+        ? labels.join(' · ')
+        : `${labels.length} themes (${labels.slice(0, 2).join(' · ')}…)`;
+    QUIZ_META = {
+      section: legacySectionDisplay,
+      week: 'Mixed',
+      topic: 'Custom mix',
+      name: 'Combined',
+      title: titleShort,
+    };
+    QUESTIONS = flatQ;
+
+    document.title = (QUIZ_META.title || 'Combined quiz') + ' — NB Quiz';
+    document.getElementById('totalQ').textContent = QUESTIONS.length;
+
+    await loadAggregateUserData();
+
+    const mergedTags = await mergeTopicTagsForAggregate();
+    applyAggregateTopicPrefsAfterMerge(mergedTags);
+    rebuildAggTopicStemLabels();
+
+    document.getElementById('loadingScreen').classList.add('hidden');
+    showUI(true);
+
+    topicApplyPrefsFromState();
+    initSidebar();
+    finishQuizLoad(true);
+  } catch (e) {
+    showError('Failed to load combined quiz: ' + e.message);
+  }
+}
+
+async function loadQuizParentMode(params) {
+  const sectionParam = (params.get('section') || '').trim();
+  const weekId = (params.get('weekId') || '').trim();
+  const weekRaw = (params.get('week') || '').trim();
+  const parentSlug = (params.get('parentSlug') || '').trim();
+  if (!sectionParam || !parentSlug || (!weekRaw && !weekId)) {
+    showError('Missing section, week (or weekId), or parentSlug for this combined quiz.');
+    return;
+  }
+  const sectionIdForDocs = canonicalSectionIdFromLabel(sectionParam);
+  const legacyDisplay = legacySectionDisplayFromSectionId(sectionIdForDocs);
+  const docId = weekId
+    ? weekParentPillsDocId(sectionIdForDocs, weekId)
+    : weekParentPillsDocIdLegacy(legacyDisplay, weekRaw);
+  try {
+    document.getElementById('loadingScreen').classList.remove('hidden');
+    let wpSnap = await db.collection('weekParentPills').doc(docId).get();
+    if (!wpSnap.exists && weekRaw) {
+      wpSnap = await db
+        .collection('weekParentPills')
+        .doc(weekParentPillsDocIdLegacy(legacyDisplay, weekRaw))
+        .get();
+    }
     if (!wpSnap.exists) {
       showError('Week parent pills are not available yet. Ask an admin to generate them in Manage.');
       return;
@@ -2522,29 +3039,10 @@ async function loadQuizParentMode(params) {
       return;
     }
 
-    const qCache = new Map();
-    async function getQuestions(quizId) {
-      if (qCache.has(quizId)) return qCache.get(quizId);
-      const snap = await db.collection('quizzes').doc(quizId).collection('data').doc('questions').get();
-      const qs = snap.exists ? snap.data().questions || [] : [];
-      qCache.set(quizId, qs);
-      return qs;
-    }
-
+    const getQuestions = makeQuestionCache();
     const flatQ = [];
     const sources = [];
-    for (const m of parent.members) {
-      const quizId = m && m.quizId;
-      const indices = m && Array.isArray(m.indices) ? m.indices : [];
-      if (!quizId || !indices.length) continue;
-      const qs = await getQuestions(quizId);
-      for (const qi of indices) {
-        const j = typeof qi === 'number' ? qi : parseInt(qi, 10);
-        if (!Number.isFinite(j) || j < 0 || j >= qs.length) continue;
-        flatQ.push(qs[j]);
-        sources.push({ quizId, qIndex: j });
-      }
-    }
+    await appendParentMembersToSources(parent, getQuestions, flatQ, sources, null);
 
     if (!flatQ.length) {
       showError('No questions in this combined set.');
@@ -2555,13 +3053,17 @@ async function loadQuizParentMode(params) {
     AGG_SOURCES = sources;
     AGG_POS_KEY = `nbquiz_agg:${docId}:${parentSlug}`;
     QUIZ_ID = `agg:${docId}:${parentSlug}`;
-    topicTagsDoc = null;
+    const weekNorm = weekRaw
+      ? weekRaw.replace(/\//g, '_').toUpperCase()
+      : normalizeWeekKey(wp.week || weekRaw);
+    const weekDisplay = weekRaw || wp.week || weekNorm;
+    const sectionLabel = wp.section || legacyDisplay;
     QUIZ_META = {
-      section,
-      week: weekNorm,
+      section: sectionLabel,
+      week: weekDisplay,
       topic: parent.label || parentSlug,
       name: 'Combined',
-      title: `${weekNorm} · ${parent.label || parentSlug}`,
+      title: `${weekDisplay} · ${parent.label || parentSlug}`,
     };
     QUESTIONS = flatQ;
 
@@ -2570,13 +3072,13 @@ async function loadQuizParentMode(params) {
 
     await loadAggregateUserData();
 
+    const mergedTags = await mergeTopicTagsForAggregate();
+    applyAggregateTopicPrefsAfterMerge(mergedTags);
+    rebuildAggTopicStemLabels();
+
     document.getElementById('loadingScreen').classList.add('hidden');
     showUI(true);
 
-    topicPrefs = { showTopics: false, algorithm: 'auto' };
-    topicFilterActive = null;
-    topicPillData = { pills: [], map: new Map() };
-    topicMiniSearch = null;
     topicApplyPrefsFromState();
     initSidebar();
     finishQuizLoad(true);
@@ -2648,6 +3150,29 @@ function renderQuestion(idx) {
   _tag.title       = _bc;           // hover tooltip on desktop
   _tag.classList.remove('expanded'); // collapse on every new question
   document.getElementById('stem').innerHTML = formatQuizHtml(q.stem);
+
+  const chipWrap = document.getElementById('questionTopicChipsWrap');
+  if (chipWrap) {
+    chipWrap.innerHTML = '';
+    const showChips =
+      topicTagsDoc &&
+      topicTagsDoc.merged &&
+      topicPrefs.showTopics &&
+      aggTopicLabelsByFlatIndex &&
+      idx < aggTopicLabelsByFlatIndex.length;
+    const labs = showChips ? aggTopicLabelsByFlatIndex[idx] : [];
+    if (labs && labs.length) {
+      labs.forEach((lab) => {
+        const s = document.createElement('span');
+        s.className = 'question-topic-chip';
+        s.textContent = lab;
+        chipWrap.appendChild(s);
+      });
+      chipWrap.classList.add('visible');
+    } else {
+      chipWrap.classList.remove('visible');
+    }
+  }
 
   const flagBtn = document.getElementById('flagBtn');
   flagBtn.innerHTML         = flagged[idx] ? '🚩<span class="btn-label"> Unflag</span>' : '⚑<span class="btn-label"> Flag</span>';
@@ -3018,16 +3543,34 @@ async function restartQuiz() {
   if (!AGGREGATE_MODE) {
     try {
       await sessionRef().delete();
+      // #region agent log
+      _agentDbg('H2', 'quiz.html:restartQuiz', 'session delete ok', { qid: QUIZ_ID });
+      // #endregion
     } catch (e) {
       console.warn('Session delete failed:', e);
+      // #region agent log
+      _agentDbg('H2', 'quiz.html:restartQuiz', 'session delete failed', { qid: QUIZ_ID, err: String(e && e.message ? e.message : e) });
+      // #endregion
     }
   }
+  // #region agent log
+  {
+    const nn = results.filter((x) => x != null).length;
+    _agentDbg('H5', 'quiz.html:restartQuiz', 'memory before saveState', { nonNullResults: nn, qid: QUIZ_ID });
+  }
+  // #endregion
   await saveState();
   try {
     await db.waitForPendingWrites();
   } catch (e) {
     console.warn('waitForPendingWrites (post-restart):', e);
   }
+  // #region agent log
+  {
+    const nn = results.filter((x) => x != null).length;
+    _agentDbg('H5', 'quiz.html:restartQuiz', 'after restart complete', { nonNullResults: nn, qid: QUIZ_ID });
+  }
+  // #endregion
   initSidebar();
   renderQuestion(0);
 }
@@ -3107,6 +3650,12 @@ document.addEventListener('keydown', e => {
 });
 
 topicInitModalHandlers();
+
+function saveStateOnPageHide() {
+  if (document.visibilityState === 'hidden') saveState();
+}
+window.addEventListener('visibilitychange', saveStateOnPageHide);
+window.addEventListener('pagehide', () => saveState());
 </script>
 </body>
 </html>
