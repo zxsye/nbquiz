@@ -635,13 +635,18 @@ let promptsLoaded = false;
 
 async function loadPrompts() {
   try {
-    const [curriculumRes, notesRes, mcqRes] = await Promise.all([
-      fetch('prompt-curriculum-expansion.txt'),
+    // Prefer latest schema-driven process prompt with legacy fallback.
+    let curriculumRes = await fetch('schema2-2.txt');
+    if (!curriculumRes.ok) {
+      curriculumRes = await fetch('prompt-curriculum-expansion.txt');
+    }
+
+    const [notesRes, mcqRes] = await Promise.all([
       fetch('prompt-notes.txt'),
       fetch('prompt-mcq-style-guide.txt')
     ]);
 
-    if (!curriculumRes.ok) throw new Error('Failed to load prompt-curriculum-expansion.txt');
+    if (!curriculumRes.ok) throw new Error('Failed to load schema2-2.txt or prompt-curriculum-expansion.txt');
     if (!notesRes.ok) throw new Error('Failed to load prompt-notes.txt');
     if (!mcqRes.ok) throw new Error('Failed to load prompt-mcq-style-guide.txt');
 
@@ -767,6 +772,37 @@ function migrateLegacyData() {
 
 let state = mkDefaultState();
 
+function normalizeCurriculumExpansionTemplate(template) {
+  const incoming = String(template || '');
+  if (!incoming.trim()) return DEFAULT_CURRICULUM_EXPANSION || incoming;
+
+  const hasSchema22 =
+    incoming.includes('"schemaVersion": "2.2.0"') ||
+    incoming.includes('"schemaVersion":"2.2.0"');
+  const hasLegacySchema =
+    incoming.includes('"schemaVersion": "2.1.0"') ||
+    incoming.includes('"schemaVersion":"2.1.0"') ||
+    incoming.includes('"schemaVersion": "2.0.0"') ||
+    incoming.includes('"schemaVersion":"2.0.0"');
+
+  // Auto-upgrade legacy saved prompt text to the new schema2-2 template.
+  if (!hasSchema22 && hasLegacySchema && DEFAULT_CURRICULUM_EXPANSION) {
+    return DEFAULT_CURRICULUM_EXPANSION;
+  }
+  return incoming;
+}
+
+function normalizePromptTemplatesInState() {
+  if (!state.promptTemplates || typeof state.promptTemplates !== 'object') {
+    state.promptTemplates = {};
+  }
+  state.promptTemplates.curriculumExpansion = normalizeCurriculumExpansionTemplate(
+    state.promptTemplates.curriculumExpansion
+  );
+  if (!state.promptTemplates.notes) state.promptTemplates.notes = DEFAULT_NOTES;
+  if (!state.promptTemplates.mcqStyleGuide) state.promptTemplates.mcqStyleGuide = DEFAULT_MCQ_STYLE_GUIDE;
+}
+
 async function initState() {
   // Wait for prompts to load first
   if (!promptsLoaded) {
@@ -789,6 +825,8 @@ async function initState() {
   } catch(e) {
     state = mkDefaultState();
   }
+  normalizePromptTemplatesInState();
+  persist();
 }
 
 function persist() {
@@ -887,6 +925,7 @@ async function loadPromptMxConfigFromFirestore() {
         state.promptTemplates[key] = d.content;
       }
     });
+    normalizePromptTemplatesInState();
   } catch (e) {
     console.warn('pmx_promptTemplates load failed', e);
   }
@@ -939,6 +978,7 @@ async function loadUserStudyOsStateFromFirestore() {
     state.weeks = Array.isArray(d.weeks) ? d.weeks : [];
     state.rawWeeks = Array.isArray(d.rawWeeks) ? d.rawWeeks : [];
     state.promptTemplates = Object.assign({}, state.promptTemplates, d.promptTemplates || {});
+    normalizePromptTemplatesInState();
     if (d.ui && typeof d.ui === 'object') {
       if (d.ui.activeTab != null) state.activeTab = d.ui.activeTab;
       if (d.ui.activeTopicId !== undefined) state.activeTopicId = d.ui.activeTopicId;
@@ -1014,7 +1054,7 @@ async function seedPmxFirestoreDefaults() {
     {
       id: 'curriculum_expansion',
       name: 'Curriculum expansion',
-      description: 'Raw week → structured sections/topics with descriptors',
+      description: 'Raw week → structured sections/topics with labelled content',
       content: DEFAULT_CURRICULUM_EXPANSION,
       placeholders: ['{{RAW_WEEK_DATA}}', '{{RAW_CURRICULUM_DATA}}'],
       stateKey: 'curriculumExpansion',
@@ -1859,7 +1899,7 @@ function generateWeekMarkdown(weekId) {
 // AI OUTPUT PARSER
 // ============================================================
 function parseAIOutput(text) {
-  // Try to parse as JSON first (schema v2.1.0 with content string, or legacy v2.0.0 with descriptors)
+  // Try to parse as JSON first (schema v2.2.0 with content string, or legacy v2.1.0/v2.0.0)
   let jsonError = null;
   let jsonParseResult = null;
   
@@ -1867,7 +1907,7 @@ function parseAIOutput(text) {
     const json = JSON.parse(text);
     jsonParseResult = json;
     
-    if ((json.schemaVersion === '2.0.0' || json.schemaVersion === '2.1.0') && Array.isArray(json.sections)) {
+    if ((json.schemaVersion === '2.0.0' || json.schemaVersion === '2.1.0' || json.schemaVersion === '2.2.0') && Array.isArray(json.sections)) {
       const result = parseJSONOutput(json);
       if (result.length > 0) {
         return { success: true, topics: result };
@@ -1890,17 +1930,17 @@ function parseAIOutput(text) {
       jsonError = {
         type: 'missing_schema',
         message: 'Missing schemaVersion field.',
-        details: 'The JSON is valid but does not have the required "schemaVersion": "2.1.0" field.',
+        details: 'The JSON is valid but does not have the required "schemaVersion": "2.2.0" field.',
         location: 'root',
-        hint: 'The AI output should start with: { "schemaVersion": "2.1.0", ... }'
+        hint: 'The AI output should start with: { "schemaVersion": "2.2.0", ... }'
       };
-    } else if (json.schemaVersion !== '2.0.0' && json.schemaVersion !== '2.1.0') {
+    } else if (json.schemaVersion !== '2.0.0' && json.schemaVersion !== '2.1.0' && json.schemaVersion !== '2.2.0') {
       jsonError = {
         type: 'wrong_schema',
         message: `Wrong schema version: "${json.schemaVersion}".`,
-        details: 'Expected schemaVersion to be "2.1.0" (or legacy "2.0.0").',
+        details: 'Expected schemaVersion to be "2.2.0" (or legacy "2.1.0"/"2.0.0").',
         location: 'root.schemaVersion',
-        hint: 'The AI output must have: "schemaVersion": "2.1.0"'
+        hint: 'The AI output must have: "schemaVersion": "2.2.0"'
       };
     }
     
@@ -1944,7 +1984,7 @@ function parseAIOutput(text) {
     error: {
       type: 'no_data',
       message: 'No recognizable data format found.',
-      details: 'The input could not be parsed as either JSON (schema v2.1.0/v2.0.0) or legacy markdown format.',
+      details: 'The input could not be parsed as either JSON (schema v2.2.0/v2.1.0/v2.0.0) or legacy markdown format.',
       location: null,
       hint: 'Ensure you are pasting the complete JSON response from Claude, starting with { and ending with }.'
     }
@@ -2012,7 +2052,7 @@ function parseJSONOutput(json) {
         originalContent: ''
       };
       
-      // Handle new schema 2.1.0 with content string
+      // Handle modern schema (2.1.0+) with content string
       if (topic.content && typeof topic.content === 'string') {
         quiz.originalContent = topic.content;
         quiz.descriptors = parseContentStringToDescriptors(topic.content);
@@ -2444,6 +2484,7 @@ function rawWeekDataForPrompt(rawWeek) {
 }
 
 function buildCurriculumExpansionPrompt(rawWeek) {
+  normalizePromptTemplatesInState();
   const payload = rawWeekDataForPrompt(rawWeek);
   let tpl = state.promptTemplates.curriculumExpansion;
   tpl = tpl.replace(/\{\{RAW_WEEK_DATA\}\}/g, payload);
@@ -2815,7 +2856,7 @@ function buildAIPanel(rawWeek) {
             <li><strong>Copy</strong> the prompt above (template + <strong>verbatim</strong> raw week JSON — no intermediate processing)</li>
             <li>Open <strong>Claude</strong> (claude.ai) in a new tab</li>
             <li><strong>Paste</strong> the prompt and wait for the JSON curriculum output</li>
-            <li><strong>Copy</strong> Claude's JSON response and paste it below (must include <code>&quot;schemaVersion&quot;: &quot;2.1.0&quot;</code>)</li>
+            <li><strong>Copy</strong> Claude's JSON response and paste it below (must include <code>&quot;schemaVersion&quot;: &quot;2.2.0&quot;</code>)</li>
             <li>Click <strong>Generate Topics</strong> to parse into study cards</li>
           </ol>
         </div>
@@ -2824,7 +2865,7 @@ function buildAIPanel(rawWeek) {
           <label class="input-label">Paste AI Output Here (JSON)</label>
           <textarea id="aiOutputText" style="min-height:300px; font-family:var(--font-mono); font-size:0.8rem;" 
             oninput="hideAIOutputError()"
-            placeholder="Paste Claude's JSON response here...\n\nExpected format:\n{\n  &quot;schemaVersion&quot;: &quot;2.1.0&quot;,\n  &quot;generatedDate&quot;: &quot;...&quot;,\n  &quot;weekId&quot;: &quot;...&quot;,\n  &quot;weekTitle&quot;: &quot;...&quot;,\n  &quot;sections&quot;: [\n    {\n      &quot;id&quot;: &quot;vascular-surgery&quot;,\n      &quot;title&quot;: &quot;Vascular Surgery&quot;,\n      &quot;topics&quot;: [\n        {\n          &quot;id&quot;: &quot;abdominal-aortic-aneurysm&quot;,\n          &quot;title&quot;: &quot;Abdominal aortic aneurysm&quot;,\n          &quot;content&quot;: &quot;Pathophysiology: ...\n\nClinical features: ...&quot;\n        }\n      ]\n    }\n  ],\n  &quot;educationalResources&quot;: [...]\n}"></textarea>
+            placeholder="Paste Claude's JSON response here...\n\nExpected format:\n{\n  &quot;schemaVersion&quot;: &quot;2.2.0&quot;,\n  &quot;generatedDate&quot;: &quot;...&quot;,\n  &quot;weekId&quot;: &quot;...&quot;,\n  &quot;weekTitle&quot;: &quot;...&quot;,\n  &quot;sections&quot;: [\n    {\n      &quot;id&quot;: &quot;vascular-surgery&quot;,\n      &quot;title&quot;: &quot;Vascular Surgery&quot;,\n      &quot;topics&quot;: [\n        {\n          &quot;id&quot;: &quot;abdominal-aortic-aneurysm&quot;,\n          &quot;title&quot;: &quot;Abdominal aortic aneurysm&quot;,\n          &quot;content&quot;: &quot;Pathophysiology: ...\n\nClinical features: ...&quot;\n        }\n      ]\n    }\n  ],\n  &quot;educationalResources&quot;: [...]\n}"></textarea>
         </div>
         
         <div id="aiOutputErrorBox" style="display:none;"></div>
@@ -3093,7 +3134,7 @@ function buildTemplatesTab() {
   const tpls = [
     {
       key: 'curriculumExpansion', title: 'Curriculum Expansion Prompt (AI → Topics)',
-      desc: 'Sent to Claude to expand the raw week export into structured sections/topics with descriptors.',
+      desc: 'Sent to Claude to expand the raw week export into structured sections/topics with labelled content.',
       placeholders: ['{{RAW_WEEK_DATA}}', '{{RAW_CURRICULUM_DATA}} (legacy)'],
       val: state.promptTemplates.curriculumExpansion
     },
