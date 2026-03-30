@@ -587,6 +587,102 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
 .delete-btn { all: unset; font-size: 0.78rem; color: #dc2626; cursor: pointer; font-family: var(--font-sans); opacity: 0.7; transition: opacity .15s; }
 .delete-btn:hover { opacity: 1; }
 
+/* === POPUP TOAST NOTIFICATION === */
+.pm-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.08);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.pm-toast.visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.pm-toast-icon { font-size: 1.2rem; }
+.pm-toast.success { border-color: var(--correct-ring); }
+.pm-toast.warning { border-color: #f59e0b; }
+.pm-toast.error { border-color: #ef4444; }
+
+/* === INLINE CONFIRMATION POPUP === */
+.pm-confirm {
+  position: absolute;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.06);
+  z-index: 9998;
+  min-width: 220px;
+  font-family: var(--font-sans);
+}
+.pm-confirm::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 20px;
+  width: 10px;
+  height: 10px;
+  background: var(--surface);
+  border-left: 1.5px solid var(--border);
+  border-top: 1.5px solid var(--border);
+  transform: rotate(45deg);
+}
+.pm-confirm-text {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+.pm-confirm-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.pm-confirm-btn {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 99px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.pm-confirm-btn.cancel {
+  background: var(--surface-2);
+  color: var(--text-2);
+  border-color: var(--border);
+}
+.pm-confirm-btn.cancel:hover { background: var(--border); color: var(--text); }
+.pm-confirm-btn.confirm {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+.pm-confirm-btn.confirm:hover { background: #1d4f8a; }
+.pm-confirm-btn.danger {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+.pm-confirm-btn.danger:hover { background: #b91c1c; }
+
 /* === SECTION SELECTOR === */
 .section-selector {
   display: flex;
@@ -624,6 +720,105 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
+// ============================================================
+// POPUP NOTIFICATION SYSTEM (replaces alert/confirm)
+// ============================================================
+
+function pmToast(message, type = 'info', duration = 3000) {
+  let toast = document.querySelector('.pm-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.className = 'pm-toast';
+    document.body.appendChild(toast);
+  }
+  const icons = { success: '✅', warning: '⚠️', error: '❌', info: 'ℹ️' };
+  toast.className = `pm-toast ${type}`;
+  toast.innerHTML = `<span class="pm-toast-icon">${icons[type] || icons.info}</span><span>${message}</span>`;
+  requestAnimationFrame(() => toast.classList.add('visible'));
+  if (duration > 0) {
+    setTimeout(() => {
+      toast.classList.remove('visible');
+    }, duration);
+  }
+}
+
+function pmAlert(message, type = 'info') {
+  pmToast(message, type, 4000);
+}
+
+function pmConfirm(message, onConfirm, onCancel, options = {}) {
+  const { danger = false, confirmText = 'Confirm', cancelText = 'Cancel', anchor = null } = options;
+  const existing = document.querySelector('.pm-confirm');
+  if (existing) existing.remove();
+
+  const confirm = document.createElement('div');
+  confirm.className = 'pm-confirm';
+  confirm.innerHTML = `
+    <div class="pm-confirm-text">${message}</div>
+    <div class="pm-confirm-buttons">
+      <button class="pm-confirm-btn cancel">${cancelText}</button>
+      <button class="pm-confirm-btn confirm ${danger ? 'danger' : ''}">${confirmText}</button>
+    </div>
+  `;
+
+  const close = () => {
+    confirm.style.opacity = '0';
+    confirm.style.transform = 'translateY(-8px)';
+    setTimeout(() => confirm.remove(), 200);
+  };
+
+  confirm.querySelector('.cancel').onclick = () => {
+    close();
+    if (onCancel) onCancel();
+  };
+  confirm.querySelector('.confirm').onclick = () => {
+    close();
+    onConfirm();
+  };
+
+  confirm.style.transition = 'opacity 0.2s, transform 0.2s';
+  document.body.appendChild(confirm);
+
+  if (anchor && anchor.getBoundingClientRect) {
+    const rect = anchor.getBoundingClientRect();
+    const confirmRect = confirm.getBoundingClientRect();
+    let left = rect.left + (rect.width / 2) - 20;
+    let top = rect.bottom + 8;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    if (left + confirmRect.width > viewportWidth - 16) {
+      left = viewportWidth - confirmRect.width - 16;
+    }
+    if (left < 16) left = 16;
+    if (top + confirmRect.height > viewportHeight - 16) {
+      top = rect.top - confirmRect.height - 8;
+      confirm.style.setProperty('--arrow-top', 'auto');
+      confirm.style.setProperty('--arrow-bottom', '-6px');
+      confirm.querySelector('style')?.remove();
+      confirm.insertAdjacentHTML('afterbegin', `<style>.pm-confirm::before { top: auto; bottom: -6px; transform: rotate(225deg); left: ${rect.left + rect.width/2 - left - 5}px; }</style>`);
+    } else {
+      confirm.querySelector('style')?.remove();
+      confirm.insertAdjacentHTML('afterbegin', `<style>.pm-confirm::before { left: ${rect.left + rect.width/2 - left - 5}px; }</style>`);
+    }
+    confirm.style.left = `${left}px`;
+    confirm.style.top = `${top}px`;
+  } else {
+    confirm.style.left = '50%';
+    confirm.style.top = '50%';
+    confirm.style.transform = 'translate(-50%, -50%)';
+    confirm.querySelector('style')?.remove();
+  }
+
+  const outsideClick = (e) => {
+    if (!confirm.contains(e.target)) {
+      close();
+      document.removeEventListener('click', outsideClick, true);
+      if (onCancel) onCancel();
+    }
+  };
+  setTimeout(() => document.addEventListener('click', outsideClick, true), 10);
+}
+
 // ============================================================
 // DEFAULT TEMPLATES (loaded dynamically from text files)
 // ============================================================
@@ -1027,12 +1222,19 @@ function schedulePmxCloudSave() {
   }, 2000);
 }
 
-async function seedPmxFirestoreDefaults() {
+async function seedPmxFirestoreDefaults(anchorBtn) {
   if (!pmxDb || !pmxUser || !pmxIsAdmin) {
-    alert('Admin sign-in required.');
+    pmAlert('Admin sign-in required.', 'warning');
     return;
   }
-  if (!confirm('Seed pmx_* collections with default templates, steps, workflow, and sections? Existing fields will be merged.')) return;
+  return new Promise((resolve) => {
+    pmConfirm('Seed pmx_* collections with default templates, steps, workflow, and sections? Existing fields will be merged.', async () => {
+      resolve(await _doSeedPmxFirestoreDefaults());
+    }, () => resolve(false), { anchor: anchorBtn });
+  });
+}
+
+async function _doSeedPmxFirestoreDefaults() {
 
   const batch = pmxDb.batch();
   const TS = firebase.firestore.FieldValue.serverTimestamp();
@@ -1138,16 +1340,16 @@ async function seedPmxFirestoreDefaults() {
 
   try {
     await batch.commit();
-    alert('Seed complete. Use “Reload catalog from Firestore” to apply in this session.');
+    pmAlert('Seed complete. Use “Reload catalog from Firestore” to apply in this session.', 'success');
   } catch (e) {
     console.error(e);
-    alert('Seed failed: ' + (e && e.message));
+    pmAlert('Seed failed: ' + (e && e.message), 'error');
   }
 }
 
 async function reloadPromptMxFromFirestore() {
   if (!pmxUser) {
-    alert('Sign in first.');
+    pmAlert('Sign in first.', 'warning');
     return;
   }
   STEPS = cloneDefaultSteps();
@@ -1161,14 +1363,14 @@ async function reloadPromptMxFromFirestore() {
   });
   await loadPromptMxConfigFromFirestore();
   render();
-  alert('Reloaded catalog from Firestore (templates, steps, sections).');
+  pmAlert('Reloaded catalog from Firestore (templates, steps, sections).', 'success');
 }
 
 function signInPmxGoogle() {
   if (!pmxAuth) return;
   const provider = new firebase.auth.GoogleAuthProvider();
   pmxAuth.signInWithPopup(provider).catch(e => {
-    alert('Sign-in failed: ' + (e && e.message));
+    pmAlert('Sign-in failed: ' + (e && e.message), 'error');
   });
 }
 
@@ -1178,26 +1380,26 @@ function signOutPmx() {
 
 async function pullUserStateFromFirestore() {
   if (!pmxUser) {
-    alert('Sign in first.');
+    pmAlert('Sign in first.', 'warning');
     return;
   }
   await loadPromptMxConfigFromFirestore();
   const ok = await loadUserStudyOsStateFromFirestore();
   render();
-  alert(ok ? 'Loaded your data from Firestore.' : 'No saved cloud state yet.');
+  pmAlert(ok ? 'Loaded your data from Firestore.' : 'No saved cloud state yet.', 'success');
 }
 
 async function pushUserStateToFirestore() {
   if (!pmxUser) {
-    alert('Sign in first.');
+    pmAlert('Sign in first.', 'warning');
     return;
   }
   try {
     await saveUserStudyOsStateToFirestore();
-    alert('Saved to Firestore.');
+    pmAlert('Saved to Firestore.', 'success');
   } catch (e) {
     console.error('Push to Firestore failed:', e);
-    alert('Failed to save to Firestore: ' + (e.message || 'Unknown error'));
+    pmAlert('Failed to save to Firestore: ' + (e.message || 'Unknown error'), 'error');
   }
 }
 
@@ -2131,7 +2333,7 @@ function parseLegacyMarkdownOutput(text) {
 // ============================================================
 function importRawWeek(weekId, section, format) {
   const data = WEEK_DATA[weekId];
-  if (!data) { alert('Week not found.'); return; }
+  if (!data) { pmAlert('Week not found.', 'warning'); return; }
   
   const rawData = format === 'json' ? generateWeekJson(weekId) : generateWeekMarkdown(weekId);
   
@@ -2159,8 +2361,13 @@ function importRawWeek(weekId, section, format) {
   setState({ rawWeeks: [...state.rawWeeks, rawWeek] });
 }
 
-function deleteRawWeek(rawWeekId) {
-  if (!confirm('Delete this raw week? You can re-import it later.')) return;
+function deleteRawWeek(rawWeekId, anchorBtn) {
+  pmConfirm('Delete this raw week? You can re-import it later.', () => {
+    _doDeleteRawWeek(rawWeekId);
+  }, null, { danger: true, anchor: anchorBtn });
+}
+
+function _doDeleteRawWeek(rawWeekId) {
   const newRawWeeks = state.rawWeeks.filter(r => r.id !== rawWeekId);
   const updates = { rawWeeks: newRawWeeks };
   if (state.activeRawWeekId === rawWeekId) {
@@ -2169,9 +2376,13 @@ function deleteRawWeek(rawWeekId) {
   setState(updates);
 }
 
-function undoProcessRawWeek(rawWeekId) {
-  if (!confirm('Undo processing? This will delete the generated topics and return the week to unprocessed state.')) return;
-  
+function undoProcessRawWeek(rawWeekId, anchorBtn) {
+  pmConfirm('Undo processing? This will delete the generated topics and return the week to unprocessed state.', () => {
+    _doUndoProcessRawWeek(rawWeekId);
+  }, null, { danger: true, anchor: anchorBtn });
+}
+
+function _doUndoProcessRawWeek(rawWeekId) {
   // Remove the generated week from state.weeks
   const newWeeks = state.weeks.filter(w => w.rawWeekId !== rawWeekId);
   
@@ -2304,8 +2515,13 @@ function hideAIOutputError() {
   }
 }
 
-function deleteWeek(weekId) {
-  if (!confirm('Delete this week and all its topics? This cannot be undone.')) return;
+function deleteWeek(weekId, anchorBtn) {
+  pmConfirm('Delete this week and all its topics? This cannot be undone.', () => {
+    _doDeleteWeek(weekId);
+  }, null, { danger: true, confirmText: 'Delete', anchor: anchorBtn });
+}
+
+function _doDeleteWeek(weekId) {
   const newWeeks = state.weeks.filter(w => w.id !== weekId);
   const updates = { weeks: newWeeks };
   if (state.activeTopicId && !newWeeks.flatMap(w => w.topics).find(t => t.id === state.activeTopicId)) {
@@ -2598,7 +2814,7 @@ function buildCloudTab() {
            <strong>"Reload from Firestore"</strong> pulls the latest shared templates from the cloud into your current session.
          </p>
          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-           <button type="button" class="btn btn-primary btn-sm" onclick="seedPmxFirestoreDefaults()">Seed Firestore defaults</button>
+           <button type="button" class="btn btn-primary btn-sm" onclick="seedPmxFirestoreDefaults(this)">Seed Firestore defaults</button>
            <button type="button" class="btn btn-ghost btn-sm" onclick="reloadPromptMxFromFirestore()">Reload catalog from Firestore</button>
          </div>
        </div>`
@@ -2834,9 +3050,9 @@ function buildAIPanel(rawWeek) {
         </div>
         ${isProcessed ? `
           <span class="badge badge-studied">✓ Processed</span>
-          <button class="btn btn-ghost btn-sm" onclick="deleteRawWeek('${rawWeek.id}')" style="color:#dc2626; border-color:#fca5a5; margin-left:8px;">Remove</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteRawWeek('${rawWeek.id}', this)" style="color:#dc2626; border-color:#fca5a5; margin-left:8px;">Remove</button>
         ` : `
-          <button class="btn btn-ghost btn-sm" onclick="deleteRawWeek('${rawWeek.id}')" style="color:#dc2626; border-color:#fca5a5;">Remove</button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteRawWeek('${rawWeek.id}', this)" style="color:#dc2626; border-color:#fca5a5;">Remove</button>
         `}
       </div>
       
@@ -2880,7 +3096,7 @@ function buildAIPanel(rawWeek) {
           Go to the <strong>Topics</strong> or <strong>Workflow</strong> tab to study them.
         </div>
         <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px;">
-          <button class="btn btn-ghost" onclick="undoProcessRawWeek('${rawWeek.id}')" style="color:#666; border-color:var(--border);">Undo Process</button>
+          <button class="btn btn-ghost" onclick="undoProcessRawWeek('${rawWeek.id}', this)" style="color:#666; border-color:var(--border);">Undo Process</button>
           <button class="btn btn-primary" onclick="setTab('topics')">View Topics →</button>
         </div>
       `}
@@ -2925,7 +3141,7 @@ function buildWeekSection(w) {
         <div class="week-section-title">${esc(w.name)}</div>
         ${buildBadge(studied===total&&total>0 ? 'studied' : 'pending', `${studied}/${total} done`)}
         <span style="flex:1"></span>
-        <button class="btn btn-ghost btn-sm" style="font-size:.76rem;color:#dc2626;border-color:#fca5a5;" onclick="deleteWeek('${w.id}')">Remove Week</button>
+        <button class="btn btn-ghost btn-sm" style="font-size:.76rem;color:#dc2626;border-color:#fca5a5;" onclick="deleteWeek('${w.id}', this)">Remove Week</button>
       </div>
       
       ${Object.entries(grouped).map(([topicName, topics]) => `
@@ -3157,7 +3373,7 @@ function buildTemplatesTab() {
       <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
         <div class="section-title" style="margin-bottom:0">Prompt Templates</div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-ghost btn-sm" onclick="resetTemplates()">↩ Factory Reset</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetTemplates(this)">↩ Factory Reset</button>
           <button class="btn btn-primary btn-sm" onclick="saveTemplates()">Save All Templates</button>
         </div>
       </div>
@@ -3191,7 +3407,7 @@ function buildTemplatesTab() {
             </div>
           </div>`).join('')}
         <div style="display:flex;justify-content:flex-end;gap:8px;padding-bottom:8px;">
-          <button class="btn btn-ghost btn-sm" onclick="resetTemplates()">↩ Factory Reset</button>
+          <button class="btn btn-ghost btn-sm" onclick="resetTemplates(this)">↩ Factory Reset</button>
           <button class="btn btn-primary" onclick="saveTemplates()">Save All Templates</button>
         </div>
       </div>
@@ -3223,7 +3439,7 @@ function handleRawImport() {
   const weekId = document.getElementById('importWeekId')?.value;
   const format = document.querySelector('input[name="importFormat"]:checked')?.value || 'json';
   
-  if (!weekId) { alert('Select a week first.'); return; }
+  if (!weekId) { pmAlert('Select a week first.', 'warning'); return; }
   
   importRawWeek(weekId, state.selectedSection, format);
   document.getElementById('importWeekId').value = '';
@@ -3352,7 +3568,7 @@ function copyNotesResult(topicId, btn) {
   if (!topic) return;
   const notes = topic.notes || '';
   if (!notes.trim()) {
-    alert('No notes to copy. Paste the AI response into the notes box first.');
+    pmAlert('No notes to copy. Paste the AI response into the notes box first.', 'warning');
     return;
   }
   navigator.clipboard.writeText(notes).then(() => {
@@ -3497,9 +3713,13 @@ async function saveTemplates() {
   btns.forEach(b => { if (b.textContent.includes('Save All')) { const o=b.innerHTML; b.innerHTML='✅ Saved All!'; setTimeout(()=>{b.innerHTML=o;},1500); }});
 }
 
-function resetTemplates() {
-  if (!confirm('Factory reset all templates? This will restore the original built-in prompts and discard your edits.')) return;
-  
+function resetTemplates(anchorBtn) {
+  pmConfirm('Factory reset all templates? This will restore the original built-in prompts and discard your edits.', () => {
+    _doResetTemplates();
+  }, null, { danger: true, confirmText: 'Reset', anchor: anchorBtn });
+}
+
+function _doResetTemplates() {
   const keys = ['curriculumExpansion', 'notes', 'mcqStyleGuide'];
   const oldTemplates = { ...state.promptTemplates };
   const newTemplates = {
