@@ -363,6 +363,7 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
   box-shadow: var(--shadow);
 }
 .prompt-combined-block { background: #1e1b16; border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; }
+.prompt-combined-block.copy-style { background: #e8e6e1; border: 1.5px solid #c5c3be; }
 .prompt-combined-header {
   display: flex;
   justify-content: space-between;
@@ -371,13 +372,17 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
   border-bottom: 1px solid rgba(255,255,255,.1);
   background: rgba(255,255,255,.03);
 }
+.prompt-combined-block.copy-style .prompt-combined-header { border-bottom: 1px solid rgba(0,0,0,.1); background: transparent; }
 .prompt-combined-label { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .08em; }
+.prompt-combined-block.copy-style .prompt-combined-label { color: #666; }
 .prompt-combined-content {
   padding: 16px;
   font-family: var(--font-mono);
   font-size: 0.76rem;
   line-height: 1.65;
   color: rgba(255,255,255,.82);
+}
+.prompt-combined-block.copy-style .prompt-combined-content { color: #1a1a1a; }
   white-space: pre-wrap;
   max-height: 400px;
   overflow-y: auto;
@@ -525,6 +530,12 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
   max-height: 280px;
   overflow-y: auto;
 }
+
+/* Light grey variant for copy-from prompt blocks */
+.prompt-block.copy-style { background: #e8e6e1; border: 1.5px solid #c5c3be; }
+.prompt-block.copy-style .prompt-block-header { border-bottom: 1px solid rgba(0,0,0,.1); }
+.prompt-block.copy-style .prompt-block-label { color: #666; }
+.prompt-block.copy-style .prompt-block-content { color: #1a1a1a; }
 .result-section { margin-bottom: 16px; }
 
 /* === NOTES RESULT BOX === */
@@ -538,18 +549,40 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
   background: rgba(255,255,255,.02);
 }
 .notes-result-label { font-family: var(--font-mono); font-size: 0.68rem; font-weight: 600; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: .08em; }
+/* Light grey variant for notes result boxes */
+.notes-result-box.copy-style { background: #e8e6e1; border: 1.5px solid #c5c3be; }
+.notes-result-box.copy-style .notes-result-header { border-bottom: 1px solid rgba(0,0,0,.1); background: transparent; }
+.notes-result-box.copy-style .notes-result-label { color: #666; }
 .notes-result-content {
   width: 100%;
-  border: none;
+  border: none !important;
+  border-radius: 0 !important;
   padding: 16px;
   font-family: var(--font-mono);
   font-size: 0.76rem;
   line-height: 1.65;
   color: rgba(255,255,255,.82);
-  background: transparent;
+  background: transparent !important;
   resize: vertical;
 }
 .notes-result-content:focus { outline: none; }
+.notes-result-box.copy-style .notes-result-content { color: #1a1a1a; }
+
+/* Copy box (read-only, light grey) - for boxes users copy FROM */
+.copy-box {
+  background: #e8e6e1 !important;
+  border: 1.5px solid #c5c3be !important;
+  border-radius: var(--radius);
+  color: #1a1a1a !important;
+}
+
+/* Edit box (editable, dark/black) - for boxes users paste INTO */
+.edit-box {
+  background: #0d0c0a !important;
+  border: 1.5px solid #2a2824 !important;
+  border-radius: var(--radius);
+  color: rgba(255,255,255,.82) !important;
+}
 
 .step-footer { display: flex; justify-content: flex-end; align-items: center; gap: 10px; padding-top: 4px; }
 .step-complete-label { color: var(--correct); font-size: 0.85rem; font-weight: 600; }
@@ -3057,11 +3090,11 @@ function buildAIPanel(rawWeek) {
       </div>
       
       ${!isProcessed ? `
-        <div class="prompt-combined-block">
+        <div class="prompt-combined-block copy-style">
           <div class="prompt-combined-header">
             <span class="prompt-combined-label">Prompt + Curriculum Data → Paste into Claude</span>
             <button class="btn btn-ghost btn-sm"
-                    style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15);font-size:.76rem;"
+                    style="color:#555;border-color:rgba(0,0,0,.2);font-size:.76rem;"
                     onclick="copyCurriculumPrompt(this)">📋 Copy</button>
           </div>
           <div class="prompt-combined-content" id="curriculumPromptContent">${esc(prompt)}</div>
@@ -3079,7 +3112,7 @@ function buildAIPanel(rawWeek) {
         
         <div style="margin-bottom:16px;">
           <label class="input-label">Paste AI Output Here (JSON)</label>
-          <textarea id="aiOutputText" style="min-height:300px; font-family:var(--font-mono); font-size:0.8rem;" 
+          <textarea id="aiOutputText" class="edit-box" style="min-height:300px; font-family:var(--font-mono); font-size:0.8rem;" 
             oninput="hideAIOutputError()"
             placeholder="Paste Claude's JSON response here...\n\nExpected format:\n{\n  &quot;schemaVersion&quot;: &quot;2.2.0&quot;,\n  &quot;generatedDate&quot;: &quot;...&quot;,\n  &quot;weekId&quot;: &quot;...&quot;,\n  &quot;weekTitle&quot;: &quot;...&quot;,\n  &quot;sections&quot;: [\n    {\n      &quot;id&quot;: &quot;vascular-surgery&quot;,\n      &quot;title&quot;: &quot;Vascular Surgery&quot;,\n      &quot;topics&quot;: [\n        {\n          &quot;id&quot;: &quot;abdominal-aortic-aneurysm&quot;,\n          &quot;title&quot;: &quot;Abdominal aortic aneurysm&quot;,\n          &quot;content&quot;: &quot;Pathophysiology: ...\n\nClinical features: ...&quot;\n        }\n      ]\n    }\n  ],\n  &quot;educationalResources&quot;: [...]\n}"></textarea>
         </div>
@@ -3288,11 +3321,11 @@ function buildStepCard(step, topic, nextStepId) {
         </div>
 
         ${prompt ? `
-          <div class="prompt-block">
+          <div class="prompt-block copy-style">
             <div class="prompt-block-header">
               <span class="prompt-block-label">Prompt → paste into ${step.promptTarget}</span>
               <button class="btn btn-ghost btn-sm"
-                      style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15);font-size:.76rem;"
+                      style="color:#555;border-color:rgba(0,0,0,.2);font-size:.76rem;"
                       onclick="copyPrompt('${step.id}','${topic.id}',this)">📋 Copy</button>
             </div>
             <div class="prompt-block-content">${esc(prompt)}</div>
@@ -3314,18 +3347,18 @@ function buildStepCard(step, topic, nextStepId) {
           </div>` : `
           <div class="result-section">
             <label class="input-label">${step.resultLabel}</label>
-            <textarea style="min-height:110px" placeholder="Paste the AI response here..."
+            <textarea class="edit-box" style="min-height:110px" placeholder="Paste the AI response here..."
               oninput="saveResult('${topic.id}','${step.resultKey}',this.value)">${esc(resultVal)}</textarea>
           </div>`) : ''}
 
         ${step.id === 'upload' && topic.notes ? `
           <div class="result-section">
             <label class="input-label">Notes from Step 1 (ready to copy)</label>
-            <div class="notes-result-box">
+            <div class="notes-result-box copy-style">
               <div class="notes-result-header">
                 <span class="notes-result-label">Generated Notes</span>
                 <button class="btn btn-ghost btn-sm"
-                        style="color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.15);font-size:.76rem;"
+                        style="color:#555;border-color:rgba(0,0,0,.2);font-size:.76rem;"
                         onclick="copyNotesResult('${topic.id}',this)">📋 Copy</button>
               </div>
               <div class="notes-result-content" style="white-space:pre-wrap;min-height:120px;max-height:300px;overflow-y:auto;">${esc(topic.notes)}</div>
@@ -3402,7 +3435,7 @@ function buildTemplatesTab() {
                 <div class="placeholder-hint">
                   ${t.placeholders.map(p => `<span class="placeholder-tag">${p}</span>`).join('')}
                 </div>` : ''}
-              <textarea class="mono" id="tpl-${t.key}" style="min-height:200px">${esc(t.val)}</textarea>
+              <textarea class="mono edit-box" id="tpl-${t.key}" style="min-height:200px">${esc(t.val)}</textarea>
               <div class="diff-display" id="diff-${t.key}" style="display:none;margin-top:12px;padding:12px;background:var(--surface-2);border-radius:8px;font-size:.78rem;font-family:var(--font-mono);white-space:pre-wrap;max-height:200px;overflow-y:auto;"></div>
             </div>
           </div>`).join('')}
