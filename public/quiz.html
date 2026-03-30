@@ -3353,6 +3353,21 @@ function submitAnswer(opts) {
 }
 
 function goBack() {
+  const indices = topicGetActiveFilterIndices();
+  if (indices && indices.size > 0) {
+    // Find previous visible question in filtered set
+    const sorted = Array.from(indices).sort((a, b) => a - b);
+    const idx = sorted.findIndex(i => i >= current);
+    const prevIdx = idx > 0 ? sorted[idx - 1] : sorted[sorted.length - 1];
+    if (prevIdx === undefined || prevIdx === current) return;
+    if (!answered) results[current] = null;
+    current = prevIdx;
+    answered = false; selected = null;
+    renderQuestion(current);
+    const r = results[current];
+    if (r && !r.skipped) { selected = r.chosen; submitAnswer({ replay: true }); }
+    return;
+  }
   if (current <= 0) return;
   if (!answered) results[current] = null;
   current--;
@@ -3363,6 +3378,20 @@ function goBack() {
 }
 
 function nextQuestion() {
+  const indices = topicGetActiveFilterIndices();
+  if (indices && indices.size > 0) {
+    // Find next visible question in filtered set
+    const sorted = Array.from(indices).sort((a, b) => a - b);
+    const idx = sorted.findIndex(i => i > current);
+    const nextIdx = idx >= 0 ? sorted[idx] : sorted[0];
+    if (nextIdx === undefined) { showResults(); return; }
+    current = nextIdx;
+    saveState();
+    renderQuestion(current);
+    const r = results[current];
+    if (r && !r.skipped) { selected = r.chosen; submitAnswer({ replay: true }); }
+    return;
+  }
   current++;
   saveState();
   if (current >= QUESTIONS.length) showResults();
