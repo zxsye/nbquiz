@@ -710,6 +710,7 @@ function cancelNew(field) {
 function onNewInput(field) {
   newVals[field] = document.getElementById(`new${cap(field)}Txt`).value;
   if (field === 'week') onWeekChange();
+  if (field === 'topic') onTopicChange();
   checkReady();
 }
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
