@@ -1261,7 +1261,7 @@ async function seedPmxFirestoreDefaults(anchorBtn) {
     return;
   }
   return new Promise((resolve) => {
-    pmConfirm('Seed pmx_* collections with default templates, steps, workflow, and sections? Existing fields will be merged.', async () => {
+    pmConfirm('Publish your current saved templates to the cloud? This will overwrite the shared templates other users download.', async () => {
       resolve(await _doSeedPmxFirestoreDefaults());
     }, () => resolve(false), { anchor: anchorBtn });
   });
@@ -1290,7 +1290,7 @@ async function _doSeedPmxFirestoreDefaults() {
       id: 'curriculum_expansion',
       name: 'Curriculum expansion',
       description: 'Raw week → structured sections/topics with labelled content',
-      content: DEFAULT_CURRICULUM_EXPANSION,
+      content: state.promptTemplates.curriculumExpansion,
       placeholders: ['{{RAW_WEEK_DATA}}', '{{RAW_CURRICULUM_DATA}}'],
       stateKey: 'curriculumExpansion',
       version: 1,
@@ -1299,7 +1299,7 @@ async function _doSeedPmxFirestoreDefaults() {
       id: 'study_notes',
       name: 'Study notes',
       description: 'Clinical notes from topic descriptors (6 pillars format)',
-      content: DEFAULT_NOTES,
+      content: state.promptTemplates.notes,
       placeholders: ['{{TITLE}}', '{{DESCRIPTORS}}'],
       stateKey: 'notes',
       version: 2,
@@ -1308,7 +1308,7 @@ async function _doSeedPmxFirestoreDefaults() {
       id: 'mcq_style_guide',
       name: 'MCQ style guide',
       description: 'NotebookLM MCQ generation',
-      content: DEFAULT_MCQ_STYLE_GUIDE,
+      content: state.promptTemplates.mcqStyleGuide,
       placeholders: [],
       stateKey: 'mcqStyleGuide',
       version: 1,
@@ -2618,6 +2618,17 @@ function markDone(topicId, stepId) {
       if (stepBody) stepBody.classList.add('open');
       const chevron = nextCard.querySelector('.step-chevron');
       if (chevron) chevron.textContent = '▲';
+
+      // If completing the notes step, show and update the notes box in the upload card
+      if (stepId === 'notes' && nextId === 'upload' && stepBody) {
+        const freshTopic = findTopic(topicId);
+        const notesBox = stepBody.querySelector('.upload-notes-box');
+        if (notesBox && freshTopic && freshTopic.notes) {
+          const contentEl = notesBox.querySelector('.notes-result-content');
+          if (contentEl) contentEl.textContent = freshTopic.notes;
+          notesBox.style.display = '';
+        }
+      }
     }
   } else {
     state.openStepId = null;
@@ -2696,11 +2707,11 @@ function updateStepCardVisuals(topicId, stepId, done) {
   // Update undo button in header
   const header = card.querySelector('.step-header');
   if (header) {
-    const existingUndo = header.querySelector('button[onclick*="markUndone"]');
+    const existingUndo = header.querySelector('.step-undo-btn');
     if (done && !existingUndo) {
       const chevron = header.querySelector('.step-chevron');
       const undoBtn = document.createElement('button');
-      undoBtn.className = 'btn btn-ghost btn-sm';
+      undoBtn.className = 'btn btn-ghost btn-sm step-undo-btn';
       undoBtn.style.cssText = 'font-size:.76rem;';
       undoBtn.textContent = '↩ Undo';
       undoBtn.onclick = (e) => { e.stopPropagation(); markUndone(topicId, stepId); };
@@ -2843,7 +2854,7 @@ function buildCloudTab() {
     ? `<div class="card" style="padding:20px;margin-bottom:16px;">
          <div class="section-title" style="font-size:1.05rem;margin-bottom:10px;">Admin — Share Templates With Users</div>
          <p style="font-size:.86rem;color:var(--text-2);line-height:1.55;margin-bottom:14px;">
-           <strong>"Seed Firestore"</strong> publishes the built-in prompt templates to the cloud so other users can download them.<br>
+           <strong>"Seed Firestore"</strong> publishes your current saved prompt templates to the cloud so other users can download them.<br>
            <strong>"Reload from Firestore"</strong> pulls the latest shared templates from the cloud into your current session.
          </p>
          <div style="display:flex;flex-wrap:wrap;gap:8px;">
@@ -3311,7 +3322,7 @@ function buildStepCard(step, topic, nextStepId) {
           <div class="step-title">${step.icon} ${step.title}</div>
           <div class="step-subtitle">${step.subtitle}</div>
         </div>
-        ${done ? `<button class="btn btn-ghost btn-sm" style="font-size:.76rem;" onclick="event.stopPropagation();markUndone('${topic.id}','${step.id}')">↩ Undo</button>` : ''}
+        ${done ? `<button class="btn btn-ghost btn-sm step-undo-btn" style="font-size:.76rem;" onclick="event.stopPropagation();markUndone('${topic.id}','${step.id}')">↩ Undo</button>` : ''}
         <span class="step-chevron">${isOpen ? '▲' : '▼'}</span>
       </div>
 
@@ -3351,8 +3362,8 @@ function buildStepCard(step, topic, nextStepId) {
               oninput="saveResult('${topic.id}','${step.resultKey}',this.value)">${esc(resultVal)}</textarea>
           </div>`) : ''}
 
-        ${step.id === 'upload' && topic.notes ? `
-          <div class="result-section">
+        ${step.id === 'upload' ? `
+          <div class="result-section upload-notes-box"${topic.notes ? '' : ' style="display:none"'}>
             <label class="input-label">Notes from Step 1 (ready to copy)</label>
             <div class="notes-result-box copy-style">
               <div class="notes-result-header">
