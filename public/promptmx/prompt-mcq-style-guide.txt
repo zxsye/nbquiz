@@ -1,0 +1,74 @@
+# Medical MCQ Style Guide
+*Single-best-answer questions for final-year medical students*
+
+---
+
+## CORE PRINCIPLE
+Every question tests the **next best step**, not merely a valid step. Distractors must be plausible and from the same category as the correct answer — students should need to reason through *why* each distractor fails, not just recognise it as wrong.
+
+**Before generating each question, reason through:**
+1. What concept am I testing?
+2. What would a student plausibly choose instead, and why?
+3. Does the stem contain exactly one discriminating detail that separates the correct answer from all distractors?
+
+Then write the question.
+
+---
+
+## ANSWER OPTIONS
+- Always **5 options (A–E)**, one single best answer.
+- Distractors must be: the right action at the wrong time; the right treatment for a related but distinct condition; a valid step that isn't the *most appropriate* given the specific context; or the next step in the sequence rather than the current one.
+
+---
+
+## QUESTION FORMATS
+
+### 1. Clinical Vignette (majority of questions)
+2–5 sentences: patient demographics, chief complaint, relevant history, examination findings, pertinent results. Occasionally include irrelevant history to train filtering.
+
+- **Diagnosis** — enough discriminating features to favour one diagnosis; ask *"most likely diagnosis"* or *"most important to exclude"*
+- **Investigation** — specify what's already been done; distractors are too invasive, less specific, or premature
+- **Acute management** — time-critical scenario; most common trap is treating before stabilising or skipping a diagnostic step
+- **Definitive / next step** — initial action already described; tests sequence of care, not isolated steps; highest-yield format
+- **Complication recognition** — post-procedure patient with temporal clues (e.g., "day 2 post-op"); ask for cause or next step
+- **Pathophysiology / mechanism** — underlying mechanism, expected investigation finding, or drug rationale
+
+### 2. Direct Fact-Based
+1–2 sentence stem for foundational knowledge not suited to a vignette. Epidemiology, classification, pharmacology. Distractors must span a clinically meaningful range — not trivially obvious.
+
+### 3. Sequential / Multi-Step Management
+State the scenario → state the initial action taken → describe patient response → ask for next best step. Each distractor is a step that is premature, already done, or appropriate for a different clinical trajectory.
+
+### 4. Lab / Imaging Interpretation
+Brief vignette + lab values (electrolytes, LFTs, ABG, coagulation) or imaging description. Ask for diagnosis or next action. Distractors have overlapping biochemical or radiological profiles.
+
+### 5. Exception Stem ("Which is NOT…")
+Four options are genuine associations; the correct answer is plausible but belongs to a related, distinct condition. Tests incomplete mental models. Never use when the exception is trivially obvious.
+
+### 6. Applied Anatomy / Procedure
+Frame around a clinical consequence. Distractors are nearby anatomical structures plausible in the procedural context.
+
+---
+
+## BLOOM'S LEVEL MIX
+| Level      | Target | Examples                                                         |
+| ---------- | ------ | ---------------------------------------------------------------- |
+| Remember   | 15%    | Fact-based, classification                                       |
+| Understand | 25%    | Pathophysiology, lab interpretation                              |
+| Apply      | 35%    | Vignette → diagnosis or initial management                       |
+| Analyse    | 25%    | Sequential management, complication recognition, exception stems |
+
+---
+
+## EACH QUESTION MUST INCLUDE AN EXPLANATION COVERING:
+1. Why the correct answer is correct
+2. Why the most tempting distractor is wrong
+3. A clinical pearl or decision rule where applicable
+
+---
+
+## AVOID
+- "All of the above" / "None of the above"
+- Stem clues that make the answer obvious without reasoning
+- Two answers that are equally defensible — add one discriminating clinical detail if needed
+- Pure recall questions unless the fact is genuinely high-yield

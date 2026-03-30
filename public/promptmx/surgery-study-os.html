@@ -625,384 +625,38 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
 // ============================================================
-// DEFAULT TEMPLATES
+// DEFAULT TEMPLATES (loaded dynamically from text files)
 // ============================================================
 
+let DEFAULT_CURRICULUM_EXPANSION = '';
+let DEFAULT_NOTES = '';
+let DEFAULT_MCQ_STYLE_GUIDE = '';
+let promptsLoaded = false;
 
-You are a medical education curriculum designer with expertise in final-year undergraduate medicine. Your task is to take a raw curriculum input (provided as structured JSON) and transform it into a comprehensive, well-structured curriculum suitable for final-year medical students preparing for clinical practice and exit examinations.
+async function loadPrompts() {
+  try {
+    const [curriculumRes, notesRes, mcqRes] = await Promise.all([
+      fetch('prompt-curriculum-expansion.txt'),
+      fetch('prompt-notes.txt'),
+      fetch('prompt-mcq-style-guide.txt')
+    ]);
 
-Your output must be valid JSON only — no prose, no markdown fences, no commentary outside the JSON object.
+    if (!curriculumRes.ok) throw new Error('Failed to load prompt-curriculum-expansion.txt');
+    if (!notesRes.ok) throw new Error('Failed to load prompt-notes.txt');
+    if (!mcqRes.ok) throw new Error('Failed to load prompt-mcq-style-guide.txt');
 
----
-
-## Step 1 — Reorganise into distinct sections
-
-Separate all topics into clearly defined, non-overlapping sections based on specialty, clinical context, or educational format (e.g. Orthopaedic Trauma, Hand Surgery, Arthroplasty, Clinical Skills). No topic may appear in more than one section. If a topic overlaps two areas, assign it to its primary section; record the cross-reference as a brief parenthetical string in that topic's `crossReference` field. Use concise, professional section titles.
-
----
-
-## Step 2 — Expand each topic to final-year level
-
-For each topic produce between 6 and 10 labelled entries in the topic's `content` string. Each entry covers one of the following dimensions — not necessarily one entry per dimension, but the full set across the 6–10 entries must address:
-
-- Pathophysiology relevant to clinical decision-making
-- Clinical presentation and examination findings
-- Investigations: which to order, sequence, and interpretation
-- Management: acute/emergency steps, conservative options, surgical indications, escalation thresholds
-- Complications and their recognition
-- Prognostic or scoring systems (e.g. GCS, Wells score, ATLS shock classification)
-- Surgical anatomy where it directly informs clinical decision-making
-- Red flags and emergency recognition
-- Medicolegal or consent considerations where relevant
-
-[[IMPORTANT — minimum entry count: every topic must have at least 6 labelled entries. If you reach Step 2 with fewer than 6, add entries for complications, anatomy, scoring systems, or consent before proceeding.]]
-
----
-
-## Step 3 — Add gap-fill topics
-
-Identify topics a final-year curriculum for this specialty would typically include but that are absent from the input. Add these as additional topic objects within the appropriate existing section object.
-
-[[CRITICAL — do NOT create new section objects to hold gap-fill content. Do not add any field that marks a topic as gap-fill. Gap-fill topics must be silently integrated — indistinguishable from original content in the output.]]
-
----
-
-## Step 4 — Content formatting rules
-
-Each labelled entry in the `content` string follows the format `Label: specifics` — a label, a colon, a space, then the noun-phrase content. Entries are separated by a double newline (`\n\n`).
-
-- `Label`: the concept being described (e.g. `Pathophysiology`, `Rutherford classification`, `Surgical anatomy`, `Red flags`).
-- `Specifics` (after the colon): noun-phrase content only. No subject-verb prose sentences. Every clause — including every clause after a semicolon — must function as a standalone noun phrase or `label: specifics` fragment.
-
-**The test:** if a clause requires a subject-verb pair to make grammatical sense, rewrite it as a noun phrase.
-
-**WRONG** (predicate clause after semicolon):
-```
-Pathophysiology: elevated compartment pressure >30 mmHg; leads to cellular hypoxia and rhabdomyolysis
-```
-
-**RIGHT** (noun phrases throughout):
-```
-Pathophysiology: elevated intracompartmental pressure >30 mmHg; downstream consequences — cellular hypoxia, muscle necrosis, rhabdomyolysis
-```
-
-**WRONG**:
-```
-Management: IV flucloxacillin for 4–6 weeks; requires serial CRP monitoring
-```
-
-**RIGHT**:
-```
-Management: IV flucloxacillin (vancomycin if MRSA risk) for 4–6 weeks; response monitoring — serial CRP trending
-```
-
-**Additional content rules:**
-
-- Each entry's specifics must include specific thresholds, eponymous scores, imaging criteria, classifications, or decision rules inline. Vague phrases such as `appropriate management` or `relevant investigations` are forbidden.
-- Do not begin specifics with the verbs "Understand", "Know", "Recognise", or similar learning-objective verbs.
-- [[FORBIDDEN adverbs — do not use as filler: "strictly", "rigorously", "reliably", "overwhelmingly", "emergent" (without clinical specificity). Replace each with the precise threshold or decision rule it imprecisely gestures at.]]
-
----
-
-## Step 5 — Educational resources
-
-Carry across every tutorial, podcast, and lecture from the input into the `"educationalResources"` array. Do not invent new entries.
-
-Each resource object has three fields:
-- `"type"`: `"tutorial"` | `"podcast"` | `"lecture"`
-- `"title"`: the original title string from the input
-- `"summary"`: a single dense noun-phrase string covering the key clinical content; semicolons separate distinct sub-topics
-
-[[CRITICAL — `"summary"` must be a single string. No nested arrays, no sub-objects. One entry = one summary string, never a list.]]
-
-**WRONG** (nested structure):
-```json
-{
-  "type": "tutorial",
-  "title": "Tutorial: IV Fluids in Surgical Patients",
-  "summary": ["maintenance calculations", "bolus thresholds", "post-op oliguria"]
+    DEFAULT_CURRICULUM_EXPANSION = await curriculumRes.text();
+    DEFAULT_NOTES = await notesRes.text();
+    DEFAULT_MCQ_STYLE_GUIDE = await mcqRes.text();
+    promptsLoaded = true;
+  } catch (e) {
+    console.error('Failed to load prompts:', e);
+    // Set fallback empty strings - the app will show errors where prompts are needed
+    DEFAULT_CURRICULUM_EXPANSION = '';
+    DEFAULT_NOTES = '';
+    DEFAULT_MCQ_STYLE_GUIDE = '';
+  }
 }
-```
-
-**RIGHT** (single summary string):
-```json
-{
-  "type": "tutorial",
-  "title": "Tutorial: IV Fluids in Surgical Patients",
-  "summary": "maintenance requirements (25–30 mL/kg/day), bolus thresholds, hyperchloraemic acidosis from 0.9% saline, post-op oliguria: physiological ADH response vs. hypovolaemia"
-}
-```
-
----
-
-## Step 6 — Depth and style calibration
-
-Calibrate content to **final year of an undergraduate medical degree** — post-clerkship, pre-internship. Assume completed clinical rotations and foundational science knowledge. This is a curriculum framework (what to know, at what threshold), not a study guide (everything about it).
-
-Use the following worked examples as the benchmark for entry density, noun-phrase discipline, and specificity. Every topic you produce should match this level:
-
-**Style reference — topic example 1:**
-```json
-{
-  "id": "acute-limb-ischaemia",
-  "title": "Acute limb ischaemia (ALI)",
-  "content": "Pathophysiology: sudden arterial flow cessation from embolism, in-situ thrombosis, or trauma; ischaemia-reperfusion injury and compartment syndrome as downstream consequences\n\nThe 6 Ps: pain, pallor, pulselessness, paraesthesia, paralysis, perishing cold — paraesthesia and paralysis indicating advanced ischaemia threatening viability\n\nRutherford classification: Grade I viable, IIa marginally threatened, IIb immediately threatened, III irreversible — determines urgency and revascularisation vs. primary amputation\n\nEmbolism vs. in-situ thrombosis: embolism — AF source, contralateral normal pulses, no prior claudication; thrombosis — background PAD, bilateral absent ankle pulses, more gradual onset\n\nInvestigations: urgent duplex USS and/or CTA; ECG for AF identification; echo for cardiac source; CK for rhabdomyolysis; renal function baseline\n\nEmergency management: IV heparin immediately on diagnosis; analgesia; dependent limb positioning; urgent vascular surgery referral\n\nRevascularisation: surgical embolectomy (Fogarty catheter) for embolic; catheter-directed thrombolysis for thrombotic <14 days; angioplasty/bypass for underlying lesion\n\nPost-revascularisation complications: hyperkalaemia, myoglobinuria, AKI, compartment syndrome (low threshold for fasciotomy), reperfusion injury, no-reflow phenomenon\n\nThrombolysis contraindications: recent stroke, active bleeding, recent surgery — indications to escalate to surgical revascularisation"
-}
-```
-
-**Style reference — section example (abbreviated to show structure):**
-```json
-{
-  "id": "neurosurgery",
-  "title": "Neurosurgery",
-  "topics": [
-    {
-      "id": "subarachnoid-haemorrhage",
-      "title": "Subarachnoid haemorrhage (SAH)",
-      "content": "Causes: ruptured berry aneurysm (85%), AVM, trauma, idiopathic\n\nClinical presentation: thunderclap headache, meningism, focal deficits, reduced GCS\n\nInvestigations: non-contrast CT (sensitivity ~98% within 6h); LP for xanthochromia if CT negative\n\nGrading: Hunt & Hess (clinical severity), Fisher (CT blood load), WFNS (neurological grade)\n\nAcute management: nimodipine for vasospasm prevention; euvolaemia maintenance; blood pressure targets; seizure prophylaxis\n\nDefinitive treatment: endovascular coiling vs. surgical clipping; timing decisions based on grade and anatomy\n\nComplications: rebleeding (peak 24h), vasospasm (days 4–14), hydrocephalus, hyponatraemia (SIADH vs. cerebral salt-wasting)"
-    },
-    {
-      "id": "raised-icp",
-      "title": "Raised intracranial pressure (ICP)",
-      "content": "Monro-Kellie doctrine: brain, blood, CSF compartments; compensatory displacement before pressure rises\n\nCauses: haematoma, tumour, oedema, hydrocephalus, hypertensive encephalopathy\n\nClinical features: Cushing's triad — hypertension, bradycardia, irregular respirations; papilloedema; CN VI palsy as false localising sign\n\nHerniation syndromes: uncal — CN III palsy, contralateral hemiplegia; tonsillar — coning, cardiorespiratory arrest; central — bilateral signs\n\nICP monitoring: indications (GCS ≤8 with abnormal CT, or normal CT with ≥2 risk factors); EVD vs. intraparenchymal bolt; CPP target >60 mmHg\n\nMedical management: 30° head elevation; osmotherapy — mannitol 0.25–1 g/kg or hypertonic saline; sedation; hyperventilation as bridge (pCO₂ 30–35 mmHg)\n\nSurgical options: EVD insertion for hydrocephalus; decompressive craniectomy for refractory ICP"
-    },
-    {
-      "id": "brain-tumours",
-      "title": "Brain tumours",
-      "content": "Primary — glioma: WHO grading I–IV; IDH mutation as favourable prognostic marker; low-grade vs. high-grade behaviour and surveillance intervals\n\nPrimary — GBM (WHO Grade IV): median survival 14–16 months with Stupp protocol (radiotherapy + temozolomide); MGMT methylation as predictive marker\n\nPrimary — meningioma: extra-axial, dural attachment, typically WHO Grade I; surgical resection vs. surveillance based on size, symptoms, and growth rate\n\nPrimary — other: pituitary adenoma — endocrine effects, bitemporal hemianopia, trans-sphenoidal resection; acoustic neuroma — CN VIII, CPA angle; medulloblastoma — paediatric, posterior fossa\n\nSecondary metastases: common primaries — lung, breast, melanoma, colorectal, renal; ring-enhancing lesions at grey-white matter junction on MRI\n\nMetastases management: whole brain radiotherapy, stereotactic radiosurgery (≤3–4 lesions), surgical resection for single accessible lesion, dexamethasone for vasogenic oedema\n\nClinical presentation: headache (worse lying/morning — raised ICP pattern), seizures, focal neurological deficits, personality change\n\nInvestigations: MRI with gadolinium as gold standard; CT for acute setting; biopsy for histological grading\n\nPeri-operative management: dexamethasone for oedema; seizure prophylaxis (levetiracetam); VTE prophylaxis — mechanical until haemostasis confirmed"
-    }
-  ]
-}
-```
-
----
-
-## Output Schema
-
-Produce a single JSON object conforming exactly to this schema. No additional fields. No fields omitted.
-
-```json
-{
-  "schemaVersion": "2.1.0",
-  "generatedDate": "<ISO 8601 timestamp>",
-  "weekId": "<from input>",
-  "weekTitle": "<from input>",
-  "sections": [
-    {
-      "id": "<kebab-case — unique across all sections>",
-      "title": "<concise professional section heading>",
-      "topics": [
-        {
-          "id": "<kebab-case — unique within section>",
-          "title": "<topic name: the condition, procedure, or clinical entity>",
-          "crossReference": "<optional: brief parenthetical if topic straddles two sections, else omit field>",
-          "content": "<labelled entries separated by \\n\\n, each in the format 'Label: noun-phrase specifics'>"
-        }
-      ]
-    }
-  ],
-  "educationalResources": [
-    {
-      "type": "<'tutorial' | 'podcast' | 'lecture'>",
-      "title": "<original title from input>",
-      "summary": "<single dense noun-phrase string; semicolons separate sub-topics>"
-    }
-  ]
-}
-```
-
-**Schema enforcement rules:**
-- `sections`: array of one or more section objects; no two sections may share an `id`
-- `topics`: array of one or more topic objects per section; no two topics within a section may share an `id`; gap-fill topics are integrated silently with no distinguishing field
-- `content`: a single string per topic containing 6–10 labelled entries in the format `Label: noun-phrase specifics`, separated by `\n\n` — no exceptions; no nested objects or arrays
-- `educationalResources`: one object per resource from the input; `"summary"` is always a single string; no nested structures
-
----
-
-## Constraints (all carry over from original specification)
-
-- No topic may appear in more than one section. Each section is self-contained.
-- No prose paragraphs anywhere in the output.
-- Specifics must include specific thresholds, scores, classifications, and decision rules — vague or generic phrasing is forbidden.
-- Depth calibrated to final year of undergraduate medicine — post-clerkship, pre-internship; foundational science assumed.
-- This is a curriculum framework, not a study guide.
-- Gap-fill topics must be silently integrated into existing sections. No field, marker, or comment may distinguish them.
-- Educational resources: one summary string per entry, never a nested list.
-
-
-Produce the output JSON object now. Output valid JSON only — no markdown fences, no commentary.
-
-
-## Input
-
-```json
-{{RAW_WEEK_DATA}}
-```
-const DEFAULT_NOTES = `You are an expert medical educator creating clinical notes for a final year medical student preparing for their surgical rotation. The goal is for the student to be "intern safe" — able to recognise, assess, and initiate management of surgical conditions independently, and know when to escalate.
-
-You will be given a topic title and a set of descriptors. The descriptors provide contextual scaffolding — use them to guide the focus and emphasis of your notes, but go beyond them using your full clinical knowledge to produce comprehensive, detailed notes.
-
-Map all descriptor content into the 6 pillars below. Do not create separate sections for individual descriptors — integrate their content naturally into whichever pillar it belongs to.
-
----
-
-## INPUT FORMAT
-
-You will receive a topic in this structure:
-
-- title: {{TITLE}}
-- descriptors: a list of label/specifics pairs providing clinical context and emphasis
-
-{{DESCRIPTORS}}
-
----
-
-## OUTPUT FORMAT
-
-Generate structured notes in plain markdown using the 6 pillars below. Always generate all 6 pillars, even if a pillar requires adaptation to fit the topic (e.g., for a neurosurgical topic, reframe "Surgical Management" around operative and interventional decisions relevant to that specialty).
-
----
-
-### 1. PROVISIONAL DIAGNOSIS
-- Classic and atypical presentations
-- Key features from the history that point toward this diagnosis
-- Anatomical localisation and its significance
-- Red flag symptoms that demand urgent review
-- Differentials to consider and how to distinguish between them (use a table where helpful)
-
----
-
-### 2. APPROPRIATE INVESTIGATIONS
-Structure investigations in tiers:
-- **Bedside/Immediate:** obs, ECG, BSL, urine dipstick, pregnancy test where relevant
-- **Bloods:** specify which tests and explain WHY each is ordered
-- **Imaging:** specify the correct modality, when to use it, and what you are looking for (CXR, AXR, USS, CT, CT angiography, MRI — indications for each)
-- **Additional:** endoscopy, biopsy, functional tests, grading tools, scoring systems where relevant
-
----
-
-### 3. MANAGING COMMON EMERGENCIES
-- Immediate resuscitation steps (use ABCDE framework where relevant)
-- Time-critical actions and their deadlines where applicable
-- IV access, fluids, NBM, analgesia, specific medications — specify each with rationale
-- When to call the surgical or specialty registrar
-- Recognise the haemodynamically or neurologically unstable patient and act accordingly
-
----
-
-### 4. NEXT BEST STEP REASONING
-- Is the patient stable or unstable? — this determines the entire pathway
-- Resuscitation always precedes investigation in the unstable patient
-- When the next step is a specialist consult vs further investigation vs self-managed
-- Dispel common clinical myths relevant to this condition
-- When to escalate and to whom
-
----
-
-### 5. PRINCIPLES OF MANAGEMENT
-- Conservative vs operative/interventional decision making
-- Definitive treatment options and how the choice is made (e.g., patient grade, anatomy, timing)
-- Perioperative or periprocedural care where applicable: fasting, VTE prophylaxis, consent, monitoring
-- Complication prevention and targeted management
-- Post-operative or post-procedure complications by timeline:
-    * Early (hours–day 2): haemorrhage, instability, immediate deterioration
-    * Intermediate (day 3–5): infections, systemic complications, ileus
-    * Late (day 5+): condition-specific complications (e.g., vasospasm, anastomotic leak, DVT/PE)
-
----
-
-### 6. SURGERY vs INVESTIGATION vs MEDICAL MANAGEMENT
-Clearly state which pathway applies and why:
-- **INTERVENE NOW:** define the conditions that mandate immediate theatre, procedural intervention, or emergency treatment
-- **INVESTIGATE FIRST:** define when imaging or further workup changes management
-- **MEDICAL MANAGEMENT:** define when conservative treatment is appropriate and what it entails
-Always ask: Will this investigation change my management? Is this patient stable enough for imaging?
-
----
-
-## FORMATTING RULES
-- Use clear headings for each pillar
-- Use tables where comparisons are needed (e.g., differentials, investigation tiers, grading scales)
-- Flag time-critical points with ⚠️
-- Flag escalation points with 🔺
-- Keep language clinical but accessible — written for a final year student, not a consultant
-- Prioritise common presentations and conditions over rare ones
-- End with a **Key Takeaways** section of no more than 5 bullet points`;
-
-const DEFAULT_MCQ_STYLE_GUIDE = `# Medical MCQ Style Guide
-*Single-best-answer questions for final-year medical students*
-
----
-
-## CORE PRINCIPLE
-Every question tests the **next best step**, not merely a valid step. Distractors must be plausible and from the same category as the correct answer — students should need to reason through *why* each distractor fails, not just recognise it as wrong.
-
-**Before generating each question, reason through:**
-1. What concept am I testing?
-2. What would a student plausibly choose instead, and why?
-3. Does the stem contain exactly one discriminating detail that separates the correct answer from all distractors?
-
-Then write the question.
-
----
-
-## ANSWER OPTIONS
-- Always **5 options (A–E)**, one single best answer.
-- Distractors must be: the right action at the wrong time; the right treatment for a related but distinct condition; a valid step that isn't the *most appropriate* given the specific context; or the next step in the sequence rather than the current one.
-
----
-
-## QUESTION FORMATS
-
-### 1. Clinical Vignette (majority of questions)
-2–5 sentences: patient demographics, chief complaint, relevant history, examination findings, pertinent results. Occasionally include irrelevant history to train filtering.
-
-- **Diagnosis** — enough discriminating features to favour one diagnosis; ask *"most likely diagnosis"* or *"most important to exclude"*
-- **Investigation** — specify what's already been done; distractors are too invasive, less specific, or premature
-- **Acute management** — time-critical scenario; most common trap is treating before stabilising or skipping a diagnostic step
-- **Definitive / next step** — initial action already described; tests sequence of care, not isolated steps; highest-yield format
-- **Complication recognition** — post-procedure patient with temporal clues (e.g., "day 2 post-op"); ask for cause or next step
-- **Pathophysiology / mechanism** — underlying mechanism, expected investigation finding, or drug rationale
-
-### 2. Direct Fact-Based
-1–2 sentence stem for foundational knowledge not suited to a vignette. Epidemiology, classification, pharmacology. Distractors must span a clinically meaningful range — not trivially obvious.
-
-### 3. Sequential / Multi-Step Management
-State the scenario → state the initial action taken → describe patient response → ask for next best step. Each distractor is a step that is premature, already done, or appropriate for a different clinical trajectory.
-
-### 4. Lab / Imaging Interpretation
-Brief vignette + lab values (electrolytes, LFTs, ABG, coagulation) or imaging description. Ask for diagnosis or next action. Distractors have overlapping biochemical or radiological profiles.
-
-### 5. Exception Stem ("Which is NOT…")
-Four options are genuine associations; the correct answer is plausible but belongs to a related, distinct condition. Tests incomplete mental models. Never use when the exception is trivially obvious.
-
-### 6. Applied Anatomy / Procedure
-Frame around a clinical consequence. Distractors are nearby anatomical structures plausible in the procedural context.
-
----
-
-## BLOOM'S LEVEL MIX
-| Level      | Target | Examples                                                         |
-| ---------- | ------ | ---------------------------------------------------------------- |
-| Remember   | 15%    | Fact-based, classification                                       |
-| Understand | 25%    | Pathophysiology, lab interpretation                              |
-| Apply      | 35%    | Vignette → diagnosis or initial management                       |
-| Analyse    | 25%    | Sequential management, complication recognition, exception stems |
-
----
-
-## EACH QUESTION MUST INCLUDE AN EXPLANATION COVERING:
-1. Why the correct answer is correct
-2. Why the most tempting distractor is wrong
-3. A clinical pearl or decision rule where applicable
-
----
-
-## AVOID
-- "All of the above" / "None of the above"
-- Stem clues that make the answer obvious without reasoning
-- Two answers that are equally defensible — add one discriminating clinical detail if needed
-- Pure recall questions unless the fact is genuinely high-yield`;
 
 // ============================================================
 // STEP DEFINITIONS
@@ -1111,16 +765,31 @@ function migrateLegacyData() {
   return null;
 }
 
-let state = (() => {
+let state = mkDefaultState();
+
+async function initState() {
+  // Wait for prompts to load first
+  if (!promptsLoaded) {
+    await loadPrompts();
+  }
+
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return Object.assign(mkDefaultState(), JSON.parse(saved));
-    // Try to migrate from v3
-    const migrated = migrateLegacyData();
-    if (migrated) return migrated;
-  } catch(e) {}
-  return mkDefaultState();
-})();
+    if (saved) {
+      state = Object.assign(mkDefaultState(), JSON.parse(saved));
+    } else {
+      // Try to migrate from v3
+      const migrated = migrateLegacyData();
+      if (migrated) {
+        state = migrated;
+      } else {
+        state = mkDefaultState();
+      }
+    }
+  } catch(e) {
+    state = mkDefaultState();
+  }
+}
 
 function persist() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
@@ -3813,7 +3482,12 @@ function resetTemplates() {
 // ============================================================
 // BOOT
 // ============================================================
-render();
+async function boot() {
+  await initState();
+  render();
+}
+
+boot();
 </script>
 </body>
 </html>
