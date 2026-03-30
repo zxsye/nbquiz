@@ -49,6 +49,14 @@
   --font-serif:   'Crimson Pro', Georgia, serif;
   --font-sans:    'DM Sans', system-ui, sans-serif;
   --font-mono:    'DM Mono', monospace;
+
+  /* Liquid Glass theme variables */
+  --c-glass: #bbbbbc;
+  --c-light: #fff;
+  --c-dark: #000;
+  --glass-reflex-dark: 1;
+  --glass-reflex-light: 1;
+  --saturation: 150%;
 }
 body { font-family: var(--font-sans); background: var(--bg); color: var(--text); min-height: 100vh; padding: 48px 24px 80px; transition: padding-bottom 0.2s ease; }
 body.has-parent-selection-bar { padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
@@ -238,15 +246,24 @@ body.has-parent-selection-bar { padding-bottom: calc(88px + env(safe-area-inset-
   width: min(760px, calc(100% - 32px));
   max-width: calc(100% - 32px);
   margin-bottom: max(12px, env(safe-area-inset-bottom, 0px));
-  padding: 12px 16px;
+  padding: 10px 14px;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
+  /* Liquid glass pill shape - bright white frosted glass */
+  background: color-mix(in srgb, var(--c-light) 45%, transparent);
+  backdrop-filter: blur(2px) saturate(var(--saturation));
+  -webkit-backdrop-filter: blur(2px) saturate(var(--saturation));
+  border: 1px solid color-mix(in srgb, var(--c-light) 60%, transparent);
+  border-radius: 99em;
+  /* Elevated shadow with more depth */
+  box-shadow:
+    inset 0 1px 1px color-mix(in srgb, var(--c-light) 80%, transparent),
+    inset 0 -1px 1px color-mix(in srgb, var(--c-dark) 8%, transparent),
+    0 2px 8px color-mix(in srgb, var(--c-dark) 8%, transparent),
+    0 6px 20px color-mix(in srgb, var(--c-dark) 10%, transparent),
+    0 12px 28px color-mix(in srgb, var(--c-dark) 6%, transparent);
   z-index: 900;
   font-family: var(--font-sans);
 }
@@ -269,24 +286,44 @@ body.has-parent-selection-bar { padding-bottom: calc(88px + env(safe-area-inset-
   font-weight: 600;
   cursor: pointer;
   border-radius: 99px;
-  padding: 8px 14px;
-  border: 1.5px solid var(--border);
-  background: var(--bg);
+  padding: 8px 16px;
+  border: none;
+  /* Engraved appearance - recessed into the glass surface */
+  background: color-mix(in srgb, var(--c-dark) 8%, transparent);
   color: var(--text-2);
-  transition: border-color 150ms, background 150ms, color 150ms;
+  box-shadow:
+    inset 0 1px 2px color-mix(in srgb, var(--c-dark) 20%, transparent),
+    inset 0 -1px 1px color-mix(in srgb, var(--c-light) 40%, transparent),
+    0 1px 0 color-mix(in srgb, var(--c-light) 30%, transparent);
+  transition: background 200ms ease, color 200ms ease, box-shadow 200ms ease;
 }
 .parent-selection-bar button:hover {
-  border-color: var(--text-3);
+  background: color-mix(in srgb, var(--c-dark) 12%, transparent);
   color: var(--text);
 }
+.parent-selection-bar button:active {
+  box-shadow:
+    inset 0 2px 4px color-mix(in srgb, var(--c-dark) 25%, transparent),
+    inset 0 -1px 1px color-mix(in srgb, var(--c-light) 20%, transparent),
+    0 0 0 transparent;
+}
 .parent-selection-bar .parent-selection-start {
-  border-color: var(--accent);
-  background: var(--accent);
+  background: color-mix(in srgb, var(--accent) 85%, transparent);
   color: #fff;
+  box-shadow:
+    inset 0 1px 2px color-mix(in srgb, var(--c-dark) 30%, transparent),
+    inset 0 -1px 1px color-mix(in srgb, var(--c-light) 30%, transparent),
+    0 1px 0 color-mix(in srgb, var(--c-light) 20%, transparent);
 }
 .parent-selection-bar .parent-selection-start:hover {
-  filter: brightness(1.06);
-  color: #fff;
+  background: color-mix(in srgb, var(--accent) 92%, transparent);
+  filter: brightness(1.05);
+}
+.parent-selection-bar .parent-selection-start:active {
+  box-shadow:
+    inset 0 2px 4px color-mix(in srgb, var(--c-dark) 35%, transparent),
+    inset 0 -1px 1px color-mix(in srgb, var(--c-light) 15%, transparent),
+    0 0 0 transparent;
 }
 .topic-list { padding: 8px 0; }
 .topic-row { display: flex; align-items: flex-start; padding: 12px 20px; gap: 16px; border-bottom: 1px solid var(--border); }
