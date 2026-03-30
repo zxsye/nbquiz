@@ -381,12 +381,11 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
   font-size: 0.76rem;
   line-height: 1.65;
   color: rgba(255,255,255,.82);
-}
-.prompt-combined-block.copy-style .prompt-combined-content { color: #1a1a1a; }
   white-space: pre-wrap;
   max-height: 400px;
   overflow-y: auto;
 }
+.prompt-combined-block.copy-style .prompt-combined-content { color: #1a1a1a; }
 .ai-instructions {
   background: var(--surface-2);
   border-radius: var(--radius);
@@ -747,6 +746,7 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
 }
 </style>
 </head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <body>
 <div id="app"></div>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -3241,8 +3241,16 @@ function buildWorkflowTab() {
   }
 
   const active = state.activeTopicId ? findTopic(state.activeTopicId) : null;
+  const topicsWithNotes = topics.filter(t => t.notes && t.notes.trim());
 
   return `
+    ${topicsWithNotes.length ? `
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px;">
+      <button class="btn btn-ghost btn-sm" style="gap:6px;" onclick="downloadAllNotes(this)">
+        ⬇ Download all notes
+        <span style="font-size:.72rem;opacity:.7;">(${topicsWithNotes.length} ready)</span>
+      </button>
+    </div>` : ''}
     <div class="workflow-layout fade-up">
       <div class="workflow-sidebar">
         ${state.weeks.map(w => {
@@ -3605,6 +3613,74 @@ function copyPrompt(stepId, topicId, btn) {
     btn.style.color = '#4ade80';
     setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
   });
+}
+
+async function downloadAllNotes(btn) {
+  const topics = allTopics().filter(t => t.notes && t.notes.trim());
+  if (!topics.length) {
+    pmAlert('No generated notes found. Paste AI responses into Step 1 for your topics first.', 'warning');
+    return;
+  }
+
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.innerHTML = '⏳ Zipping…'; btn.disabled = true; }
+
+  try {
+    const zip = new JSZip();
+    const weekMap = {};
+    for (const w of state.weeks) {
+      for (const t of w.topics) weekMap[t.id] = w.name;
+    }
+
+    const usedNamesByWeek = {};
+    for (const topic of topics) {
+      const weekName = sanitizeZipName(weekMap[topic.id] || 'Week');
+      const topicName = sanitizeZipName(topic.title || 'note');
+      const folder = zip.folder(weekName || 'Week');
+      const weekKey = weekName || 'Week';
+      if (!usedNamesByWeek[weekKey]) usedNamesByWeek[weekKey] = {};
+
+      let base = topicName || 'note';
+      if (base.length > 80) base = base.slice(0, 80).trim();
+
+      let filename = base + '.md';
+      if (usedNamesByWeek[weekKey][filename]) {
+        usedNamesByWeek[weekKey][filename]++;
+        filename = `${base} (${usedNamesByWeek[weekKey][filename]}).md`;
+      } else {
+        usedNamesByWeek[weekKey][filename] = 1;
+      }
+
+      (folder || zip).file(filename, topic.notes);
+    }
+
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'generated-notes.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    if (btn) {
+      btn.innerHTML = `✅ Downloaded ${topics.length} note${topics.length !== 1 ? 's' : ''}`;
+      btn.style.color = '#166534';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; btn.disabled = false; }, 3000);
+    }
+  } catch (e) {
+    console.error('downloadAllNotes error', e);
+    if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+    pmAlert('Failed to create ZIP: ' + e.message, 'error');
+  }
+}
+
+function sanitizeZipName(name) {
+  return String(name || '')
+    .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function copyNotesResult(topicId, btn) {
