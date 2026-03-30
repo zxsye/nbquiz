@@ -628,7 +628,8 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
 // DEFAULT TEMPLATES
 // ============================================================
 
-const DEFAULT_CURRICULUM_EXPANSION = `You are a medical education curriculum designer with expertise in final-year undergraduate medicine. Your task is to take a raw curriculum input (provided as structured JSON) and transform it into a comprehensive, well-structured curriculum suitable for final-year medical students preparing for clinical practice and exit examinations.
+
+You are a medical education curriculum designer with expertise in final-year undergraduate medicine. Your task is to take a raw curriculum input (provided as structured JSON) and transform it into a comprehensive, well-structured curriculum suitable for final-year medical students preparing for clinical practice and exit examinations.
 
 Your output must be valid JSON only — no prose, no markdown fences, no commentary outside the JSON object.
 
@@ -636,13 +637,13 @@ Your output must be valid JSON only — no prose, no markdown fences, no comment
 
 ## Step 1 — Reorganise into distinct sections
 
-Separate all topics into clearly defined, non-overlapping sections based on specialty, clinical context, or educational format (e.g. Orthopaedic Trauma, Hand Surgery, Arthroplasty, Clinical Skills). No topic may appear in more than one section. If a topic overlaps two areas, assign it to its primary section; record the cross-reference as a brief parenthetical string in that topic's \`crossReference\` field. Use concise, professional section titles.
+Separate all topics into clearly defined, non-overlapping sections based on specialty, clinical context, or educational format (e.g. Orthopaedic Trauma, Hand Surgery, Arthroplasty, Clinical Skills). No topic may appear in more than one section. If a topic overlaps two areas, assign it to its primary section; record the cross-reference as a brief parenthetical string in that topic's `crossReference` field. Use concise, professional section titles.
 
 ---
 
 ## Step 2 — Expand each topic to final-year level
 
-For each topic produce between 6 and 10 descriptor objects. Each descriptor covers one of the following dimensions — not necessarily one descriptor per dimension, but the full set across the 6–10 descriptors must address:
+For each topic produce between 6 and 10 labelled entries in the topic's `content` string. Each entry covers one of the following dimensions — not necessarily one entry per dimension, but the full set across the 6–10 entries must address:
 
 - Pathophysiology relevant to clinical decision-making
 - Clinical presentation and examination findings
@@ -654,7 +655,7 @@ For each topic produce between 6 and 10 descriptor objects. Each descriptor cove
 - Red flags and emergency recognition
 - Medicolegal or consent considerations where relevant
 
-[[IMPORTANT — minimum descriptor count: every topic must have at least 6 descriptor objects. If you reach Step 2 with fewer than 6, add descriptors for complications, anatomy, scoring systems, or consent before proceeding.]]
+[[IMPORTANT — minimum entry count: every topic must have at least 6 labelled entries. If you reach Step 2 with fewer than 6, add entries for complications, anatomy, scoring systems, or consent before proceeding.]]
 
 ---
 
@@ -666,83 +667,71 @@ Identify topics a final-year curriculum for this specialty would typically inclu
 
 ---
 
-## Step 4 — Descriptor formatting rules
+## Step 4 — Content formatting rules
 
-Every descriptor object has exactly two string fields: \`"label"\` and \`"specifics"\`.
+Each labelled entry in the `content` string follows the format `Label: specifics` — a label, a colon, a space, then the noun-phrase content. Entries are separated by a double newline (`\n\n`).
 
-- \`"label"\`: the concept being described (e.g. \`"Pathophysiology"\`, \`"Rutherford classification"\`, \`"Surgical anatomy"\`, \`"Red flags"\`).
-- \`"specifics"\`: noun-phrase content only. No subject-verb prose sentences. Every clause — including every clause after a semicolon — must function as a standalone noun phrase or \`label: specifics\` fragment.
+- `Label`: the concept being described (e.g. `Pathophysiology`, `Rutherford classification`, `Surgical anatomy`, `Red flags`).
+- `Specifics` (after the colon): noun-phrase content only. No subject-verb prose sentences. Every clause — including every clause after a semicolon — must function as a standalone noun phrase or `label: specifics` fragment.
 
 **The test:** if a clause requires a subject-verb pair to make grammatical sense, rewrite it as a noun phrase.
 
 **WRONG** (predicate clause after semicolon):
-\`\`\`json
-{
-  "label": "Pathophysiology",
-  "specifics": "elevated compartment pressure >30 mmHg; leads to cellular hypoxia and rhabdomyolysis"
-}
-\`\`\`
+```
+Pathophysiology: elevated compartment pressure >30 mmHg; leads to cellular hypoxia and rhabdomyolysis
+```
 
 **RIGHT** (noun phrases throughout):
-\`\`\`json
-{
-  "label": "Pathophysiology",
-  "specifics": "elevated intracompartmental pressure >30 mmHg; downstream consequences — cellular hypoxia, muscle necrosis, rhabdomyolysis"
-}
-\`\`\`
+```
+Pathophysiology: elevated intracompartmental pressure >30 mmHg; downstream consequences — cellular hypoxia, muscle necrosis, rhabdomyolysis
+```
 
 **WRONG**:
-\`\`\`json
-{
-  "label": "Management",
-  "specifics": "IV flucloxacillin for 4–6 weeks; requires serial CRP monitoring"
-}
-\`\`\`
+```
+Management: IV flucloxacillin for 4–6 weeks; requires serial CRP monitoring
+```
 
 **RIGHT**:
-\`\`\`json
-{
-  "label": "Management",
-  "specifics": "IV flucloxacillin (vancomycin if MRSA risk) for 4–6 weeks; response monitoring — serial CRP trending"
-}
-\`\`\`
+```
+Management: IV flucloxacillin (vancomycin if MRSA risk) for 4–6 weeks; response monitoring — serial CRP trending
+```
 
-**Additional descriptor rules:**
+**Additional content rules:**
 
-- Each descriptor's \`"specifics"\` must include specific thresholds, eponymous scores, imaging criteria, classifications, or decision rules inline. Vague phrases such as \`"appropriate management"\` or \`"relevant investigations"\` are forbidden.
-- Do not begin \`"specifics"\` values with the verbs "Understand", "Know", "Recognise", or similar learning-objective verbs.
+- Each entry's specifics must include specific thresholds, eponymous scores, imaging criteria, classifications, or decision rules inline. Vague phrases such as `appropriate management` or `relevant investigations` are forbidden.
+- Do not begin specifics with the verbs "Understand", "Know", "Recognise", or similar learning-objective verbs.
 - [[FORBIDDEN adverbs — do not use as filler: "strictly", "rigorously", "reliably", "overwhelmingly", "emergent" (without clinical specificity). Replace each with the precise threshold or decision rule it imprecisely gestures at.]]
 
 ---
 
 ## Step 5 — Educational resources
 
-Carry across every tutorial, podcast, and lecture from the input into the \`"educationalResources"\` array. Do not invent new entries.
+Carry across every tutorial, podcast, and lecture from the input into the `"educationalResources"` array. Do not invent new entries.
 
 Each resource object has three fields:
-- \`"type"\`: \`"tutorial"\` | \`"podcast"\` | \`"lecture"\`
-- \`"title"\`: the original title string from the input
-- \`"summary"\`: a single dense noun-phrase string covering the key clinical content; semicolons separate distinct sub-topics
+- `"type"`: `"tutorial"` | `"podcast"` | `"lecture"`
+- `"title"`: the original title string from the input
+- `"summary"`: a single dense noun-phrase string covering the key clinical content; semicolons separate distinct sub-topics
 
-[[CRITICAL — \`"summary"\` must be a single string. No nested arrays, no sub-objects. One entry = one summary string, never a list.]]
+[[CRITICAL — `"summary"` must be a single string. No nested arrays, no sub-objects. One entry = one summary string, never a list.]]
 
 **WRONG** (nested structure):
-\`\`\`json
+```json
 {
   "type": "tutorial",
   "title": "Tutorial: IV Fluids in Surgical Patients",
   "summary": ["maintenance calculations", "bolus thresholds", "post-op oliguria"]
 }
-\`\`\`
+```
 
 **RIGHT** (single summary string):
-\`\`\`json
+```json
 {
   "type": "tutorial",
   "title": "Tutorial: IV Fluids in Surgical Patients",
   "summary": "maintenance requirements (25–30 mL/kg/day), bolus thresholds, hyperchloraemic acidosis from 0.9% saline, post-op oliguria: physiological ADH response vs. hypovolaemia"
 }
-\`\`\`
+```
 
 ---
 
@@ -750,56 +739,19 @@ Each resource object has three fields:
 
 Calibrate content to **final year of an undergraduate medical degree** — post-clerkship, pre-internship. Assume completed clinical rotations and foundational science knowledge. This is a curriculum framework (what to know, at what threshold), not a study guide (everything about it).
 
-Use the following worked examples as the benchmark for descriptor density, noun-phrase discipline, and specificity. Every topic you produce should match this level:
+Use the following worked examples as the benchmark for entry density, noun-phrase discipline, and specificity. Every topic you produce should match this level:
 
 **Style reference — topic example 1:**
-\`\`\`json
+```json
 {
   "id": "acute-limb-ischaemia",
   "title": "Acute limb ischaemia (ALI)",
-  "descriptors": [
-    {
-      "label": "Pathophysiology",
-      "specifics": "sudden arterial flow cessation from embolism, in-situ thrombosis, or trauma; ischaemia-reperfusion injury and compartment syndrome as downstream consequences"
-    },
-    {
-      "label": "The 6 Ps",
-      "specifics": "pain, pallor, pulselessness, paraesthesia, paralysis, perishing cold — paraesthesia and paralysis indicating advanced ischaemia threatening viability"
-    },
-    {
-      "label": "Rutherford classification",
-      "specifics": "Grade I viable, IIa marginally threatened, IIb immediately threatened, III irreversible — determines urgency and revascularisation vs. primary amputation"
-    },
-    {
-      "label": "Embolism vs. in-situ thrombosis",
-      "specifics": "embolism — AF source, contralateral normal pulses, no prior claudication; thrombosis — background PAD, bilateral absent ankle pulses, more gradual onset"
-    },
-    {
-      "label": "Investigations",
-      "specifics": "urgent duplex USS and/or CTA; ECG for AF identification; echo for cardiac source; CK for rhabdomyolysis; renal function baseline"
-    },
-    {
-      "label": "Emergency management",
-      "specifics": "IV heparin immediately on diagnosis; analgesia; dependent limb positioning; urgent vascular surgery referral"
-    },
-    {
-      "label": "Revascularisation",
-      "specifics": "surgical embolectomy (Fogarty catheter) for embolic; catheter-directed thrombolysis for thrombotic <14 days; angioplasty/bypass for underlying lesion"
-    },
-    {
-      "label": "Post-revascularisation complications",
-      "specifics": "hyperkalaemia, myoglobinuria, AKI, compartment syndrome (low threshold for fasciotomy), reperfusion injury, no-reflow phenomenon"
-    },
-    {
-      "label": "Thrombolysis contraindications",
-      "specifics": "recent stroke, active bleeding, recent surgery — indications to escalate to surgical revascularisation"
-    }
-  ]
+  "content": "Pathophysiology: sudden arterial flow cessation from embolism, in-situ thrombosis, or trauma; ischaemia-reperfusion injury and compartment syndrome as downstream consequences\n\nThe 6 Ps: pain, pallor, pulselessness, paraesthesia, paralysis, perishing cold — paraesthesia and paralysis indicating advanced ischaemia threatening viability\n\nRutherford classification: Grade I viable, IIa marginally threatened, IIb immediately threatened, III irreversible — determines urgency and revascularisation vs. primary amputation\n\nEmbolism vs. in-situ thrombosis: embolism — AF source, contralateral normal pulses, no prior claudication; thrombosis — background PAD, bilateral absent ankle pulses, more gradual onset\n\nInvestigations: urgent duplex USS and/or CTA; ECG for AF identification; echo for cardiac source; CK for rhabdomyolysis; renal function baseline\n\nEmergency management: IV heparin immediately on diagnosis; analgesia; dependent limb positioning; urgent vascular surgery referral\n\nRevascularisation: surgical embolectomy (Fogarty catheter) for embolic; catheter-directed thrombolysis for thrombotic <14 days; angioplasty/bypass for underlying lesion\n\nPost-revascularisation complications: hyperkalaemia, myoglobinuria, AKI, compartment syndrome (low threshold for fasciotomy), reperfusion injury, no-reflow phenomenon\n\nThrombolysis contraindications: recent stroke, active bleeding, recent surgery — indications to escalate to surgical revascularisation"
 }
-\`\`\`
+```
 
 **Style reference — section example (abbreviated to show structure):**
-\`\`\`json
+```json
 {
   "id": "neurosurgery",
   "title": "Neurosurgery",
@@ -807,71 +759,21 @@ Use the following worked examples as the benchmark for descriptor density, noun-
     {
       "id": "subarachnoid-haemorrhage",
       "title": "Subarachnoid haemorrhage (SAH)",
-      "descriptors": [
-        { "label": "Causes", "specifics": "ruptured berry aneurysm (85%), AVM, trauma, idiopathic" },
-        { "label": "Clinical presentation", "specifics": "thunderclap headache, meningism, focal deficits, reduced GCS" },
-        { "label": "Investigations", "specifics": "non-contrast CT (sensitivity ~98% within 6h); LP for xanthochromia if CT negative" },
-        { "label": "Grading", "specifics": "Hunt & Hess (clinical severity), Fisher (CT blood load), WFNS (neurological grade)" },
-        { "label": "Acute management", "specifics": "nimodipine for vasospasm prevention; euvolaemia maintenance; blood pressure targets; seizure prophylaxis" },
-        { "label": "Definitive treatment", "specifics": "endovascular coiling vs. surgical clipping; timing decisions based on grade and anatomy" },
-        { "label": "Complications", "specifics": "rebleeding (peak 24h), vasospasm (days 4–14), hydrocephalus, hyponatraemia (SIADH vs. cerebral salt-wasting)" }
-      ]
+      "content": "Causes: ruptured berry aneurysm (85%), AVM, trauma, idiopathic\n\nClinical presentation: thunderclap headache, meningism, focal deficits, reduced GCS\n\nInvestigations: non-contrast CT (sensitivity ~98% within 6h); LP for xanthochromia if CT negative\n\nGrading: Hunt & Hess (clinical severity), Fisher (CT blood load), WFNS (neurological grade)\n\nAcute management: nimodipine for vasospasm prevention; euvolaemia maintenance; blood pressure targets; seizure prophylaxis\n\nDefinitive treatment: endovascular coiling vs. surgical clipping; timing decisions based on grade and anatomy\n\nComplications: rebleeding (peak 24h), vasospasm (days 4–14), hydrocephalus, hyponatraemia (SIADH vs. cerebral salt-wasting)"
     },
     {
       "id": "raised-icp",
       "title": "Raised intracranial pressure (ICP)",
-      "descriptors": [
-        { "label": "Monro-Kellie doctrine", "specifics": "brain, blood, CSF compartments; compensatory displacement before pressure rises" },
-        { "label": "Causes", "specifics": "haematoma, tumour, oedema, hydrocephalus, hypertensive encephalopathy" },
-        { "label": "Clinical features", "specifics": "Cushing's triad — hypertension, bradycardia, irregular respirations; papilloedema; CN VI palsy as false localising sign" },
-        { "label": "Herniation syndromes", "specifics": "uncal — CN III palsy, contralateral hemiplegia; tonsillar — coning, cardiorespiratory arrest; central — bilateral signs" },
-        { "label": "ICP monitoring", "specifics": "indications (GCS ≤8 with abnormal CT, or normal CT with ≥2 risk factors); EVD vs. intraparenchymal bolt; CPP target >60 mmHg" },
-        { "label": "Medical management", "specifics": "30° head elevation; osmotherapy — mannitol 0.25–1 g/kg or hypertonic saline; sedation; hyperventilation as bridge (pCO₂ 30–35 mmHg)" },
-        { "label": "Surgical options", "specifics": "EVD insertion for hydrocephalus; decompressive craniectomy for refractory ICP" }
-      ]
-    },
-    {
-      "id": "cerebral-aneurysms",
-      "title": "Cerebral aneurysms",
-      "descriptors": [
-        { "label": "Epidemiology and risk factors", "specifics": "smoking, hypertension, connective tissue disease, ADPKD, family history of aneurysm or SAH" },
-        { "label": "Morphology", "specifics": "berry (saccular) — most common, at bifurcations; fusiform — atherosclerotic; mycotic — infectious emboli" },
-        { "label": "Unruptured aneurysm management", "specifics": "ISUIA risk stratification by size and location; surveillance MRA vs. intervention; shared decision-making" },
-        { "label": "Endovascular vs. surgical", "specifics": "coiling favoured for elderly, posterior circulation, narrow neck; clipping for young patients, MCA, broad neck — ISAT trial evidence" },
-        { "label": "Screening", "specifics": "first-degree relatives of two or more SAH patients; ADPKD patients; MRA as modality of choice" },
-        { "label": "Ruptured aneurysm", "specifics": "SAH management pathway — see Subarachnoid haemorrhage (SAH)" }
-      ]
+      "content": "Monro-Kellie doctrine: brain, blood, CSF compartments; compensatory displacement before pressure rises\n\nCauses: haematoma, tumour, oedema, hydrocephalus, hypertensive encephalopathy\n\nClinical features: Cushing's triad — hypertension, bradycardia, irregular respirations; papilloedema; CN VI palsy as false localising sign\n\nHerniation syndromes: uncal — CN III palsy, contralateral hemiplegia; tonsillar — coning, cardiorespiratory arrest; central — bilateral signs\n\nICP monitoring: indications (GCS ≤8 with abnormal CT, or normal CT with ≥2 risk factors); EVD vs. intraparenchymal bolt; CPP target >60 mmHg\n\nMedical management: 30° head elevation; osmotherapy — mannitol 0.25–1 g/kg or hypertonic saline; sedation; hyperventilation as bridge (pCO₂ 30–35 mmHg)\n\nSurgical options: EVD insertion for hydrocephalus; decompressive craniectomy for refractory ICP"
     },
     {
       "id": "brain-tumours",
       "title": "Brain tumours",
-      "descriptors": [
-        { "label": "Primary — glioma", "specifics": "WHO grading I–IV; IDH mutation as favourable prognostic marker; low-grade vs. high-grade behaviour and surveillance intervals" },
-        { "label": "Primary — GBM (WHO Grade IV)", "specifics": "median survival 14–16 months with Stupp protocol (radiotherapy + temozolomide); MGMT methylation as predictive marker" },
-        { "label": "Primary — meningioma", "specifics": "extra-axial, dural attachment, typically WHO Grade I; surgical resection vs. surveillance based on size, symptoms, and growth rate" },
-        { "label": "Primary — other", "specifics": "pituitary adenoma — endocrine effects, bitemporal hemianopia, trans-sphenoidal resection; acoustic neuroma — CN VIII, CPA angle; medulloblastoma — paediatric, posterior fossa" },
-        { "label": "Secondary metastases", "specifics": "common primaries — lung, breast, melanoma, colorectal, renal; ring-enhancing lesions at grey-white matter junction on MRI" },
-        { "label": "Metastases management", "specifics": "whole brain radiotherapy, stereotactic radiosurgery (≤3–4 lesions), surgical resection for single accessible lesion, dexamethasone for vasogenic oedema" },
-        { "label": "Clinical presentation", "specifics": "headache (worse lying/morning — raised ICP pattern), seizures, focal neurological deficits, personality change" },
-        { "label": "Investigations", "specifics": "MRI with gadolinium as gold standard; CT for acute setting; biopsy for histological grading" },
-        { "label": "Peri-operative management", "specifics": "dexamethasone for oedema; seizure prophylaxis (levetiracetam); VTE prophylaxis — mechanical until haemostasis confirmed" }
-      ]
-    },
-    {
-      "id": "post-op-decreased-loc",
-      "title": "Post-operative decreased level of consciousness",
-      "descriptors": [
-        { "label": "Systematic approach", "specifics": "ABCDE assessment; drug chart review; point-of-care glucose; electrolytes; GCS trajectory" },
-        { "label": "Neurosurgical causes", "specifics": "intracranial haematoma (extradural, subdural, intracerebral), cerebral oedema, hydrocephalus, raised ICP — all requiring urgent CT" },
-        { "label": "Non-surgical causes", "specifics": "ischaemic or haemorrhagic stroke; post-ictal state; delirium; metabolic — hyponatraemia, hypoglycaemia, uraemia; sepsis; medication effect (opioids, benzodiazepines)" },
-        { "label": "Investigations", "specifics": "urgent non-contrast CT head; FBC, U&E, LFTs, glucose, coagulation, drug levels; ECG" },
-        { "label": "Escalation thresholds", "specifics": "GCS drop ≥2 points — neurosurgical re-referral; new focal deficit or pupillary asymmetry — immediate CT and senior review; haematoma on CT — return to theatre decision" },
-        { "label": "Pitfalls", "specifics": "assuming sedation as cause without excluding surgical bleeding; delaying CT while awaiting blood results; failure to recognise post-ictal state in context of known tumour" }
-      ]
+      "content": "Primary — glioma: WHO grading I–IV; IDH mutation as favourable prognostic marker; low-grade vs. high-grade behaviour and surveillance intervals\n\nPrimary — GBM (WHO Grade IV): median survival 14–16 months with Stupp protocol (radiotherapy + temozolomide); MGMT methylation as predictive marker\n\nPrimary — meningioma: extra-axial, dural attachment, typically WHO Grade I; surgical resection vs. surveillance based on size, symptoms, and growth rate\n\nPrimary — other: pituitary adenoma — endocrine effects, bitemporal hemianopia, trans-sphenoidal resection; acoustic neuroma — CN VIII, CPA angle; medulloblastoma — paediatric, posterior fossa\n\nSecondary metastases: common primaries — lung, breast, melanoma, colorectal, renal; ring-enhancing lesions at grey-white matter junction on MRI\n\nMetastases management: whole brain radiotherapy, stereotactic radiosurgery (≤3–4 lesions), surgical resection for single accessible lesion, dexamethasone for vasogenic oedema\n\nClinical presentation: headache (worse lying/morning — raised ICP pattern), seizures, focal neurological deficits, personality change\n\nInvestigations: MRI with gadolinium as gold standard; CT for acute setting; biopsy for histological grading\n\nPeri-operative management: dexamethasone for oedema; seizure prophylaxis (levetiracetam); VTE prophylaxis — mechanical until haemostasis confirmed"
     }
   ]
 }
-\`\`\`
+```
 
 ---
 
@@ -879,9 +781,9 @@ Use the following worked examples as the benchmark for descriptor density, noun-
 
 Produce a single JSON object conforming exactly to this schema. No additional fields. No fields omitted.
 
-\`\`\`json
+```json
 {
-  "schemaVersion": "2.0.0",
+  "schemaVersion": "2.1.0",
   "generatedDate": "<ISO 8601 timestamp>",
   "weekId": "<from input>",
   "weekTitle": "<from input>",
@@ -894,12 +796,7 @@ Produce a single JSON object conforming exactly to this schema. No additional fi
           "id": "<kebab-case — unique within section>",
           "title": "<topic name: the condition, procedure, or clinical entity>",
           "crossReference": "<optional: brief parenthetical if topic straddles two sections, else omit field>",
-          "descriptors": [
-            {
-              "label": "<concept label>",
-              "specifics": "<noun-phrase content — no full sentences, no predicate clauses>"
-            }
-          ]
+          "content": "<labelled entries separated by \\n\\n, each in the format 'Label: noun-phrase specifics'>"
         }
       ]
     }
@@ -912,13 +809,13 @@ Produce a single JSON object conforming exactly to this schema. No additional fi
     }
   ]
 }
-\`\`\`
+```
 
 **Schema enforcement rules:**
-- \`sections\`: array of one or more section objects; no two sections may share an \`id\`
-- \`topics\`: array of one or more topic objects per section; no two topics within a section may share an \`id\`; gap-fill topics are integrated silently with no distinguishing field
-- \`descriptors\`: array of 6–10 objects per topic — no exceptions; every object has exactly \`"label"\` and \`"specifics"\`; no other fields
-- \`educationalResources\`: one object per resource from the input; \`"summary"\` is always a single string; no nested structures
+- `sections`: array of one or more section objects; no two sections may share an `id`
+- `topics`: array of one or more topic objects per section; no two topics within a section may share an `id`; gap-fill topics are integrated silently with no distinguishing field
+- `content`: a single string per topic containing 6–10 labelled entries in the format `Label: noun-phrase specifics`, separated by `\n\n` — no exceptions; no nested objects or arrays
+- `educationalResources`: one object per resource from the input; `"summary"` is always a single string; no nested structures
 
 ---
 
@@ -926,7 +823,7 @@ Produce a single JSON object conforming exactly to this schema. No additional fi
 
 - No topic may appear in more than one section. Each section is self-contained.
 - No prose paragraphs anywhere in the output.
-- \`"specifics"\` values must include specific thresholds, scores, classifications, and decision rules — vague or generic phrasing is forbidden.
+- Specifics must include specific thresholds, scores, classifications, and decision rules — vague or generic phrasing is forbidden.
 - Depth calibrated to final year of undergraduate medicine — post-clerkship, pre-internship; foundational science assumed.
 - This is a curriculum framework, not a study guide.
 - Gap-fill topics must be silently integrated into existing sections. No field, marker, or comment may distinguish them.
@@ -938,10 +835,9 @@ Produce the output JSON object now. Output valid JSON only — no markdown fence
 
 ## Input
 
-\`\`\`json
+```json
 {{RAW_WEEK_DATA}}
-\`\`\``;
-
+```
 const DEFAULT_NOTES = `You are an expert medical educator creating clinical notes for a final year medical student preparing for their surgical rotation. The goal is for the student to be "intern safe" — able to recognise, assess, and initiate management of surgical conditions independently, and know when to escalate.
 
 You will be given a topic title and a set of descriptors. The descriptors provide contextual scaffolding — use them to guide the focus and emphasis of your notes, but go beyond them using your full clinical knowledge to produce comprehensive, detailed notes.
@@ -2294,7 +2190,7 @@ function generateWeekMarkdown(weekId) {
 // AI OUTPUT PARSER
 // ============================================================
 function parseAIOutput(text) {
-  // Try to parse as JSON first (new schema v2.0.0)
+  // Try to parse as JSON first (schema v2.1.0 with content string, or legacy v2.0.0 with descriptors)
   let jsonError = null;
   let jsonParseResult = null;
   
@@ -2302,7 +2198,7 @@ function parseAIOutput(text) {
     const json = JSON.parse(text);
     jsonParseResult = json;
     
-    if (json.schemaVersion === '2.0.0' && Array.isArray(json.sections)) {
+    if ((json.schemaVersion === '2.0.0' || json.schemaVersion === '2.1.0') && Array.isArray(json.sections)) {
       const result = parseJSONOutput(json);
       if (result.length > 0) {
         return { success: true, topics: result };
@@ -2325,17 +2221,17 @@ function parseAIOutput(text) {
       jsonError = {
         type: 'missing_schema',
         message: 'Missing schemaVersion field.',
-        details: 'The JSON is valid but does not have the required "schemaVersion": "2.0.0" field.',
+        details: 'The JSON is valid but does not have the required "schemaVersion": "2.1.0" field.',
         location: 'root',
-        hint: 'The AI output should start with: { "schemaVersion": "2.0.0", ... }'
+        hint: 'The AI output should start with: { "schemaVersion": "2.1.0", ... }'
       };
-    } else if (json.schemaVersion !== '2.0.0') {
+    } else if (json.schemaVersion !== '2.0.0' && json.schemaVersion !== '2.1.0') {
       jsonError = {
         type: 'wrong_schema',
         message: `Wrong schema version: "${json.schemaVersion}".`,
-        details: 'Expected schemaVersion to be "2.0.0".',
+        details: 'Expected schemaVersion to be "2.1.0" (or legacy "2.0.0").',
         location: 'root.schemaVersion',
-        hint: 'The AI output must have: "schemaVersion": "2.0.0"'
+        hint: 'The AI output must have: "schemaVersion": "2.1.0"'
       };
     }
     
@@ -2379,7 +2275,7 @@ function parseAIOutput(text) {
     error: {
       type: 'no_data',
       message: 'No recognizable data format found.',
-      details: 'The input could not be parsed as either JSON (schema v2.0.0) or legacy markdown format.',
+      details: 'The input could not be parsed as either JSON (schema v2.1.0/v2.0.0) or legacy markdown format.',
       location: null,
       hint: 'Ensure you are pasting the complete JSON response from Claude, starting with { and ending with }.'
     }
@@ -2413,6 +2309,29 @@ function estimateJSONErrorLocation(text, errorMessage) {
   return null;
 }
 
+function parseContentStringToDescriptors(content) {
+  if (!content || typeof content !== 'string') return [];
+  
+  const descriptors = [];
+  const entries = content.split(/\n\n+/);
+  
+  for (const entry of entries) {
+    const trimmed = entry.trim();
+    if (!trimmed) continue;
+    
+    // Match "Label: specifics" format
+    const match = trimmed.match(/^([^:]+):\s*(.+)$/s);
+    if (match) {
+      descriptors.push({
+        label: match[1].trim(),
+        specifics: match[2].trim()
+      });
+    }
+  }
+  
+  return descriptors;
+}
+
 function parseJSONOutput(json) {
   const topics = [];
   
@@ -2424,14 +2343,21 @@ function parseJSONOutput(json) {
         originalContent: ''
       };
       
-      // Store structured descriptors and also convert to originalContent format
-      quiz.descriptors = topic.descriptors || [];
-      if (Array.isArray(topic.descriptors)) {
+      // Handle new schema 2.1.0 with content string
+      if (topic.content && typeof topic.content === 'string') {
+        quiz.originalContent = topic.content;
+        quiz.descriptors = parseContentStringToDescriptors(topic.content);
+      }
+      // Handle legacy schema 2.0.0 with descriptors array
+      else if (Array.isArray(topic.descriptors)) {
+        quiz.descriptors = topic.descriptors;
         for (const desc of topic.descriptors) {
           if (desc.label && desc.specifics) {
             quiz.originalContent += `${desc.label}: ${desc.specifics}\n`;
           }
         }
+      } else {
+        quiz.descriptors = [];
       }
       
       topics.push({
@@ -3220,7 +3146,7 @@ function buildAIPanel(rawWeek) {
             <li><strong>Copy</strong> the prompt above (template + <strong>verbatim</strong> raw week JSON — no intermediate processing)</li>
             <li>Open <strong>Claude</strong> (claude.ai) in a new tab</li>
             <li><strong>Paste</strong> the prompt and wait for the JSON curriculum output</li>
-            <li><strong>Copy</strong> Claude's JSON response and paste it below (must include <code>&quot;schemaVersion&quot;: &quot;2.0.0&quot;</code>)</li>
+            <li><strong>Copy</strong> Claude's JSON response and paste it below (must include <code>&quot;schemaVersion&quot;: &quot;2.1.0&quot;</code>)</li>
             <li>Click <strong>Generate Topics</strong> to parse into study cards</li>
           </ol>
         </div>
@@ -3229,7 +3155,7 @@ function buildAIPanel(rawWeek) {
           <label class="input-label">Paste AI Output Here (JSON)</label>
           <textarea id="aiOutputText" style="min-height:300px; font-family:var(--font-mono); font-size:0.8rem;" 
             oninput="hideAIOutputError()"
-            placeholder="Paste Claude's JSON response here...\n\nExpected format:\n{\n  &quot;schemaVersion&quot;: &quot;2.0.0&quot;,\n  &quot;generatedDate&quot;: &quot;...&quot;,\n  &quot;weekId&quot;: &quot;...&quot;,\n  &quot;weekTitle&quot;: &quot;...&quot;,\n  &quot;sections&quot;: [\n    {\n      &quot;id&quot;: &quot;vascular-surgery&quot;,\n      &quot;title&quot;: &quot;Vascular Surgery&quot;,\n      &quot;topics&quot;: [\n        {\n          &quot;id&quot;: &quot;abdominal-aortic-aneurysm&quot;,\n          &quot;title&quot;: &quot;Abdominal aortic aneurysm&quot;,\n          &quot;descriptors&quot;: [...]\n        }\n      ]\n    }\n  ],\n  &quot;educationalResources&quot;: [...]\n}"></textarea>
+            placeholder="Paste Claude's JSON response here...\n\nExpected format:\n{\n  &quot;schemaVersion&quot;: &quot;2.1.0&quot;,\n  &quot;generatedDate&quot;: &quot;...&quot;,\n  &quot;weekId&quot;: &quot;...&quot;,\n  &quot;weekTitle&quot;: &quot;...&quot;,\n  &quot;sections&quot;: [\n    {\n      &quot;id&quot;: &quot;vascular-surgery&quot;,\n      &quot;title&quot;: &quot;Vascular Surgery&quot;,\n      &quot;topics&quot;: [\n        {\n          &quot;id&quot;: &quot;abdominal-aortic-aneurysm&quot;,\n          &quot;title&quot;: &quot;Abdominal aortic aneurysm&quot;,\n          &quot;content&quot;: &quot;Pathophysiology: ...\n\nClinical features: ...&quot;\n        }\n      ]\n    }\n  ],\n  &quot;educationalResources&quot;: [...]\n}"></textarea>
         </div>
         
         <div id="aiOutputErrorBox" style="display:none;"></div>
