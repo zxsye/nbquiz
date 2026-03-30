@@ -267,6 +267,68 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
   font-size: 0.76rem;
 }
 
+/* === ERROR DISPLAY BOX === */
+.error-box {
+  background: #fef2f2;
+  border: 1.5px solid #fca5a5;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-top: 16px;
+  font-family: var(--font-sans);
+}
+.error-box-title {
+  font-weight: 600;
+  color: #dc2626;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.error-box-section {
+  margin-top: 12px;
+}
+.error-box-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #991b1b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.error-box-message {
+  font-size: 0.85rem;
+  color: #7f1d1d;
+  line-height: 1.5;
+}
+.error-box-path {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-top: 6px;
+  word-break: break-all;
+}
+.error-box-hint {
+  font-size: 0.82rem;
+  color: #5a534a;
+  background: #fff;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  margin-top: 12px;
+}
+.error-box-hint code {
+  background: var(--border);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
 /* === PROCESS SECTION === */
 .process-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; align-items: start; }
 .process-sidebar {
@@ -2233,17 +2295,122 @@ function generateWeekMarkdown(weekId) {
 // ============================================================
 function parseAIOutput(text) {
   // Try to parse as JSON first (new schema v2.0.0)
+  let jsonError = null;
+  let jsonParseResult = null;
+  
   try {
     const json = JSON.parse(text);
+    jsonParseResult = json;
+    
     if (json.schemaVersion === '2.0.0' && Array.isArray(json.sections)) {
-      return parseJSONOutput(json);
+      const result = parseJSONOutput(json);
+      if (result.length > 0) {
+        return { success: true, topics: result };
+      }
+      // JSON parsed but no topics found
+      return {
+        success: false,
+        error: {
+          type: 'empty_output',
+          message: 'No topics found in AI output.',
+          details: 'The JSON parsed successfully but contained no sections with topics.',
+          location: null,
+          hint: 'Check that the AI response includes a "sections" array with topics. Each topic should have at least a title.'
+        }
+      };
+    }
+    
+    // JSON parsed but wrong schema version
+    if (!json.schemaVersion) {
+      jsonError = {
+        type: 'missing_schema',
+        message: 'Missing schemaVersion field.',
+        details: 'The JSON is valid but does not have the required "schemaVersion": "2.0.0" field.',
+        location: 'root',
+        hint: 'The AI output should start with: { "schemaVersion": "2.0.0", ... }'
+      };
+    } else if (json.schemaVersion !== '2.0.0') {
+      jsonError = {
+        type: 'wrong_schema',
+        message: `Wrong schema version: "${json.schemaVersion}".`,
+        details: 'Expected schemaVersion to be "2.0.0".',
+        location: 'root.schemaVersion',
+        hint: 'The AI output must have: "schemaVersion": "2.0.0"'
+      };
+    }
+    
+    if (!Array.isArray(json.sections)) {
+      jsonError = {
+        type: 'missing_sections',
+        message: 'Missing or invalid "sections" array.',
+        details: `Expected "sections" to be an array, but got: ${json.sections === undefined ? 'undefined' : typeof json.sections}.`,
+        location: 'root.sections',
+        hint: 'The JSON must include a "sections" array containing topic groups.'
+      };
     }
   } catch (e) {
-    // Not valid JSON, fall through to legacy markdown parser
+    // Not valid JSON - capture the specific parse error
+    jsonError = {
+      type: 'json_parse_error',
+      message: 'Invalid JSON syntax.',
+      details: e.message,
+      location: estimateJSONErrorLocation(text, e.message),
+      hint: 'Check for missing commas, quotes, or brackets in the JSON. Look for trailing commas which are not allowed in JSON.'
+    };
   }
   
-  // Legacy markdown parser for backward compatibility
-  return parseLegacyMarkdownOutput(text);
+  // Try legacy markdown parser as fallback
+  try {
+    const legacyResult = parseLegacyMarkdownOutput(text);
+    if (legacyResult.length > 0) {
+      return { success: true, topics: legacyResult };
+    }
+  } catch (e) {
+    // Legacy parser also failed
+  }
+  
+  // Both parsers failed - return detailed error
+  if (jsonError) {
+    return { success: false, error: jsonError };
+  }
+  
+  return {
+    success: false,
+    error: {
+      type: 'no_data',
+      message: 'No recognizable data format found.',
+      details: 'The input could not be parsed as either JSON (schema v2.0.0) or legacy markdown format.',
+      location: null,
+      hint: 'Ensure you are pasting the complete JSON response from Claude, starting with { and ending with }.'
+    }
+  };
+}
+
+function estimateJSONErrorLocation(text, errorMessage) {
+  // Try to extract line/column from common JSON parse error messages
+  const lineMatch = errorMessage.match(/line\s+(\d+)/i);
+  const colMatch = errorMessage.match(/column\s+(\d+)/i);
+  const posMatch = errorMessage.match(/position\s+(\d+)/i);
+  
+  if (lineMatch && colMatch) {
+    return { line: parseInt(lineMatch[1]), column: parseInt(colMatch[1]) };
+  }
+  if (posMatch) {
+    const pos = parseInt(posMatch[1]);
+    // Calculate line and column from position
+    let line = 1;
+    let col = 1;
+    for (let i = 0; i < pos && i < text.length; i++) {
+      if (text[i] === '\n') {
+        line++;
+        col = 1;
+      } else {
+        col++;
+      }
+    }
+    return { line, column: col };
+  }
+  return null;
 }
 
 function parseJSONOutput(json) {
@@ -2386,10 +2553,33 @@ function undoProcessRawWeek(rawWeekId) {
 
 function processRawWeek(rawWeekId, aiOutput) {
   const rawWeek = findRawWeek(rawWeekId);
-  if (!rawWeek) { alert('Raw week not found.'); return; }
+  if (!rawWeek) { 
+    showAIOutputError({
+      type: 'not_found',
+      message: 'Raw week not found.',
+      details: 'The selected week may have been removed. Please refresh and try again.'
+    });
+    return null;
+  }
   
-  const parsedTopics = parseAIOutput(aiOutput);
-  if (!parsedTopics.length) { alert('No topics found in AI output. Check the format.'); return; }
+  const parseResult = parseAIOutput(aiOutput);
+  
+  if (!parseResult.success) {
+    showAIOutputError(parseResult.error);
+    return null;
+  }
+  
+  const parsedTopics = parseResult.topics;
+  
+  if (!parsedTopics.length) { 
+    showAIOutputError({
+      type: 'empty_output',
+      message: 'No topics found in AI output.',
+      details: 'The data parsed successfully but contained no topics to create.',
+      hint: 'Ensure the AI response includes sections with at least one topic each.'
+    });
+    return null;
+  }
   
   // Flatten quizzes from all topics
   const topics = [];
@@ -2421,12 +2611,62 @@ function processRawWeek(rawWeekId, aiOutput) {
     r.id === rawWeekId ? { ...r, processedAt: new Date().toISOString(), expandedOutput: aiOutput } : r
   );
   
+  // Clear any previous error
+  hideAIOutputError();
+  
   setState({
     weeks: [...state.weeks, week],
     rawWeeks: updatedRawWeeks,
     activeTab: 'topics',
     activeRawWeekId: null
   });
+  
+  return week;
+}
+
+function showAIOutputError(error) {
+  const errorBox = document.getElementById('aiOutputErrorBox');
+  if (!errorBox) return;
+  
+  const locationHtml = error.location ? `
+    <div class="error-box-section">
+      <div class="error-box-label">Location</div>
+      ${typeof error.location === 'string' 
+        ? `<div class="error-box-path">${esc(error.location)}</div>`
+        : `<div class="error-box-path">Line ${error.location.line}, Column ${error.location.column}</div>`
+      }
+    </div>
+  ` : '';
+  
+  const hintHtml = error.hint ? `
+    <div class="error-box-hint">
+      <strong>💡 Hint:</strong> ${error.hint}
+    </div>
+  ` : '';
+  
+  errorBox.innerHTML = `
+    <div class="error-box">
+      <div class="error-box-title">❌ ${esc(error.message)}</div>
+      <div class="error-box-message">${esc(error.details || 'An error occurred while parsing the AI output.')}</div>
+      ${locationHtml}
+      ${hintHtml}
+    </div>
+  `;
+  
+  errorBox.style.display = 'block';
+  
+  // Scroll the error box into view
+  setTimeout(() => {
+    errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 50);
+}
+
+function hideAIOutputError() {
+  const errorBox = document.getElementById('aiOutputErrorBox');
+  if (errorBox) {
+    errorBox.style.display = 'none';
+    errorBox.innerHTML = '';
+  }
 }
 
 function deleteWeek(weekId) {
@@ -2988,8 +3228,11 @@ function buildAIPanel(rawWeek) {
         <div style="margin-bottom:16px;">
           <label class="input-label">Paste AI Output Here (JSON)</label>
           <textarea id="aiOutputText" style="min-height:300px; font-family:var(--font-mono); font-size:0.8rem;" 
+            oninput="hideAIOutputError()"
             placeholder="Paste Claude's JSON response here...\n\nExpected format:\n{\n  &quot;schemaVersion&quot;: &quot;2.0.0&quot;,\n  &quot;generatedDate&quot;: &quot;...&quot;,\n  &quot;weekId&quot;: &quot;...&quot;,\n  &quot;weekTitle&quot;: &quot;...&quot;,\n  &quot;sections&quot;: [\n    {\n      &quot;id&quot;: &quot;vascular-surgery&quot;,\n      &quot;title&quot;: &quot;Vascular Surgery&quot;,\n      &quot;topics&quot;: [\n        {\n          &quot;id&quot;: &quot;abdominal-aortic-aneurysm&quot;,\n          &quot;title&quot;: &quot;Abdominal aortic aneurysm&quot;,\n          &quot;descriptors&quot;: [...]\n        }\n      ]\n    }\n  ],\n  &quot;educationalResources&quot;: [...]\n}"></textarea>
         </div>
+        
+        <div id="aiOutputErrorBox" style="display:none;"></div>
         
         <div style="display:flex; justify-content:flex-end;">
           <button class="btn btn-success" onclick="handleProcessRawWeek('${rawWeek.id}')">Generate Topics ✓</button>
@@ -3369,7 +3612,19 @@ function copyCurriculumPrompt(btn) {
 
 function handleProcessRawWeek(rawWeekId) {
   const aiOutput = document.getElementById('aiOutputText')?.value || '';
-  if (!aiOutput.trim()) { alert('Paste the AI output first.'); return; }
+  
+  // Hide any previous error first
+  hideAIOutputError();
+  
+  if (!aiOutput.trim()) {
+    showAIOutputError({
+      type: 'empty_input',
+      message: 'No AI output provided.',
+      details: 'The text area is empty. Please paste the AI JSON response first.',
+      hint: 'Copy the JSON output from Claude and paste it into the text area above.'
+    });
+    return;
+  }
   
   processRawWeek(rawWeekId, aiOutput);
 }
