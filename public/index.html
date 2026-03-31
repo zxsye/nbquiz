@@ -684,9 +684,19 @@ async function renderSectionGrid(docs, uid) {
     });
   });
 
-  const sortedGids = Object.keys(groups).sort(
-    (a, b) => weekSortKey(groups[a].weekLabel) - weekSortKey(groups[b].weekLabel)
-  );
+  const sortedGids = Object.keys(groups).sort((a, b) => {
+    const labelA = groups[a].weekLabel;
+    const labelB = groups[b].weekLabel;
+    const numA = weekSortKey(labelA);
+    const numB = weekSortKey(labelB);
+    // If both are W-prefixed numbers, sort numerically
+    if (numA !== 9999 && numB !== 9999) return numA - numB;
+    // If only one is W-prefixed, it comes first
+    if (numA !== 9999) return -1;
+    if (numB !== 9999) return 1;
+    // Otherwise, alphanumerical sort
+    return labelA.localeCompare(labelB, undefined, { numeric: true, sensitivity: 'base' });
+  });
   const weekParentByGid = await fetchWeekParentDataByGid(
     currentSectionId,
     sectionLabel,
