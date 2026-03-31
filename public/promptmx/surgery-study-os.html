@@ -3245,11 +3245,14 @@ function buildWorkflowTab() {
 
   return `
     ${topicsWithNotes.length ? `
-    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px;">
-      <button class="btn btn-ghost btn-sm" style="gap:6px;" onclick="downloadAllNotes(this)">
-        ⬇ Download all notes
-        <span style="font-size:.72rem;opacity:.7;">(${topicsWithNotes.length} ready)</span>
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:12px;gap:8px;">
+      <button class="btn btn-ghost btn-sm" onclick="downloadAllNotes(this)">
+        ⬇ Download all (ZIP)
       </button>
+      <button class="btn btn-ghost btn-sm" onclick="downloadAllNotesAsSingleFile(this)">
+        ⬇ Download as .md
+      </button>
+      <span style="font-size:.72rem;opacity:.7;">(${topicsWithNotes.length} ready)</span>
     </div>` : ''}
     <div class="workflow-layout fade-up">
       <div class="workflow-sidebar">
@@ -3636,6 +3639,7 @@ async function downloadAllNotes(btn) {
     for (const topic of topics) {
       const weekName = sanitizeZipName(weekMap[topic.id] || 'Week');
       const topicName = sanitizeZipName(topic.title || 'note');
+      const sectionName = sanitizeZipName(topic.topic || 'General');
       const folder = zip.folder(weekName || 'Week');
       const weekKey = weekName || 'Week';
       if (!usedNamesByWeek[weekKey]) usedNamesByWeek[weekKey] = {};
@@ -3643,10 +3647,11 @@ async function downloadAllNotes(btn) {
       let base = topicName || 'note';
       if (base.length > 80) base = base.slice(0, 80).trim();
 
-      let filename = base + '.md';
+      // Prefix with section name: SectionName_TopicName.md
+      let filename = sectionName + '_' + base + '.md';
       if (usedNamesByWeek[weekKey][filename]) {
         usedNamesByWeek[weekKey][filename]++;
-        filename = `${base} (${usedNamesByWeek[weekKey][filename]}).md`;
+        filename = `${sectionName}_${base} (${usedNamesByWeek[weekKey][filename]}).md`;
       } else {
         usedNamesByWeek[weekKey][filename] = 1;
       }
@@ -3673,6 +3678,74 @@ async function downloadAllNotes(btn) {
     console.error('downloadAllNotes error', e);
     if (btn) { btn.innerHTML = orig; btn.disabled = false; }
     pmAlert('Failed to create ZIP: ' + e.message, 'error');
+  }
+}
+
+async function downloadAllNotesAsSingleFile(btn) {
+  const topics = allTopics().filter(t => t.notes && t.notes.trim());
+  if (!topics.length) {
+    pmAlert('No generated notes found. Paste AI responses into Step 1 for your topics first.', 'warning');
+    return;
+  }
+
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.innerHTML = '⏳ Preparing…'; btn.disabled = true; }
+
+  try {
+    // Build week map for sorting and headers
+    const weekMap = {};
+    const weekOrder = {};
+    for (let i = 0; i < state.weeks.length; i++) {
+      const w = state.weeks[i];
+      weekOrder[w.id] = i;
+      for (const t of w.topics) weekMap[t.id] = w.name;
+    }
+
+    // Sort topics by week order, then by section, then by title
+    const sortedTopics = topics.sort((a, b) => {
+      const weekA = weekOrder[state.weeks.find(w => w.topics.some(t => t.id === a.id))?.id] ?? 999;
+      const weekB = weekOrder[state.weeks.find(w => w.topics.some(t => t.id === b.id))?.id] ?? 999;
+      if (weekA !== weekB) return weekA - weekB;
+      const sectionA = (a.topic || 'General').toLowerCase();
+      const sectionB = (b.topic || 'General').toLowerCase();
+      if (sectionA !== sectionB) return sectionA.localeCompare(sectionB);
+      return (a.title || '').localeCompare(b.title || '');
+    });
+
+    // Build combined content with headers and separators
+    const parts = [];
+    for (const topic of sortedTopics) {
+      const weekName = weekMap[topic.id] || 'Unknown Week';
+      const sectionName = topic.topic || 'General';
+      const header = `## ${weekName} - ${sectionName} - ${topic.title}`;
+      parts.push(header);
+      parts.push('');
+      parts.push(topic.notes.trim());
+      parts.push('');
+      parts.push('---');
+      parts.push('');
+    }
+
+    const combinedContent = parts.join('\n');
+    const blob = new Blob([combinedContent], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'all-notes.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    if (btn) {
+      btn.innerHTML = `✅ Downloaded ${topics.length} note${topics.length !== 1 ? 's' : ''}`;
+      btn.style.color = '#166534';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; btn.disabled = false; }, 3000);
+    }
+  } catch (e) {
+    console.error('downloadAllNotesAsSingleFile error', e);
+    if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+    pmAlert('Failed to create file: ' + e.message, 'error');
   }
 }
 
