@@ -30,7 +30,7 @@ const fence = fenceRegex.exec(t);
       throw new Error(`Unrecoverable JSON syntax: ${repairError.message}`);
     }
   }
-}
+
 
 function normalizePills(parsed, numQuestions) {
   const raw = Array.isArray(parsed.pills) ? parsed.pills : [];
