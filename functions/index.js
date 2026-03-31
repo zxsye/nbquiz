@@ -96,21 +96,54 @@ function parseJsonFromModel(text) {
 
     // Attempt 2: Local string repair (Zero API cost)
     try {
-      let repairedText = t
-        // Remove trailing commas in arrays/objects
-        .replace(/,\s*([\]}])/g, '$1')
-        // Fix unescaped newlines inside strings
-        .replace(/\n/g, '\\n')
-        // Sometimes the model cuts off the final closing brackets
-        .replace(/\]\}*$/, ']}')
-        .replace(/\}*$/, '}');
+      let repaired = t;
 
-      // If the model abruptly stopped, forcefully close the JSON
-      if (!repairedText.endsWith('}')) {
-        repairedText += ']}';
+      // Remove trailing commas before closing brackets
+      repaired = repaired.replace(/,\s*([\]}])/g, '$1');
+
+      // Fix unescaped newlines inside strings (but preserve structure)
+      repaired = repaired.replace(/\n/g, '\\n');
+
+      // Count brackets to determine what's missing
+      let openBraces = 0;
+      let openBrackets = 0;
+      let inString = false;
+      let escaped = false;
+
+      for (let i = 0; i < repaired.length; i++) {
+        const char = repaired[i];
+        if (escaped) {
+          escaped = false;
+          continue;
+        }
+        if (char === '\\') {
+          escaped = true;
+          continue;
+        }
+        if (char === '"' && !escaped) {
+          inString = !inString;
+          continue;
+        }
+        if (inString) continue;
+        if (char === '{') openBraces++;
+        else if (char === '}') openBraces--;
+        else if (char === '[') openBrackets++;
+        else if (char === ']') openBrackets--;
       }
 
-      return JSON.parse(repairedText);
+      // Close any unclosed arrays
+      while (openBrackets > 0) {
+        repaired += ']';
+        openBrackets--;
+      }
+
+      // Close any unclosed objects
+      while (openBraces > 0) {
+        repaired += '}';
+        openBraces--;
+      }
+
+      return JSON.parse(repaired);
     } catch (repairError) {
       // If we STILL can't parse it, throw so the API retry loop can catch it
       logger.error('Local JSON repair failed. Raw text:', t);
