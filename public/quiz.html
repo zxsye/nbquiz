@@ -211,7 +211,8 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
   background: var(--surface-2);
   border-color: var(--text-3);
 }
-#collapsedHideModeBtn.active {
+#collapsedHideModeBtn.active,
+#collapsedRandomiseModeBtn.active {
     background: var(--accent-light);
     border-color: var(--accent);
     color: var(--accent);
@@ -921,6 +922,10 @@ body.has-topic-selection-bar .main-content {
         <span class="mode-btn-label">🙈 Hide options</span>
         <span class="mode-btn-switch"></span>
       </button>
+      <button class="mode-btn" id="randomiseModeBtn" onclick="toggleRandomiseMode()">
+        <span class="mode-btn-label">🔀 Randomise</span>
+        <span class="mode-btn-switch"></span>
+      </button>
       <div class="topic-sidebar-controls">
         <button type="button" class="mode-btn" id="topicPillsToggleBtn" aria-pressed="false" aria-label="Show topic pills in sidebar">
           <span class="mode-btn-label">🏷 Topic pills</span>
@@ -955,6 +960,7 @@ body.has-topic-selection-bar .main-content {
       <div class="sidebar-collapsed-divider"></div>
       <div class="sidebar-collapsed-actions">
         <button class="collapsed-icon-btn" id="collapsedHideModeBtn" onclick="toggleHideMode()">🙈</button>
+        <button class="collapsed-icon-btn" id="collapsedRandomiseModeBtn" onclick="toggleRandomiseMode()">🔀</button>
         <button class="collapsed-icon-btn" onclick="copySidebarResults()">📋</button>
         <button class="collapsed-icon-btn" onclick="showResults()">🔚</button>
       </div>
@@ -1108,6 +1114,9 @@ let uid = null;
 let hideOptionsMode  = false;
 let optionsRevealed  = false;
 let eliminated       = {}; // keyed by option letter for current question
+let randomiseMode = false;
+let shuffledOrder = [];
+let shuffledPositionMap = new Map();
 let QUIZ_META = null;
 
 /** Parent-pill aggregate: flat QUESTIONS map to source quizzes via AGG_SOURCES. */
@@ -1646,8 +1655,8 @@ function topicApplyFilterVisibility() {
 function topicEnsureCurrentVisible() {
   const indices = topicGetActiveFilterIndices();
   if (!indices || indices.size === 0 || indices.has(current)) return;
-  const first = Math.min(...indices);
-  if (Number.isFinite(first)) jumpTo(first);
+  const first = shuffledOrder.find((i) => indices.has(i));
+  if (first !== undefined) jumpTo(first);
 }
 
 function topicApplyPrefsFromStateImmediateHide() {
@@ -1936,6 +1945,7 @@ function showUI(visible) {
 // ── Load quiz ─────────────────────────────────────────────────────────────────
 async function loadQuiz() {
   const params = new URLSearchParams(location.search);
+  randomiseMode = false;
   AGGREGATE_MODE = false;
   AGG_SOURCES = [];
   aggQuizSessions = {};
@@ -1974,6 +1984,8 @@ async function loadQuiz() {
 
     QUESTIONS = qSnap.data().questions || [];
     if (!QUESTIONS.length) { showError('This quiz has no questions.'); return; }
+
+    initShuffledOrder();
 
     document.title = (meta.title || QUIZ_ID) + ' — NB Quiz';
     document.getElementById('totalQ').textContent = QUESTIONS.length;
@@ -2422,21 +2434,21 @@ function initSidebarGrids() {
     qGrid.innerHTML = '';
     collapsedQGrid.innerHTML = '';
 
-    QUESTIONS.forEach((_, i) => {
+    shuffledOrder.forEach((qIdx, position) => {
         // Expanded view
         const div = document.createElement('div');
         div.className = 'q-grid-item';
-        div.id = `grid-item-${i}`;
-        div.onclick = () => jumpTo(i);
-        div.innerHTML = `${i + 1}<div class="flag-icon">🚩</div><div class="note-icon">📔</div>`;
+        div.id = `grid-item-${qIdx}`;
+        div.onclick = () => jumpTo(qIdx);
+        div.innerHTML = `${position + 1}<div class="flag-icon">🚩</div><div class="note-icon">📔</div>`;
         qGrid.appendChild(div);
 
         // Collapsed view (vertical)
         const collapsedDiv = document.createElement('div');
         collapsedDiv.className = 'q-grid-item collapsed-q-item';
-        collapsedDiv.id = `collapsed-grid-item-${i}`;
-        collapsedDiv.onclick = () => jumpTo(i);
-        collapsedDiv.innerHTML = `${i + 1}<div class="flag-icon">🚩</div><div class="note-icon">📔</div>`;
+        collapsedDiv.id = `collapsed-grid-item-${qIdx}`;
+        collapsedDiv.onclick = () => jumpTo(qIdx);
+        collapsedDiv.innerHTML = `${position + 1}<div class="flag-icon">🚩</div><div class="note-icon">📔</div>`;
         collapsedQGrid.appendChild(collapsedDiv);
         
     });
@@ -2992,6 +3004,8 @@ async function loadQuizMultiParentMode(params) {
     };
     QUESTIONS = flatQ;
 
+    initShuffledOrder();
+
     document.title = (QUIZ_META.title || 'Combined quiz') + ' — NB Quiz';
     document.getElementById('totalQ').textContent = QUESTIONS.length;
 
@@ -3075,6 +3089,8 @@ async function loadQuizParentMode(params) {
     };
     QUESTIONS = flatQ;
 
+    initShuffledOrder();
+
     document.title = (QUIZ_META.title || 'Combined quiz') + ' — NB Quiz';
     document.getElementById('totalQ').textContent = QUESTIONS.length;
 
@@ -3118,6 +3134,38 @@ function toggleHideMode() {
   if (!answered) { optionsRevealed = false; applyVeil(); }
 }
 
+function initShuffledOrder() {
+  shuffledOrder = QUESTIONS.map((_, i) => i);
+  shuffledPositionMap = new Map(shuffledOrder.map((qi, pos) => [qi, pos]));
+}
+
+function getNavigationOrder() {
+  const indices = topicGetActiveFilterIndices();
+  return indices ? shuffledOrder.filter((i) => indices.has(i)) : shuffledOrder.slice();
+}
+
+function toggleRandomiseMode() {
+  randomiseMode = !randomiseMode;
+  if (randomiseMode) {
+    shuffledOrder = QUESTIONS.map((_, i) => i);
+    for (let i = shuffledOrder.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledOrder[i], shuffledOrder[j]] = [shuffledOrder[j], shuffledOrder[i]];
+    }
+  } else {
+    shuffledOrder = QUESTIONS.map((_, i) => i);
+  }
+  shuffledPositionMap = new Map(shuffledOrder.map((qi, pos) => [qi, pos]));
+  const randomiseModeBtn = document.getElementById('randomiseModeBtn');
+  const collapsedRandomiseModeBtn = document.getElementById('collapsedRandomiseModeBtn');
+  if (randomiseModeBtn) randomiseModeBtn.classList.toggle('active', randomiseMode);
+  if (collapsedRandomiseModeBtn) collapsedRandomiseModeBtn.classList.toggle('active', randomiseMode);
+  initSidebarGrids();
+  const indices = topicGetActiveFilterIndices();
+  const first = shuffledOrder.find((i) => !indices || indices.has(i));
+  if (first !== undefined) jumpTo(first);
+}
+
 function revealOptions() {
   optionsRevealed = true;
   applyVeil();
@@ -3151,7 +3199,8 @@ function renderQuestion(idx) {
 
   answered = false; selected = null; eliminated = {};
 
-  document.getElementById('qLabel').textContent  = `Question ${idx + 1}`;
+  const dispPos = shuffledPositionMap.get(idx);
+  document.getElementById('qLabel').textContent = `Question ${(dispPos !== undefined ? dispPos : idx) + 1}`;
   const _bc = buildBreadcrumb();
   const _tag = document.getElementById('partTag');
   _tag.textContent = _bc || `Part ${q.part || 1}`;
@@ -3231,7 +3280,9 @@ function renderQuestion(idx) {
   submitBtn.innerHTML = 'Check<span class="submit-answer-suffix"> answer</span>';
   submitBtn.onclick     = submitAnswer;
   document.getElementById('skipBtn').style.display = '';
-  document.getElementById('backBtn').style.display = idx > 0 ? '' : 'none';
+  const navOrder = getNavigationOrder();
+  const navPos = navOrder.indexOf(idx);
+  document.getElementById('backBtn').style.display = navPos > 0 ? '' : 'none';
   setFeedback('', '');
   updateSidebar();
   updateProgress();
@@ -3343,7 +3394,9 @@ function submitAnswer(opts) {
 
   setFeedback(isCorrect ? '✅ Correct!' : `❌ The answer was ${q.correct}`, isCorrect ? 'correct' : 'wrong');
   const submitBtn = document.getElementById('submitBtn');
-  submitBtn.textContent = current < QUESTIONS.length - 1 ? '→' : 'See results';
+  const navAfter = getNavigationOrder();
+  const navPosAfter = navAfter.indexOf(current);
+  submitBtn.textContent = navPosAfter < navAfter.length - 1 ? '→' : 'See results';
   submitBtn.onclick     = nextQuestion;
   submitBtn.disabled    = false;
   document.getElementById('skipBtn').style.display = 'none';
@@ -3355,24 +3408,11 @@ function submitAnswer(opts) {
 }
 
 function goBack() {
-  const indices = topicGetActiveFilterIndices();
-  if (indices && indices.size > 0) {
-    // Find previous visible question in filtered set
-    const sorted = Array.from(indices).sort((a, b) => a - b);
-    const idx = sorted.findIndex(i => i >= current);
-    const prevIdx = idx > 0 ? sorted[idx - 1] : sorted[sorted.length - 1];
-    if (prevIdx === undefined || prevIdx === current) return;
-    if (!answered) results[current] = null;
-    current = prevIdx;
-    answered = false; selected = null;
-    renderQuestion(current);
-    const r = results[current];
-    if (r && !r.skipped) { selected = r.chosen; submitAnswer({ replay: true }); }
-    return;
-  }
-  if (current <= 0) return;
+  const order = getNavigationOrder();
+  const pos = order.indexOf(current);
+  if (pos <= 0) return;
   if (!answered) results[current] = null;
-  current--;
+  current = order[pos - 1];
   answered = false; selected = null;
   renderQuestion(current);
   const r = results[current];
@@ -3380,28 +3420,15 @@ function goBack() {
 }
 
 function nextQuestion() {
-  const indices = topicGetActiveFilterIndices();
-  if (indices && indices.size > 0) {
-    // Find next visible question in filtered set
-    const sorted = Array.from(indices).sort((a, b) => a - b);
-    const idx = sorted.findIndex(i => i > current);
-    const nextIdx = idx >= 0 ? sorted[idx] : sorted[0];
-    if (nextIdx === undefined) { showResults(); return; }
-    current = nextIdx;
-    saveState();
-    renderQuestion(current);
-    const r = results[current];
-    if (r && !r.skipped) { selected = r.chosen; submitAnswer({ replay: true }); }
-    return;
-  }
-  current++;
+  const order = getNavigationOrder();
+  const pos = order.indexOf(current);
+  const next = order[pos + 1];
+  if (next === undefined) { showResults(); return; }
+  current = next;
   saveState();
-  if (current >= QUESTIONS.length) showResults();
-  else {
-    renderQuestion(current);
-    const r = results[current];
-    if (r && !r.skipped) { selected = r.chosen; submitAnswer({ replay: true }); }
-  }
+  renderQuestion(current);
+  const r = results[current];
+  if (r && !r.skipped) { selected = r.chosen; submitAnswer({ replay: true }); }
 }
 
 
@@ -3536,7 +3563,7 @@ async function restartQuiz() {
     console.warn('waitForPendingWrites (pre-restart):', e);
   }
 
-  current = 0; score = 0; answered = false; selected = null;
+  score = 0; answered = false; selected = null;
   optionsRevealed = false;
   results = new Array(QUESTIONS.length).fill(null);
   // Lifetime attempt log ("Your attempts") — keep all tries with timestamps; only reset progress above.
@@ -3608,8 +3635,20 @@ async function restartQuiz() {
     _agentDbg('H5', 'quiz.html:restartQuiz', 'after restart complete', { nonNullResults: nn, qid: QUIZ_ID });
   }
   // #endregion
+  if (randomiseMode) {
+    shuffledOrder = QUESTIONS.map((_, i) => i);
+    for (let i = shuffledOrder.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledOrder[i], shuffledOrder[j]] = [shuffledOrder[j], shuffledOrder[i]];
+    }
+  } else {
+    initShuffledOrder();
+  }
+  shuffledPositionMap = new Map(shuffledOrder.map((qi, pos) => [qi, pos]));
   initSidebar();
-  renderQuestion(0);
+  const order = getNavigationOrder();
+  current = order.length ? order[0] : 0;
+  renderQuestion(current);
 }
 
 function escHtml(s) {
