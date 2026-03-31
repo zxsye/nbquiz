@@ -112,6 +112,48 @@ body {
 .btn-danger { background: transparent; color: #dc2626; border-color: #fca5a5; }
 .btn-danger:hover { background: #fef2f2; }
 
+/* === SECTION DOWNLOAD MENU === */
+.section-actions { position: relative; display: flex; align-items: center; justify-content: space-between; background: var(--accent-light); }
+.section-download-btn {
+  all: unset;
+  cursor: pointer;
+  font-size: 0.52rem;
+  width: 17px;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  background: transparent;
+  transition: all .15s;
+  opacity: 0.85;
+}
+.section-download-btn:hover { opacity: 1; background: rgba(37,99,168,0.12); }
+.section-menu {
+  position: absolute;
+  right: 8px;
+  top: calc(100% + 4px);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow);
+  z-index: 100;
+  min-width: 140px;
+  overflow: hidden;
+}
+.section-menu-item {
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background .15s;
+  border-bottom: 1px solid var(--border);
+}
+.section-menu-item:last-child { border-bottom: none; }
+.section-menu-item:hover { background: var(--accent-light); color: var(--accent); }
+
 /* === CARDS === */
 .card {
   background: var(--surface);
@@ -445,7 +487,7 @@ select { cursor: pointer; appearance: none; background-image: url("data:image/sv
   top: 0;
   z-index: 1;
 }
-.sidebar-topic-header { font-size: 0.72rem; color: var(--accent); background: var(--accent-light); }
+.sidebar-topic-header { font-size: 0.72rem; color: var(--accent); background: transparent; }
 .sidebar-topic {
   display: flex;
   align-items: center;
@@ -3268,9 +3310,22 @@ function buildWorkflowTab() {
           return `
             <div>
               <div class="sidebar-week-title">${esc(w.name)}</div>
-              ${Object.entries(grouped).map(([topicName, topicQuizzes]) => `
+              ${Object.entries(grouped).map(([topicName, topicQuizzes]) => {
+                const menuId = `menu-${topicName.replace(/[^a-zA-Z0-9]/g, '_')}-${w.id}`;
+                const hasNotes = topicQuizzes.some(t => t.notes && t.notes.trim());
+                return `
                 <div>
-                  <div class="sidebar-topic-header">${esc(topicName)}</div>
+                  <div class="section-actions">
+                    <div class="sidebar-topic-header">${esc(topicName)}</div>
+                    ${hasNotes ? `
+                    <button class="section-download-btn" onclick="showSectionMenu(event, '${menuId}')" title="Download notes for this section">
+                      ⬇
+                    </button>
+                    <div class="section-menu" id="${menuId}" style="display:none;">
+                      <div class="section-menu-item" onclick="downloadSectionNotes('${esc(topicName)}', '${esc(w.id)}', 'zip', '${esc(w.name)}')">Download as ZIP</div>
+                      <div class="section-menu-item" onclick="downloadSectionNotes('${esc(topicName)}', '${esc(w.id)}', 'md', '${esc(w.name)}')">Download as .md</div>
+                    </div>` : ''}
+                  </div>
                   ${topicQuizzes.map(t => {
                     const isActive = active && t.id === active.id;
                     return `<div class="sidebar-topic ${isActive?'active':''}" data-topic-id="${t.id}" onclick="selectTopic('${t.id}')">
@@ -3278,8 +3333,8 @@ function buildWorkflowTab() {
                       ${buildBadge(topicStatus(t))}
                     </div>`;
                   }).join('')}
-                </div>
-              `).join('')}
+                </div>`;
+              }).join('')}
             </div>`;
         }).join('')}
       </div>
@@ -3754,6 +3809,132 @@ function sanitizeZipName(name) {
     .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function closeAllSectionMenus() {
+  document.querySelectorAll('.section-menu').forEach(menu => {
+    menu.style.display = 'none';
+  });
+}
+
+function showSectionMenu(event, menuId) {
+  event.stopPropagation();
+  const menu = document.getElementById(menuId);
+  if (!menu) return;
+
+  // Close other menus first
+  closeAllSectionMenus();
+
+  // Toggle current menu
+  const isVisible = menu.style.display === 'block';
+  menu.style.display = isVisible ? 'none' : 'block';
+
+  // Add one-time click listener to close menu when clicking outside
+  if (!isVisible) {
+    setTimeout(() => {
+      document.addEventListener('click', function closeMenu(e) {
+        if (!menu.contains(e.target)) {
+          menu.style.display = 'none';
+          document.removeEventListener('click', closeMenu);
+        }
+      }, { once: true });
+    }, 0);
+  }
+}
+
+async function downloadSectionNotes(sectionName, weekId, format, weekName) {
+  const week = state.weeks.find(w => w.id === weekId);
+  if (!week) {
+    pmAlert('Week not found', 'error');
+    return;
+  }
+
+  // Filter topics in this week that belong to this section and have notes
+  const topics = week.topics.filter(t =>
+    t.topic === sectionName && t.notes && t.notes.trim()
+  );
+
+  if (!topics.length) {
+    pmAlert('No notes found for this section', 'warning');
+    return;
+  }
+
+  try {
+    if (format === 'zip') {
+      const zip = new JSZip();
+      const usedNames = {};
+
+      for (const topic of topics) {
+        const topicName = sanitizeZipName(topic.title || 'note');
+        const sectionNameClean = sanitizeZipName(sectionName || 'General');
+
+        let base = topicName || 'note';
+        if (base.length > 80) base = base.slice(0, 80).trim();
+
+        let filename = sectionNameClean + '_' + base + '.md';
+        if (usedNames[filename]) {
+          usedNames[filename]++;
+          filename = `${sectionNameClean}_${base} (${usedNames[filename]}).md`;
+        } else {
+          usedNames[filename] = 1;
+        }
+
+        zip.file(filename, topic.notes);
+      }
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeWeek = sanitizeZipName(weekName || week.name || 'Week');
+      const safeSection = sanitizeZipName(sectionName || 'Section');
+      a.download = `${safeWeek}-${safeSection}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      pmAlert(`Downloaded ${topics.length} note${topics.length !== 1 ? 's' : ''} as ZIP`, 'success');
+    } else if (format === 'md') {
+      // Sort by title
+      const sortedTopics = topics.sort((a, b) =>
+        (a.title || '').localeCompare(b.title || '')
+      );
+
+      const parts = [];
+      for (const topic of sortedTopics) {
+        const sectionNameClean = topic.topic || 'General';
+        const header = `## ${sectionNameClean} - ${topic.title}`;
+        parts.push(header);
+        parts.push('');
+        parts.push(topic.notes.trim());
+        parts.push('');
+        parts.push('---');
+        parts.push('');
+      }
+
+      const combinedContent = parts.join('\n');
+      const blob = new Blob([combinedContent], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeWeek = sanitizeZipName(weekName || week.name || 'Week');
+      const safeSection = sanitizeZipName(sectionName || 'Section');
+      a.download = `${safeWeek}-${safeSection}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      pmAlert(`Downloaded ${topics.length} note${topics.length !== 1 ? 's' : ''} as single file`, 'success');
+    }
+  } catch (e) {
+    console.error('downloadSectionNotes error', e);
+    pmAlert('Failed to download: ' + e.message, 'error');
+  }
+
+  // Close menu after download
+  closeAllSectionMenus();
 }
 
 function copyNotesResult(topicId, btn) {
