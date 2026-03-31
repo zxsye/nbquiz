@@ -1,92 +1,35 @@
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { defineSecret } = require('firebase-functions/params');
-const logger = require('firebase-functions/logger');
-const admin = require('firebase-admin');
-
-const openaiApiKey = defineSecret('OPENAI_API_KEY');
-const geminiApiKey = defineSecret('GEMINI_API_KEY');
-
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const TOPIC_MAX_PILLS = 8;
-/** Soft average questions per subquiz pill (used only in LLM prompt hints). */
-const TARGET_AVG_QUESTIONS_PER_PILL = 5;
-const OPENAI_MODEL = 'gpt-4o-mini';
-const GEMINI_MODEL = 'gemini-2.5-flash';
-
-/** Gen2 callables run on Cloud Run: without public invoker, OPTIONS preflight is rejected (no auth) → browser reports CORS. `invoker: 'public'` fixes that; Firebase Auth on the callable body still gates real calls. */
-const CALL_OPTS = {
-  region: 'us-central1',
-  invoker: 'public',
-  cors: true,
-  timeoutSeconds: 300,
-  memory: '512MiB',
-};
-
-/** Use codes whose messages are forwarded to clients (`internal` is not). */
-function callableError(msg) {
-  const s = String(msg || 'Unknown error').slice(0, 2000);
-  return new HttpsError('failed-precondition', s);
-}
-
-function rethrowIfHttpsError(e) {
-  if (e instanceof HttpsError) throw e;
-}
-
-/**
- * Firebase callable runtime only forwards HttpsError to clients; any other throw becomes
- * functions/internal. Use this at export boundaries so real errors surface as failed-precondition.
- */
-function wrapCallableHandler(fn) {
-  return async (request) => {
-    try {
-      return await fn(request);
-    } catch (e) {
-      if (e instanceof HttpsError) throw e;
-      logger.error('Topic tags callable (non-HttpsError)', e);
-      const msg =
-        e instanceof Error ? e.message || e.name || String(e) : String(e);
-      throw new HttpsError(
-        'failed-precondition',
-        msg.slice(0, 2000) || 'Unknown server error'
-      );
-    }
-  };
-}
-
-function stripHtml(s) {
-  if (!s || typeof s !== 'string') return '';
-  return s
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function compactQuestions(questions) {
-  return questions.map((q, i) => {
-    const options = q.options || {};
-    const letters = Object.keys(options).sort();
-    const opts = {};
-    letters.forEach((L) => {
-      opts[L] = stripHtml(options[L]).slice(0, 800);
-    });
-    return {
-      i,
-      stem: stripHtml(q.stem || '').slice(0, 2000),
-      correct: q.correct || '',
-      options: opts,
-      hint: stripHtml(q.hint || '').slice(0, 400),
-    };
-  });
-}
-
-function parseJsonFromModel(text) {
-  let t = (text || '').trim();
-  const fence = /^```(?:json)?\s*\n?([\s\S]*?)\n?```$/m.exec(t);
+const fence = fenceRegex.exec(t);
   if (fence) t = fence[1].trim();
-  return JSON.parse(t);
+  
+  try {
+    // Attempt 1: Standard parse
+    return JSON.parse(t);
+  } catch (e) {
+    logger.warn('Initial JSON parse failed, attempting local repair...', e.message);
+    
+    // Attempt 2: Local string repair (Zero API cost)
+    try {
+      let repairedText = t
+        // Remove trailing commas in arrays/objects
+        .replace(/,\s*([\]}])/g, '$1')
+        // Fix unescaped newlines inside strings
+        .replace(/\n/g, '\\n') 
+        // Sometimes the model cuts off the final closing brackets
+        .replace(/\]\}*$/, ']}') 
+        .replace(/\}*$/, '}');
+
+      // If the model abruptly stopped, forcefully close the JSON
+      if (!repairedText.endsWith('}')) {
+        repairedText += ']}';
+      }
+
+      return JSON.parse(repairedText);
+    } catch (repairError) {
+      // If we STILL can't parse it, throw so the API retry loop can catch it
+      logger.error('Local JSON repair failed. Raw text:', t);
+      throw new Error(`Unrecoverable JSON syntax: ${repairError.message}`);
+    }
+  }
 }
 
 function normalizePills(parsed, numQuestions) {
@@ -196,7 +139,32 @@ async function callOpenAI(apiKey, userPrompt) {
       model: OPENAI_MODEL,
       temperature: 0.2,
       max_tokens: 8192,
-      response_format: { type: 'json_object' },
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "topic_tags_schema",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              pills: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    label: { type: "string" },
+                    indices: { type: "array", items: { type: "integer" } }
+                  },
+                  required: ["label", "indices"],
+                  additionalProperties: false
+                }
+              }
+            },
+            required: ["pills"],
+            additionalProperties: false
+          }
+        }
+      },
       messages: [
         {
           role: 'system',
@@ -225,6 +193,23 @@ async function callGemini(apiKey, userPrompt) {
       temperature: 0.2,
       maxOutputTokens: 8192,
       responseMimeType: 'application/json',
+      responseSchema: {
+        type: "OBJECT",
+        properties: {
+          pills: {
+            type: "ARRAY",
+            items: {
+              type: "OBJECT",
+              properties: {
+                label: { type: "STRING" },
+                indices: { type: "ARRAY", items: { type: "INTEGER" } }
+              },
+              required: ["label", "indices"]
+            }
+          }
+        },
+        required: ["pills"]
+      }
     },
   };
   const res = await fetch(url, {
@@ -768,7 +753,7 @@ async function generateTopicTagsCore(request, provider) {
     const approxPerPillLo = Math.max(1, Math.floor(n / targetPillCount));
     const approxPerPillHi = Math.max(approxPerPillLo, Math.ceil(n / targetPillCount));
 
-    const userPrompt = `You partition a medical quiz into subquizzes using topic "pills". Each pill is a filterable subquiz: the learner selects one pill to study that slice of questions.
+    let userPrompt = `You partition a medical quiz into subquizzes using topic "pills". Each pill is a filterable subquiz: the learner selects one pill to study that slice of questions.
 
 This quiz has ${n} questions (indexes 0 through ${n - 1}).
 
@@ -792,42 +777,39 @@ ${payload}`;
 
     let rawText;
     let modelId;
-    if (provider === 'gemini') {
-      const key = readSecretTrimmed(geminiApiKey, 'GEMINI_API_KEY');
-      if (!key) {
-        throw new HttpsError('failed-precondition', 'GEMINI_API_KEY secret is empty.');
-      }
+    let parsed;
+    let success = false;
+    let lastError = null;
+
+    for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        rawText = await callGemini(key, userPrompt);
+        if (provider === 'gemini') {
+          const key = readSecretTrimmed(geminiApiKey, 'GEMINI_API_KEY');
+          if (!key) throw new HttpsError('failed-precondition', 'GEMINI_API_KEY secret is empty.');
+          rawText = await callGemini(key, userPrompt);
+          modelId = GEMINI_MODEL;
+        } else {
+          const key = readSecretTrimmed(openaiApiKey, 'OPENAI_API_KEY');
+          if (!key) throw new HttpsError('failed-precondition', 'OPENAI_API_KEY secret is empty.');
+          rawText = await callOpenAI(key, userPrompt);
+          modelId = OPENAI_MODEL;
+        }
+
+        parsed = parseJsonFromModel(rawText);
+        success = true;
+        break; // Exit loop if successful!
       } catch (e) {
-        rethrowIfHttpsError(e);
-        console.error('Gemini error', e);
-        throw callableError(e.message || 'Gemini request failed');
+        lastError = e;
+        logger.warn(`Attempt ${attempt + 1} failed:`, e.message);
+        // Warn the model if we have to retry
+        userPrompt += `\n\nCRITICAL ERROR in previous attempt: You provided invalid JSON syntax. Ensure all brackets are closed and commas are correct.`;
       }
-      modelId = GEMINI_MODEL;
-    } else {
-      const key = readSecretTrimmed(openaiApiKey, 'OPENAI_API_KEY');
-      if (!key) {
-        throw new HttpsError('failed-precondition', 'OPENAI_API_KEY secret is empty.');
-      }
-      try {
-        rawText = await callOpenAI(key, userPrompt);
-      } catch (e) {
-        rethrowIfHttpsError(e);
-        console.error('OpenAI error', e);
-        throw callableError(e.message || 'OpenAI request failed');
-      }
-      modelId = OPENAI_MODEL;
     }
 
-    let parsed;
-    try {
-      parsed = parseJsonFromModel(rawText);
-    } catch (e) {
-      rethrowIfHttpsError(e);
-      console.error('JSON parse error', e);
-      throw callableError(`Model returned invalid JSON: ${e.message || e}`);
+    if (!success) {
+      throw callableError(`Failed to generate valid tags after retries. Last error: ${lastError.message}`);
     }
+    
     let { pills, pillsMap } = normalizePills(parsed, questions.length);
     ({ pills, pillsMap } = capPillsMap(pills, pillsMap, TOPIC_MAX_PILLS));
     ({ pills, pillsMap } = ensureFullCoverage(pills, pillsMap, questions.length));
