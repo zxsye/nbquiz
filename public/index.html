@@ -72,6 +72,7 @@ body.has-parent-selection-bar { padding-bottom: calc(88px + env(safe-area-inset-
 .signout-btn:hover { color: var(--accent); }
 .admin-link { font-size: .72rem; font-family: var(--font-mono); font-weight: 500; color: var(--accent); text-decoration: none; border: 1px solid var(--accent); border-radius: 99px; padding: 3px 10px; display: none; align-items: center; gap: 4px; transition: background 150ms; }
 .admin-link:hover { background: var(--accent-light); }
+.version-badge { font-size: .65rem; font-family: var(--font-mono); font-weight: 500; color: var(--text-3); background: var(--bg); border: 1px solid var(--border); border-radius: 99px; padding: 2px 8px; display: inline-flex; align-items: center; gap: 4px; }
 
 /* ── Section Tabs ── */
 .section-tabs {
@@ -414,7 +415,10 @@ body.has-parent-selection-bar { padding-bottom: calc(88px + env(safe-area-inset-
   <div class="logo">NB <span>Quiz</span></div>
   <div class="header-right">
     <a class="admin-link" id="adminLink" href="/admin">⚙ Admin</a>
-    <div class="credit">made by Zi Lin</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="credit">made by Zi Lin</div>
+      <span class="version-badge">v2.0</span>
+    </div>
     <div class="user-info"  id="userInfo"></div>
     <button class="signout-btn" id="signoutBtn" onclick="signOut()">sign out</button>
   </div>
