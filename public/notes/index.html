@@ -1003,12 +1003,18 @@ body.outline-in-sidebar .sidebar .note-list {
 .tile-content:empty { display: none; }
 .tile-content > :first-child { margin-top: 0; }
 .tile-content > :last-child { margin-bottom: 0; }
-.tile-content p, .tile-content ul, .tile-content ol, .tile-content pre, .tile-content blockquote {
+.tile-content p, .tile-content pre, .tile-content blockquote {
   margin: 0 0 .7em;
   line-height: 1.5;
   font-size: .95rem;
   font-family: var(--font-sans);
   white-space: pre-wrap;
+}
+.tile-content ul, .tile-content ol {
+  margin: 0 0 .7em;
+  line-height: 1.5;
+  font-size: .95rem;
+  font-family: var(--font-sans);
 }
 .tile-content code {
   background: #f4f1ea;
