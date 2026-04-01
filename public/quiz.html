@@ -232,6 +232,7 @@ body { font-family: var(--font-sans); background: var(--bg); color: var(--text);
 .app-title span { color: var(--accent); }
 .score-badge { font-family: var(--font-mono); font-size: .8rem; font-weight: 500; background: var(--surface); border: 1.5px solid var(--border); border-radius: 99px; padding: 6px 14px; color: var(--text-2); display: flex; gap: 6px; align-items: center; }
 .score-badge .score-num { color: var(--text); font-weight: 600; }
+.version-badge { font-size: .65rem; font-family: var(--font-mono); font-weight: 500; color: var(--text-3); background: var(--surface); border: 1px solid var(--border); border-radius: 99px; padding: 2px 8px; margin-left: 8px; }
 
 /* Progress */
 .progress-wrap { width: 100%; max-width: 780px; margin: 0 auto 28px; }
@@ -969,8 +970,8 @@ body.has-topic-selection-bar .main-content {
 
 <div class="main-content" id="mainContent" style="display:none">
   <header class="app-header">
-    <a href="/" class="app-title">NB <span>Quiz</span></a>
-    <div style="display:flex;align-items:center;gap:12px;">
+    <a href="/" class="app-title">NB <span>Quiz</span></a><span class="version-badge">v2.0</span>
+    <div style="display:flex;align-items:center;gap:12px; margin-left:auto;">
       <div class="score-badge">Score&nbsp;<span class="score-num" id="scoreDisplay">0 / 0</span></div>
       <button class="btn btn-ghost" onclick="signOut()" style="padding:6px 14px;font-size:.8rem;">Sign out</button>
     </div>
@@ -1118,6 +1119,8 @@ let randomiseMode = false;
 let shuffledOrder = [];
 let shuffledPositionMap = new Map();
 let QUIZ_META = null;
+/** Whether session data has been loaded from server; prevents saving uninitialized state. */
+let sessionLoaded = false;
 
 /** Parent-pill aggregate: flat QUESTIONS map to source quizzes via AGG_SOURCES. */
 let AGGREGATE_MODE = false;
@@ -2246,6 +2249,11 @@ function _agentDbg(hypothesisId, location, message, data) {
 // #endregion
 async function saveState() {
   if (!uid) return;
+  // Prevent saving uninitialized state that would overwrite server data (race condition fix)
+  if (!sessionLoaded) {
+    const hasAnyProgress = Array.isArray(results) && results.some((r) => r !== null);
+    if (!hasAnyProgress) return;
+  }
   _saveStateChain = _saveStateChain
     .then(() => flushSaveState())
     .catch((e) => console.warn('Save failed:', e));
@@ -2286,6 +2294,11 @@ async function flushSaveState() {
   if (AGGREGATE_MODE) {
     await saveAggState();
     return;
+  }
+  // Extra safety: skip if session never loaded and there's nothing to save
+  if (!sessionLoaded) {
+    const hasAnyProgress = Array.isArray(results) && results.some((r) => r !== null);
+    if (!hasAnyProgress) return;
   }
   const snap = snapshotSessionForSave();
   let _agentSeq = 0;
@@ -2368,6 +2381,7 @@ async function loadState() {
     let ah = normalizeAttemptHistoryDoc(d.attemptHistory, n);
     seedAttemptHistoryFromResults(results, ah);
     attemptHistory = ah;
+    sessionLoaded = true;
     return true;
   } catch(e) { console.warn('Load failed:', e); return false; }
 }
