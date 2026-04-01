@@ -2289,6 +2289,75 @@ function snapshotSessionForSave() {
   };
 }
 
+/**
+ * Merge results arrays from local and server, keeping the most recent answer per question.
+ * Never allows null/empty to overwrite a valid answer.
+ * @param {Array} local - Local results array with timestamps
+ * @param {Array} server - Server results array with timestamps
+ * @returns {Array} Merged results array
+ */
+function mergeResultsByTimestamp(local, server) {
+  const n = Math.max(
+    Array.isArray(local) ? local.length : 0,
+    Array.isArray(server) ? server.length : 0
+  );
+  const merged = [];
+  for (let i = 0; i < n; i++) {
+    const localResult = local?.[i] || null;
+    const serverResult = server?.[i] || null;
+    // If only one side has data, use that
+    if (!localResult) {
+      merged[i] = serverResult;
+      continue;
+    }
+    if (!serverResult) {
+      merged[i] = localResult;
+      continue;
+    }
+    // Both have data - compare timestamps
+    const localAt = typeof localResult.at === 'number' ? localResult.at : 0;
+    const serverAt = typeof serverResult.at === 'number' ? serverResult.at : 0;
+    // Keep the more recent answer
+    merged[i] = localAt >= serverAt ? localResult : serverResult;
+  }
+  return merged;
+}
+
+/**
+ * Merge attempt history arrays, combining all unique attempts from both sources.
+ * Deduplicates by timestamp to prevent duplicates from concurrent saves.
+ * @param {Array} localAh - Local attempt history array (encoded for Firestore: [{tries: [...]}])
+ * @param {Array} serverAh - Server attempt history array (encoded for Firestore: [{tries: [...]}])
+ * @param {number} n - Number of questions
+ * @returns {Array} Merged attempt history array
+ */
+function mergeAttemptHistory(localAh, serverAh, n) {
+  const merged = [];
+  for (let i = 0; i < n; i++) {
+    const localSlot = localAh?.[i];
+    const serverSlot = serverAh?.[i];
+    const localTries = localSlot?.tries || [];
+    const serverTries = serverSlot?.tries || [];
+    // Combine all attempts
+    const combined = [...serverTries];
+    // Add local tries that aren't already in server (by timestamp)
+    const serverTimestamps = new Set(serverTries.map(t => t.at).filter(Boolean));
+    for (const localTry of localTries) {
+      if (!localTry || typeof localTry.chosen !== 'string') continue;
+      if (localTry.at && serverTimestamps.has(localTry.at)) continue; // Already exists
+      combined.push(localTry);
+    }
+    // Sort by timestamp if available
+    combined.sort((a, b) => {
+      const atA = typeof a.at === 'number' ? a.at : 0;
+      const atB = typeof b.at === 'number' ? b.at : 0;
+      return atA - atB;
+    });
+    merged.push({ tries: combined });
+  }
+  return merged;
+}
+
 async function flushSaveState() {
   if (!uid) return;
   if (AGGREGATE_MODE) {
@@ -2309,7 +2378,7 @@ async function flushSaveState() {
     const ahSlots = Array.isArray(snap.attemptHistory)
       ? snap.attemptHistory.filter((h) => h && Array.isArray(h.tries) && h.tries.length).length
       : -1;
-    _agentDbg('H1', 'quiz.html:flushSaveState', 'flush before set', {
+    _agentDbg('H1', 'quiz.html:flushSaveState', 'flush before transaction', {
       seq: _agentSeq,
       nonNullResults: nn,
       attemptSlotsWithTries: ahSlots,
@@ -2318,17 +2387,50 @@ async function flushSaveState() {
   }
   // #endregion
   try {
-    await sessionRef().set({
-      ...snap,
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    const n = QUESTIONS.length;
+    // Use Firestore transaction to read-before-write and merge with server state
+    await db.runTransaction(async (transaction) => {
+      const docSnap = await transaction.get(sessionRef());
+      const serverData = docSnap.exists ? docSnap.data() : {};
+      // Merge results: per-question, keep most recent by timestamp
+      const mergedResults = mergeResultsByTimestamp(snap.results, serverData.results);
+      // Merge attempt history: combine all attempts from both sources
+      const mergedAttemptHistory = mergeAttemptHistory(
+        snap.attemptHistory,
+        serverData.attemptHistory,
+        n
+      );
+      // For flags: use last-write-wins per-question (local wins if different)
+      const mergedFlagged = snap.flagged;
+      // Recalculate score from merged results
+      const mergedScore = mergedResults.filter(r => r?.wasCorrect).length;
+      transaction.set(sessionRef(), {
+        results: mergedResults,
+        flagged: mergedFlagged,
+        current: snap.current,  // current position is device-specific
+        score: mergedScore,
+        attemptHistory: mergedAttemptHistory,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
     });
     // #region agent log
     {
       const nn = Array.isArray(snap.results) ? snap.results.filter((x) => x != null).length : -1;
-      _agentDbg('H4', 'quiz.html:flushSaveState', 'flush after set ok', { seq: _agentSeq, nonNullResults: nn, qid: QUIZ_ID });
+      _agentDbg('H4', 'quiz.html:flushSaveState', 'flush after transaction ok', { seq: _agentSeq, nonNullResults: nn, qid: QUIZ_ID });
     }
     // #endregion
-  } catch(e) { console.warn('Save failed:', e); }
+  } catch(e) {
+    console.warn('Save failed (transaction):', e);
+    // Fallback: try simple set without merge (preserves old behavior on transaction failure)
+    try {
+      await sessionRef().set({
+        ...snap,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (e2) {
+      console.warn('Save failed (fallback set):', e2);
+    }
+  }
 }
 
 async function loadState() {
@@ -2753,20 +2855,48 @@ async function saveAggState() {
   syncAggCacheFromFlat();
   try {
     await Promise.all(
-      Object.keys(aggQuizSessions).map((qid) => {
+      Object.keys(aggQuizSessions).map(async (qid) => {
         const s = aggQuizSessions[qid];
         const n = Array.isArray(s.results) ? s.results.length : 0;
-        return db
+        const localResults = (s.results || []).map((r) => snapshotResultForSave(r));
+        const localAttemptHistory = encodeAttemptHistoryForFirestore(s.attemptHistory, n);
+        const localFlagged = s.flagged;
+        const ref = db
           .collection('quizSessions')
           .doc(uid)
           .collection('quizzes')
-          .doc(qid)
-          .set({
-            results: (s.results || []).map((r) => snapshotResultForSave(r)),
-            flagged: s.flagged,
-            attemptHistory: encodeAttemptHistoryForFirestore(s.attemptHistory, n),
+          .doc(qid);
+        // Use transaction to merge with server state
+        try {
+          await db.runTransaction(async (transaction) => {
+            const docSnap = await transaction.get(ref);
+            const serverData = docSnap.exists ? docSnap.data() : {};
+            // Merge results and attempt history using same helpers
+            const mergedResults = mergeResultsByTimestamp(localResults, serverData.results);
+            const mergedAttemptHistory = mergeAttemptHistory(
+              localAttemptHistory,
+              serverData.attemptHistory,
+              n
+            );
+            const mergedScore = mergedResults.filter(r => r?.wasCorrect).length;
+            transaction.set(ref, {
+              results: mergedResults,
+              flagged: localFlagged,
+              attemptHistory: mergedAttemptHistory,
+              score: mergedScore,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            });
+          });
+        } catch (txError) {
+          // Fallback to simple set on transaction failure
+          console.warn('Aggregate save transaction failed, using fallback:', txError);
+          await ref.set({
+            results: localResults,
+            flagged: localFlagged,
+            attemptHistory: localAttemptHistory,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
           });
+        }
       })
     );
     localStorage.setItem(AGG_POS_KEY, String(current));
@@ -3385,8 +3515,9 @@ function submitAnswer(opts) {
   const isCorrect = selected === q.correct;
   if (!replay) {
     if (!attemptHistory[current]) attemptHistory[current] = [];
-    attemptHistory[current].push({ chosen: selected, wasCorrect: isCorrect, at: Date.now() });
-    results[current] = { q: current, chosen: selected, correct: q.correct, wasCorrect: isCorrect, skipped: false };
+    const now = Date.now();
+    attemptHistory[current].push({ chosen: selected, wasCorrect: isCorrect, at: now });
+    results[current] = { q: current, chosen: selected, correct: q.correct, wasCorrect: isCorrect, skipped: false, at: now };
     score = results.filter(r => r?.wasCorrect).length;
   }
 
