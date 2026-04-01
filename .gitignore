@@ -13,3 +13,4 @@ serviceAccountKey.json
 *.zip
 /liquid-glass
 public/promptmx/temp.txt
+/deprecate
