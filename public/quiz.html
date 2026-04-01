@@ -626,6 +626,94 @@ kbd.pressed { background:var(--accent-light); border-color:var(--accent); color:
 }
 .topic-modal-chip.more { border-style: dashed; color: var(--text-3); }
 .topic-modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.note-conflict-section { margin-bottom: 14px; }
+.note-conflict-label { font-size: .72rem; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.note-conflict-box { background: var(--surface-2); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 10px 12px; font-size: .85rem; color: var(--text); max-height: 100px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+.note-conflict-box:empty::before { content: '(empty)'; color: var(--text-3); font-style: italic; }
+
+/* Mini popup for note conflicts */
+.mini-popup {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1300;
+  width: 340px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,.12), 0 2px 8px rgba(0,0,0,.08);
+  padding: 16px 18px;
+  font-family: var(--font-sans);
+  animation: miniPopupSlide 250ms cubic-bezier(.4,0,.2,1);
+}
+.mini-popup.hidden { display: none; }
+@keyframes miniPopupSlide {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.mini-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.mini-popup-icon { font-size: 1.1rem; }
+.mini-popup-header h3 {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+.mini-popup-desc {
+  font-size: .82rem;
+  color: var(--text-2);
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+.mini-popup-versions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.mini-popup-version {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mini-popup-label {
+  font-size: .65rem;
+  font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.mini-popup-box {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: .78rem;
+  color: var(--text);
+  max-height: 70px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.4;
+}
+.mini-popup-box:empty::before { content: '(empty)'; color: var(--text-3); font-style: italic; }
+.mini-popup-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.btn-sm {
+  padding: 6px 12px;
+  font-size: .75rem;
+  min-height: 32px;
+}
+
 .topic-pills-wrap { margin-bottom: 16px; display: none; flex-direction: column; gap: 10px; }
 .topic-pills-wrap.visible { display: flex; }
 @keyframes topicPillsFadeSlide {
@@ -908,6 +996,29 @@ body.has-topic-selection-bar .main-content {
   </div>
 </div>
 
+<!-- Note Conflict Warning Mini Popup -->
+<div id="noteConflictModal" class="mini-popup hidden" aria-modal="true" role="dialog" aria-labelledby="noteConflictTitle">
+  <div class="mini-popup-header">
+    <span class="mini-popup-icon">⚠️</span>
+    <h3 id="noteConflictTitle">Note modified elsewhere</h3>
+  </div>
+  <p class="mini-popup-desc">The server version differs from yours. Save anyway?</p>
+  <div class="mini-popup-versions">
+    <div class="mini-popup-version">
+      <span class="mini-popup-label">Server</span>
+      <div id="noteConflictServer" class="mini-popup-box"></div>
+    </div>
+    <div class="mini-popup-version">
+      <span class="mini-popup-label">Yours</span>
+      <div id="noteConflictLocal" class="mini-popup-box"></div>
+    </div>
+  </div>
+  <div class="mini-popup-actions">
+    <button type="button" class="btn btn-ghost btn-sm" id="noteConflictCancel">Cancel</button>
+    <button type="button" class="btn btn-wrong btn-sm" id="noteConflictOverwrite">Overwrite</button>
+  </div>
+</div>
+
 <aside class="sidebar" id="sidebar" style="display:none">
   <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -1107,6 +1218,10 @@ let score     = 0;
 let results   = [];
 let flagged   = [];
 let notes     = []; // array of strings, one per question
+/** Snapshot of server notes at page load, for conflict detection */
+let _serverNotesSnapshot = [];
+/** For aggregate mode: {quizId: string[]} snapshot per quiz */
+let _aggServerNotesSnapshot = {};
 /** Per-question list of { chosen, wasCorrect, at? } for every submit ever — cumulative across restarts (never cleared on restart). */
 let attemptHistory = [];
 let currentFilter = 'wrong';
@@ -1816,6 +1931,27 @@ function topicConfirmModal() {
   }
 }
 
+function noteConflictInitHandlers() {
+  const popup = document.getElementById('noteConflictModal');
+  const cancelBtn = document.getElementById('noteConflictCancel');
+  const overwriteBtn = document.getElementById('noteConflictOverwrite');
+  if (!popup || !cancelBtn || !overwriteBtn) return;
+
+  cancelBtn.onclick = () => {
+    if (popup._resolve) popup._resolve('cancel');
+  };
+  overwriteBtn.onclick = () => {
+    if (popup._resolve) popup._resolve('overwrite');
+  };
+  // Close on Escape key (global handler since popup is fixed position)
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && popup._resolve && !popup.classList.contains('hidden')) {
+      e.preventDefault();
+      popup._resolve('cancel');
+    }
+  });
+}
+
 function topicInitModalHandlers() {
   document.getElementById('topicModalOk').onclick = topicConfirmModal;
   document.getElementById('topicModalCancel').onclick = () => {
@@ -2489,27 +2625,118 @@ async function loadState() {
 }
 
 // ── Notes: stored as {notes: string[]} array ──────────────────────────────────
+/** Returns true if localNote starts with serverNote (user only added content, no overwrite). */
+function isAppendOnly(localNote, serverNote) {
+  const local = (localNote || '').trim();
+  const server = (serverNote || '').trim();
+  if (!server) return true; // empty server is always safe
+  return local.startsWith(server);
+}
+
+/** Show conflict warning mini popup. Returns a Promise that resolves to 'overwrite' or 'cancel'. */
+function showNoteConflictModal(serverNote, localNote) {
+  return new Promise((resolve) => {
+    const popup = document.getElementById('noteConflictModal');
+    const serverEl = document.getElementById('noteConflictServer');
+    const localEl = document.getElementById('noteConflictLocal');
+    if (!popup) { resolve('overwrite'); return; }
+    serverEl.textContent = serverNote || '(empty)';
+    localEl.textContent = localNote || '(empty)';
+    popup.classList.remove('hidden');
+    // Store resolver on the popup element for handlers to access
+    popup._resolve = (choice) => {
+      popup.classList.add('hidden');
+      resolve(choice);
+    };
+  });
+}
+
 async function saveNote(idx) {
   if (!uid) return;
   const statusEl = document.getElementById('noteSaveStatus');
   try {
+    const localValue = document.getElementById('noteTextarea').value;
+
     if (AGGREGATE_MODE) {
       const { quizId, qIndex } = AGG_SOURCES[idx];
       if (!quizId || !aggNotesByQuiz[quizId]) return;
-      notes[idx] = document.getElementById('noteTextarea').value;
-      aggNotesByQuiz[quizId][qIndex] = notes[idx];
+
+      // Fetch current server state for conflict detection
+      const serverSnap = await db
+        .collection('quizSessions')
+        .doc(uid)
+        .collection('notes')
+        .doc(quizId)
+        .get();
+
+      const serverNotes = serverSnap.exists && Array.isArray(serverSnap.data().notes)
+        ? serverSnap.data().notes : [];
+      const serverValue = serverNotes[qIndex] || '';
+      const snapshotValue = (_aggServerNotesSnapshot[quizId] && _aggServerNotesSnapshot[quizId][qIndex]) || '';
+
+      // Check for conflict: server changed from snapshot AND we're not just appending
+      const serverChanged = serverValue !== snapshotValue;
+      const wouldOverwrite = serverChanged && !isAppendOnly(localValue, serverValue);
+
+      if (wouldOverwrite) {
+        const choice = await showNoteConflictModal(serverValue, localValue);
+        if (choice === 'cancel') {
+          if (statusEl) statusEl.textContent = 'Save cancelled';
+          setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 1500);
+          return;
+        }
+        // User chose to overwrite - proceed with save
+      }
+
+      // Proceed with save
+      notes[idx] = localValue;
+      aggNotesByQuiz[quizId][qIndex] = localValue;
       await db
         .collection('quizSessions')
         .doc(uid)
         .collection('notes')
         .doc(quizId)
         .set({ notes: aggNotesByQuiz[quizId] || [] });
+
+      // Update snapshot to reflect new server state
+      if (!_aggServerNotesSnapshot[quizId]) _aggServerNotesSnapshot[quizId] = [];
+      _aggServerNotesSnapshot[quizId][qIndex] = localValue;
+
     } else {
+      // Non-aggregate mode
+      // Fetch current server state for conflict detection
+      const serverSnap = await notesRef().get();
+      const serverNotes = serverSnap.exists && Array.isArray(serverSnap.data().notes)
+        ? serverSnap.data().notes : [];
+      const serverValue = serverNotes[idx] || '';
+      const snapshotValue = _serverNotesSnapshot[idx] || '';
+
+      // Check for conflict: server changed from snapshot AND we're not just appending
+      const serverChanged = serverValue !== snapshotValue;
+      const wouldOverwrite = serverChanged && !isAppendOnly(localValue, serverValue);
+
+      if (wouldOverwrite) {
+        const choice = await showNoteConflictModal(serverValue, localValue);
+        if (choice === 'cancel') {
+          if (statusEl) statusEl.textContent = 'Save cancelled';
+          setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 1500);
+          return;
+        }
+        // User chose to overwrite - proceed with save
+      }
+
+      // Proceed with save
+      notes[idx] = localValue;
       await notesRef().set({ notes: notes });
+
+      // Update snapshot to reflect new server state
+      _serverNotesSnapshot[idx] = localValue;
     }
+
     if (statusEl) statusEl.textContent = 'Saved ✓';
     setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 1500);
   } catch(e) {
+    console.error('Note save failed:', e);
     if (statusEl) statusEl.textContent = 'Save failed';
   }
 }
@@ -2518,21 +2745,30 @@ async function loadNotes() {
   if (!uid || AGGREGATE_MODE) return;
   try {
     const snap = await notesRef().get();
-    if (!snap.exists) return;
+    if (!snap.exists) {
+      _serverNotesSnapshot = new Array(notes.length).fill('');
+      return;
+    }
     const d = snap.data();
 
     // New format: {notes: string[]}
     if (Array.isArray(d.notes)) {
       d.notes.forEach((n, i) => { if (i < notes.length) notes[i] = n || ''; });
+      // Store deep copy as server snapshot for conflict detection
+      _serverNotesSnapshot = d.notes.map(n => n || '');
       return;
     }
 
     // Legacy format: {n_0: string, n_1: string, ...} — read but don't persist until next save
+    _serverNotesSnapshot = new Array(notes.length).fill('');
     Object.keys(d).forEach(k => {
       const m = k.match(/^n_(\d+)$/);
       if (m) {
         const i = parseInt(m[1]);
-        if (i < notes.length) notes[i] = d[k] || '';
+        if (i < notes.length) {
+          notes[i] = d[k] || '';
+          _serverNotesSnapshot[i] = d[k] || '';
+        }
       }
     });
   } catch(e) { console.warn('Notes load failed:', e); }
@@ -2793,6 +3029,7 @@ async function loadAggregateUserData() {
   const quizIds = [...new Set(AGG_SOURCES.map((x) => x.quizId))];
   aggQuizSessions = {};
   aggNotesByQuiz = {};
+  _aggServerNotesSnapshot = {}; // Reset server snapshots
   await Promise.all(
     quizIds.map(async (qid) => {
       const qSnap = await db.collection('quizzes').doc(qid).collection('data').doc('questions').get();
@@ -2821,6 +3058,10 @@ async function loadAggregateUserData() {
         noteSnap.data().notes.forEach((t, j) => {
           if (j < n) notesFull[j] = t || '';
         });
+        // Store server snapshot for conflict detection
+        _aggServerNotesSnapshot[qid] = [...notesFull];
+      } else {
+        _aggServerNotesSnapshot[qid] = new Array(n).fill('');
       }
       aggNotesByQuiz[qid] = notesFull;
     })
@@ -3871,6 +4112,7 @@ document.addEventListener('keydown', e => {
 });
 
 topicInitModalHandlers();
+noteConflictInitHandlers();
 
 function saveStateOnPageHide() {
   if (document.visibilityState === 'hidden') saveState();
