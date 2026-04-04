@@ -2956,6 +2956,9 @@ function wrapSubSupBraced(text) {
 }
 
 function formatQuizHtml(text) {
+  if (!text) return text;
+  // Unwrap bare integers that got needlessly dollar-wrapped: $80$ → 80
+  text = text.replace(/\$(\d+)\$/g, '$1');
   return wrapSubSupBraced(wrapLatex(text));
 }
 
