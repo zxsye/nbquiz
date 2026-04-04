@@ -2957,11 +2957,13 @@ function wrapSubSupBraced(text) {
 
 function formatQuizHtml(text) {
   if (!text) return text;
-  // Unwrap bare integers that got needlessly dollar-wrapped: $80$ → 80
-  text = text.replace(/\$(\d+)\$/g, '$1');
+  const num = '-?\\d+(?:\\.\\d+)?';
+  text = text.replace(new RegExp(`\\$\\$(${num})\\$\\$`, 'g'), '$1');
+  text = text.replace(new RegExp(`\\$(${num})\\$`, 'g'), '$1');
+  text = text.replace(new RegExp(`\\\\\\[(${num})\\\\\\]`, 'g'), '$1');
+  text = text.replace(new RegExp(`\\\\\\((${num})\\\\\\)`, 'g'), '$1');
   return wrapSubSupBraced(wrapLatex(text));
 }
-
 
 function buildBreadcrumb() {
   if (!QUIZ_META) return '';
