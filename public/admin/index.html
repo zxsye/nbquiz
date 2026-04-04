@@ -760,7 +760,7 @@ function cleanMath(text) {
     .replace(/\\\%/g,'%').replace(/\\text\{([^}]+)\}/g,'$1')
     .replace(/\$([^$]+)\$/g, (_, inner) => {
       // Bare numbers don't need LaTeX — strip the delimiters
-      if (/^-?\d+(\.\d+)?$/.test(inner.trim())) return inner.trim();
+      if (/^-?\d+(\.\d+)?%?$/.test(inner.trim())) return inner.trim();
       return '\\(' + inner + '\\)';
     })
     .replace(/\\u0027/g,"'");
